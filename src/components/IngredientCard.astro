@@ -1,0 +1,158 @@
+---
+/**
+ * IngredientCard — the protagonist of the Plant section.
+ *
+ * Each card shows one ingredient: its image, name, quantity line, an
+ * optional growth note, and an optional origin link (farm or garden).
+ * Variant on the broader Card pattern — the ingredient is the subject,
+ * not a stage's entity.
+ */
+
+import type { JourneyIngredient } from '~/lib/journey';
+
+interface Props {
+  ingredient: JourneyIngredient;
+}
+
+const { ingredient } = Astro.props;
+const i = ingredient;
+
+const originHref = i.origin
+  ? `/${i.origin.kind === 'farm' ? 'farms' : 'garden'}/${i.origin.slug}/`
+  : null;
+---
+
+<article class="ingredient">
+  <div
+    class="ingredient-image"
+    style={i.heroUrl ? `background-image: url('${i.heroUrl}')` : undefined}
+    aria-hidden={i.heroUrl ? undefined : 'true'}
+  />
+  <div class="ingredient-body">
+    <span class="ingredient-kind">Ingredient</span>
+    <h3 class="ingredient-name">{i.name}</h3>
+    <p class="ingredient-text">{i.text}</p>
+    {i.growthNote && <p class="ingredient-growth">{i.growthNote}</p>}
+    {i.origin && originHref ? (
+      <a class="ingredient-origin" href={originHref}>
+        <span class="origin-glyph" aria-hidden="true">
+          {i.origin.kind === 'farm' ? '◖' : '✿'}
+        </span>
+        <span class="origin-text">
+          <span class="origin-name">{i.origin.name}</span>
+          {i.origin.location && <span class="origin-meta"> · {i.origin.location}</span>}
+        </span>
+      </a>
+    ) : (
+      <p class="ingredient-no-origin">Origin not yet authored</p>
+    )}
+  </div>
+</article>
+
+<style>
+  .ingredient {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 18, 24, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    color: var(--ink);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ingredient:hover {
+    transform: translateY(-2px);
+    border-color: rgba(141, 178, 95, 0.55);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .ingredient-image {
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: #11151a;
+    border-bottom: 1px solid var(--rule);
+  }
+  /* Fallback for ingredients without a hero — subtle green gradient. */
+  .ingredient-image[aria-hidden="true"] {
+    background: linear-gradient(135deg, rgba(40, 60, 40, 0.7), rgba(20, 28, 18, 0.95));
+  }
+
+  .ingredient-body {
+    padding: 0.85rem 0.95rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ingredient-kind {
+    font-size: 0.66rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(141, 178, 95, 0.95);
+  }
+
+  .ingredient-name {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.1rem;
+    line-height: 1.2;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .ingredient-text {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .ingredient-growth {
+    font-size: 0.76rem;
+    color: var(--ink-mute);
+    line-height: 1.45;
+    font-style: normal;
+    margin: 0.15rem 0 0;
+  }
+
+  .ingredient-origin {
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px dashed rgba(141, 178, 95, 0.28);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .ingredient-origin .origin-glyph {
+    color: rgba(141, 178, 95, 0.95);
+    line-height: 1.1;
+    font-size: 0.95rem;
+    margin-top: 0.05rem;
+  }
+
+  .ingredient-origin .origin-name {
+    font-weight: 500;
+    font-size: 0.86rem;
+  }
+  .ingredient-origin:hover .origin-name {
+    color: rgba(141, 178, 95, 0.95);
+  }
+
+  .ingredient-origin .origin-meta {
+    color: var(--ink-mute);
+    font-size: 0.78rem;
+  }
+
+  .ingredient-no-origin {
+    margin: 0.5rem 0 0;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--rule);
+    font-size: 0.74rem;
+    color: var(--ink-mute);
+    letter-spacing: 0.04em;
+  }
+</style>

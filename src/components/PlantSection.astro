@@ -1,0 +1,81 @@
+---
+/**
+ * PlantSection — the ingredients, each shown with where it grew.
+ *
+ * Each ingredient is its own card (image + name + quantity + growth
+ * note + origin link). The ingredients are the protagonists; the
+ * section answers "what plants (and one mineral) did this dish need?"
+ */
+
+import IngredientCard from './IngredientCard.astro';
+import type { JourneyIngredient } from '~/lib/journey';
+
+interface Props {
+  ingredients: JourneyIngredient[];
+}
+
+const { ingredients } = Astro.props;
+---
+
+<section id="plant" class="journey-section section-plant">
+  <div class="container">
+    <header class="section-head">
+      <p class="stage-eyebrow">2 · Plant</p>
+      <h2>
+        Then, the plants.
+      </h2>
+      <p class="section-lead">
+        Each ingredient held water and minerals, built sugar out of
+        light over weeks or months, ripened, and was picked. A few
+        ingredients (salt, water) came from a different elemental story.
+      </p>
+    </header>
+
+    <ul class="ingredients-grid">
+      {ingredients.map((i) => (
+        <li><IngredientCard ingredient={i} /></li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .section-plant {
+    position: relative;
+    padding: 6rem 0;
+    background: linear-gradient(180deg, rgba(10, 13, 17, 1) 0%, rgba(16, 22, 18, 1) 30%, rgba(10, 13, 17, 1) 100%);
+  }
+
+  .section-head {
+    max-width: 60ch;
+    margin: 0 0 3rem;
+  }
+
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0.4rem 0 1rem;
+  }
+
+  .section-lead {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .ingredients-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.1rem;
+  }
+  .ingredients-grid li { display: flex; }
+
+  @media (max-width: 720px) {
+    .ingredients-grid { grid-template-columns: 1fr; }
+  }
+</style>

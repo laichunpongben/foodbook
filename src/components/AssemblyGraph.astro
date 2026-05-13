@@ -1,23 +1,28 @@
 ---
 /**
- * AssemblyGraph — the chain leading to a dish.
+ * AssemblyGraph — Sankey-style flow lane.
  *
- *   PRODUCTION CHAIN   Source ──→ Grow ──→ Cook
- *                                          │
- *                                       trunk
- *                                          │
- *                          ┌──── branches ────┐
- *                          ▼     ▼     ▼     ▼
- *   CONSUMPTION GALLERY    Eat   Eat   Eat   Eat  (responsive grid)
+ *   ┌────────┐         ┌────────┐         ┌────────┐
+ *   │ Farm A │──╮      │        │──╮      │ Meal   │
+ *   ├────────┤  ╰─────→│ Recipe │  ├─────→├────────┤
+ *   │ Farm B │  ╭─────→│        │  ├─────→│ Tandem │
+ *   ├────────┤  │      └────────┘  ├─────→├────────┤
+ *   │ Garden │──╯                  ├─────→│ Da Me  │
+ *   └────────┘                     ├─────→├────────┤
+ *                                  ├─────→│ Rezdôra│
+ *                                  └─────→├────────┤
+ *                                         │ LucAle │
+ *                                         └────────┘
  *
- * Cubic-bezier connectors between every pair of adjacent production
- * stages, then a single "trunk" drops from each last-production-stage
- * card to a manifold point, from which "branches" fan out to every
- * card in the Eat gallery. One dish, many tables — the lineage stays
- * legible even though the Eat layout is a 2-D grid below.
+ *   1 SOURCE                    2 COOK              3 EAT
  *
- * Card + stage heading live in their own components. This file owns
- * the chain SVG, the layout grid, and the hover-highlight wiring.
+ * Cards stay as CSS-positioned HTML so they're readable. Ribbons
+ * between columns are computed by d3-sankey (`sankeyLinkHorizontal`)
+ * — proper Sankey path geometry, uniform width per ribbon (we have
+ * no quantitative weights, so all = 1). One lane, continuous flow.
+ *
+ * The dish itself remains the page header above this section — it's
+ * the subject of the flow, not a node in it.
  */
 
 import type { AssemblyGraph, Node } from '~/lib/assembly';
@@ -30,7 +35,7 @@ interface Props {
 
 const { graph } = Astro.props;
 
-/* ---------- node → presentational props ---------- */
+/* ---------- presentational helpers ---------- */
 
 const href = (n: Node): string => {
   switch (n.kind) {
@@ -55,197 +60,190 @@ const kindLabel = (n: Node): string => {
 const variant = (n: Node): 'default' | 'visited' | 'discovered' =>
   n.kind === 'restaurant' ? n.status : 'default';
 
-const productionStages = [
-  { id: 'source', step: 1, label: 'Source', nodes: graph.source },
-  { id: 'grow',   step: 2, label: 'Grow',   nodes: graph.grow },
-  { id: 'cook',   step: 3, label: 'Cook',   nodes: graph.cook },
-].filter((s) => s.nodes.length > 0);
+/* ---------- three columns of the flow lane ----------
+ * Source + Grow are parallel inputs to Cook, so they share column 1.
+ * Cook is column 2 (the bottleneck). Eat is column 3 (the fan-out).
+ */
 
-const hasProduction = productionStages.length > 0;
-const hasEat = graph.eat.length > 0;
+const sourceCol = [...graph.source, ...graph.grow];
+const cookCol   = graph.cook;
+const eatCol    = graph.eat;
+
+const hasSource = sourceCol.length > 0;
+const hasCook   = cookCol.length > 0;
+const hasEat    = eatCol.length > 0;
 ---
 
-<section class="assembly" aria-label={`Lifecycle of ${graph.dish.label}`}>
-  <!-- Chain SVG spans the whole section; draws production curves +
-       trunk/branches from the last production stage to every Eat card. -->
-  <svg class="chain-edges" aria-hidden="true" preserveAspectRatio="none">
-    <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
-              markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-      </marker>
-    </defs>
-  </svg>
+<section class="assembly" aria-label={`Lifecycle flow of ${graph.dish.label}`}>
+  <div class="lane">
+    <svg class="ribbons" aria-hidden="true" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="ribbonGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"  stop-color="rgba(232, 119, 90, 0.55)" />
+          <stop offset="50%" stop-color="rgba(210, 84, 59, 0.35)" />
+          <stop offset="100%" stop-color="rgba(232, 119, 90, 0.55)" />
+        </linearGradient>
+      </defs>
+    </svg>
 
-  {hasProduction && (
-    <div class="production" style={`--prod-cols: ${productionStages.length}`}>
-      {productionStages.map((stage) => (
-        <div class={`stage stage-${stage.id}`} data-stage={stage.id}>
-          <StageHeading step={stage.step} label={stage.label} />
-          <ul class="stage-nodes">
-            {stage.nodes.map((n) => (
-              <li>
-                <Card
-                  href={href(n)}
-                  imageUrl={n.heroUrl}
-                  kindLabel={kindLabel(n)}
-                  label={n.label}
-                  meta={n.meta}
-                  facts={n.facts}
-                  variant={variant(n)}
-                  nodeId={`${stage.id}--${n.slug}`}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  )}
+    {hasSource && (
+      <div class="layer" data-layer="source">
+        <StageHeading step={1} label="Source" />
+        <ul class="layer-nodes">
+          {sourceCol.map((n) => (
+            <li>
+              <Card
+                href={href(n)}
+                imageUrl={n.heroUrl}
+                kindLabel={kindLabel(n)}
+                label={n.label}
+                meta={n.meta}
+                facts={n.facts}
+                variant={variant(n)}
+                nodeId={`source--${n.slug}`}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
 
-  {hasEat && (
-    <div class="eat" data-last-stage={productionStages[productionStages.length - 1]?.id ?? ''}>
-      <StageHeading step={4} label="Eat" />
-      <ul class="eat-grid">
-        {graph.eat.map((n) => (
-          <li>
-            <Card
-              href={href(n)}
-              imageUrl={n.heroUrl}
-              kindLabel={kindLabel(n)}
-              label={n.label}
-              meta={n.meta}
-              facts={n.facts}
-              variant={variant(n)}
-              nodeId={`eat--${n.slug}`}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
+    {hasCook && (
+      <div class="layer" data-layer="cook">
+        <StageHeading step={2} label="Cook" />
+        <ul class="layer-nodes">
+          {cookCol.map((n) => (
+            <li>
+              <Card
+                href={href(n)}
+                imageUrl={n.heroUrl}
+                kindLabel={kindLabel(n)}
+                label={n.label}
+                meta={n.meta}
+                facts={n.facts}
+                variant={variant(n)}
+                nodeId={`cook--${n.slug}`}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {hasEat && (
+      <div class="layer" data-layer="eat">
+        <StageHeading step={3} label="Eat" />
+        <ul class="layer-nodes">
+          {eatCol.map((n) => (
+            <li>
+              <Card
+                href={href(n)}
+                imageUrl={n.heroUrl}
+                kindLabel={kindLabel(n)}
+                label={n.label}
+                meta={n.meta}
+                facts={n.facts}
+                variant={variant(n)}
+                nodeId={`eat--${n.slug}`}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
 </section>
 
 <script>
-  import { link, curveBumpX, curveBumpY } from 'd3-shape';
+  import { sankeyLinkHorizontal } from 'd3-sankey';
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
-  /* d3-shape link generators. Each takes a {source: [x,y], target: [x,y]}
-   * and returns an SVG path string with a smooth cubic bezier between the
-   * two — curveBumpX flows horizontally (production row), curveBumpY
-   * flows vertically (trunk and branches into the Eat gallery). */
-  const horizontalLink = link(curveBumpX) as unknown as
-    (d: { source: [number, number]; target: [number, number] }) => string;
-  const verticalLink = link(curveBumpY) as unknown as
-    (d: { source: [number, number]; target: [number, number] }) => string;
+  /** d3-sankey's link generator. Expects each link to carry source/target
+   *  nodes with x1/y0 and x0/y1 (sankey conventions). Returns a proper
+   *  Sankey ribbon path string. */
+  const ribbonPath = sankeyLinkHorizontal();
 
-  function clearEdges(svg: SVGSVGElement) {
-    svg.querySelectorAll('path.edge, path.trunk, path.branch').forEach((p) => p.remove());
+  /** Per-ribbon stroke width. Uniform because we don't have quantitative
+   *  weights — every ribbon represents "this flows to that". */
+  const RIBBON_WIDTH = 14;
+
+  function clearRibbons(svg: SVGSVGElement) {
+    svg.querySelectorAll('path.ribbon').forEach((p) => p.remove());
   }
 
-  function makePath(
-    svg: SVGSVGElement, d: string, cls: string, from: string, to: string,
+  function makeRibbon(
+    svg: SVGSVGElement,
+    sourceCard: HTMLElement,
+    targetCard: HTMLElement,
+    anchor: DOMRect,
   ): SVGPathElement {
+    const sr = sourceCard.getBoundingClientRect();
+    const tr = targetCard.getBoundingClientRect();
+
+    // d3-sankey's generator wants a sankey-shaped link object. We mock
+    // one — source.x1/y is the right-edge midpoint of the source card,
+    // target.x0/y is the left-edge midpoint of the target card.
+    const linkLike = {
+      source: {
+        x1: sr.right - anchor.left,
+      },
+      target: {
+        x0: tr.left - anchor.left,
+      },
+      y0: sr.top + sr.height / 2 - anchor.top,
+      y1: tr.top + tr.height / 2 - anchor.top,
+      width: RIBBON_WIDTH,
+    };
+
     const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('d', d);
-    path.setAttribute('class', cls);
-    if (from) path.dataset.from = from;
-    if (to) path.dataset.to = to;
+    path.setAttribute('d', ribbonPath(linkLike as never) ?? '');
+    path.setAttribute('class', 'ribbon');
+    path.dataset.from = sourceCard.dataset.nodeId ?? '';
+    path.dataset.to = targetCard.dataset.nodeId ?? '';
     svg.appendChild(path);
     return path;
   }
 
-  function drawProductionCurve(
-    svg: SVGSVGElement, anchor: DOMRect,
-    from: HTMLElement, to: HTMLElement, stacked: boolean,
-  ) {
-    const fr = from.getBoundingClientRect();
-    const tr = to.getBoundingClientRect();
-    let d: string;
-    if (stacked) {
-      d = verticalLink({
-        source: [fr.left + fr.width / 2 - anchor.left, fr.bottom - anchor.top],
-        target: [tr.left + tr.width / 2 - anchor.left, tr.top - anchor.top],
-      });
-    } else {
-      d = horizontalLink({
-        source: [fr.right - anchor.left, fr.top + fr.height / 2 - anchor.top],
-        target: [tr.left - anchor.left, tr.top + tr.height / 2 - anchor.top],
-      });
-    }
-    makePath(svg, d, 'edge', from.dataset.nodeId ?? '', to.dataset.nodeId ?? '');
-  }
-
-  function drawTrunkAndBranches(
-    svg: SVGSVGElement, anchor: DOMRect,
-    lastStageCards: HTMLElement[], eatCards: HTMLElement[],
-  ) {
-    if (lastStageCards.length === 0 || eatCards.length === 0) return;
-    // Manifold sits 28px above the topmost Eat card. Trunks drop to it,
-    // branches fan out from it to each Eat card's top-centre using
-    // d3-shape's vertical curve generator.
-    const eatTops = eatCards.map((c) => c.getBoundingClientRect().top - anchor.top);
-    const manifoldY = Math.min(...eatTops) - 28;
-
-    for (const last of lastStageCards) {
-      const cr = last.getBoundingClientRect();
-      const trunkX = cr.left + cr.width / 2 - anchor.left;
-      const trunkTopY = cr.bottom - anchor.top;
-
-      makePath(
-        svg,
-        `M ${trunkX} ${trunkTopY} L ${trunkX} ${manifoldY}`,
-        'trunk',
-        last.dataset.nodeId ?? '',
-        '',
-      );
-
-      for (const eat of eatCards) {
-        const er = eat.getBoundingClientRect();
-        const ex = er.left + er.width / 2 - anchor.left;
-        const ey = er.top - anchor.top;
-        const d = verticalLink({
-          source: [trunkX, manifoldY],
-          target: [ex, ey],
-        });
-        makePath(svg, d, 'branch', last.dataset.nodeId ?? '', eat.dataset.nodeId ?? '');
-      }
-    }
-  }
-
   function draw(root: HTMLElement) {
-    const svg = root.querySelector('svg.chain-edges') as SVGSVGElement | null;
-    if (!svg) return;
-    clearEdges(svg);
+    const svg = root.querySelector('svg.ribbons') as SVGSVGElement | null;
+    const lane = root.querySelector('.lane') as HTMLElement | null;
+    if (!svg || !lane) return;
 
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    clearRibbons(svg);
 
-    const anchor = root.getBoundingClientRect();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Render statically (no animation) but still draw the ribbons.
+    }
+
+    const anchor = lane.getBoundingClientRect();
     svg.setAttribute('viewBox', `0 0 ${anchor.width} ${anchor.height}`);
     svg.style.width = `${anchor.width}px`;
     svg.style.height = `${anchor.height}px`;
 
-    const stacked = matchMedia('(max-width: 720px)').matches;
+    const sourceCards = Array.from(root.querySelectorAll<HTMLAnchorElement>('[data-layer="source"] .card'));
+    const cookCards   = Array.from(root.querySelectorAll<HTMLAnchorElement>('[data-layer="cook"] .card'));
+    const eatCards    = Array.from(root.querySelectorAll<HTMLAnchorElement>('[data-layer="eat"] .card'));
 
-    // (1) Production curves between adjacent stages.
-    const stages = Array.from(root.querySelectorAll<HTMLElement>('.production .stage'));
-    for (let i = 0; i < stages.length - 1; i++) {
-      const fromCards = Array.from(stages[i].querySelectorAll<HTMLAnchorElement>('.card'));
-      const toCards = Array.from(stages[i + 1].querySelectorAll<HTMLAnchorElement>('.card'));
-      for (const from of fromCards) {
-        for (const to of toCards) {
-          drawProductionCurve(svg, anchor, from, to, stacked);
-        }
+    // Layer 1 → 2: every Source/Grow card to every Cook card.
+    for (const s of sourceCards) {
+      for (const c of cookCards) {
+        makeRibbon(svg, s, c, anchor);
       }
     }
-
-    // (2) Trunk + branches from last production stage to every Eat card.
-    const lastStage = stages[stages.length - 1];
-    if (lastStage) {
-      const lastCards = Array.from(lastStage.querySelectorAll<HTMLAnchorElement>('.card'));
-      const eatCards = Array.from(root.querySelectorAll<HTMLAnchorElement>('.eat .card'));
-      drawTrunkAndBranches(svg, anchor, lastCards, eatCards);
+    // Layer 2 → 3: every Cook card to every Eat card.
+    for (const c of cookCards) {
+      for (const e of eatCards) {
+        makeRibbon(svg, c, e, anchor);
+      }
+    }
+    // Edge case: if there's no Cook layer, connect Source → Eat directly.
+    if (cookCards.length === 0) {
+      for (const s of sourceCards) {
+        for (const e of eatCards) {
+          makeRibbon(svg, s, e, anchor);
+        }
+      }
     }
   }
 
@@ -254,12 +252,11 @@ const hasEat = graph.eat.length > 0;
       const card = (e.target as HTMLElement).closest<HTMLAnchorElement>('.card');
       if (!card) return;
       const id = card.dataset.nodeId;
-      root.querySelectorAll<SVGPathElement>('path.edge, path.trunk, path.branch')
-        .forEach((p) => {
-          p.classList.toggle('lit', p.dataset.from === id || p.dataset.to === id);
-        });
+      root.querySelectorAll<SVGPathElement>('path.ribbon').forEach((p) => {
+        p.classList.toggle('lit', p.dataset.from === id || p.dataset.to === id);
+      });
       const touched = new Set<string>([id ?? '']);
-      root.querySelectorAll<SVGPathElement>('path.lit').forEach((p) => {
+      root.querySelectorAll<SVGPathElement>('path.ribbon.lit').forEach((p) => {
         if (p.dataset.from) touched.add(p.dataset.from);
         if (p.dataset.to) touched.add(p.dataset.to);
       });
@@ -268,7 +265,7 @@ const hasEat = graph.eat.length > 0;
       });
     });
     root.addEventListener('mouseleave', () => {
-      root.querySelectorAll<SVGPathElement>('path.lit')
+      root.querySelectorAll<SVGPathElement>('path.ribbon.lit')
         .forEach((p) => p.classList.remove('lit'));
       root.querySelectorAll<HTMLAnchorElement>('.card.faded')
         .forEach((c) => c.classList.remove('faded'));
@@ -296,127 +293,100 @@ const hasEat = graph.eat.length > 0;
 
 <style>
   /* ============================================================
-   *  Outer rhythm — chain SVG overlays the whole assembly
+   *  Outer
    * ============================================================ */
   .assembly {
-    position: relative;
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 3rem;
   }
 
-  .chain-edges {
+  /* The flow lane — three columns side by side. Each column stretches
+   * to the lane's height; cards are stacked vertically and centered
+   * within the column. The Eat column with many cards stretches the
+   * lane tall; the Source and Cook columns then center their few
+   * cards in that height, producing the "fan-in / fan-out" geometry. */
+  .lane {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1.15fr);
+    gap: clamp(2rem, 6vw, 5rem);
+    align-items: stretch;
+    min-height: 60vh;
+  }
+
+  /* ============================================================
+   *  Ribbons
+   * ============================================================ */
+  .ribbons {
     position: absolute;
     inset: 0;
     pointer-events: none;
     overflow: visible;
-    color: var(--ink-mute);
     z-index: 0;
   }
 
-  /* Shared base for every chain path. */
-  .chain-edges path {
+  .ribbon {
     fill: none;
-    stroke-linecap: round;
-    transition: stroke 0.25s ease, stroke-width 0.25s ease;
-    /* Pathlength normalises stroke-dasharray to a 0–1 scale so the
-     * draw-in animation works the same for short trunks and long
-     * branches alike. */
+    stroke: url(#ribbonGradient);
+    stroke-opacity: 0.55;
+    mix-blend-mode: screen;
+    transition: stroke-opacity 0.25s ease, stroke-width 0.25s ease;
     pathLength: 1;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    animation: drawIn 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: drawRibbon 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
   }
 
-  @keyframes drawIn {
+  .ribbon.lit {
+    stroke-opacity: 1;
+    stroke: var(--paprika);
+  }
+
+  @keyframes drawRibbon {
     to { stroke-dashoffset: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .chain-edges path {
-      animation: none;
-      stroke-dashoffset: 0;
-    }
-  }
-
-  /* Production curves — thin, neutral; light up paprika on hover. */
-  .chain-edges .edge {
-    stroke: rgba(250, 248, 244, 0.24);
-    stroke-width: 1.25;
-  }
-
-  /* Trunk — vertical drop from last production card to the manifold. */
-  .chain-edges .trunk {
-    stroke: rgba(232, 119, 90, 0.55);
-    stroke-width: 1.5;
-    animation-delay: 0.2s;
-  }
-
-  /* Branches — curves from manifold to every Eat card. Staggered draw. */
-  .chain-edges .branch {
-    stroke: rgba(232, 119, 90, 0.34);
-    stroke-width: 1;
-    animation-delay: 0.55s;
-  }
-
-  .chain-edges .lit {
-    stroke: var(--paprika);
-    stroke-width: 1.8;
-    stroke-opacity: 1;
+    .ribbon { animation: none; stroke-dashoffset: 0; }
   }
 
   /* ============================================================
-   *  Production chain — 3 columns side by side
+   *  Columns
    * ============================================================ */
-  .production {
+  .layer {
     position: relative;
     z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(var(--prod-cols, 3), minmax(0, 1fr));
-    gap: clamp(1rem, 3vw, 2rem);
-    align-items: start;
-  }
-
-  .stage {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
 
-  .stage-nodes {
+  .layer-nodes {
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
-  }
-  .stage-nodes li { display: flex; }
-
-  /* ============================================================
-   *  Consumption gallery — responsive auto-fill grid
-   * ============================================================ */
-  .eat {
-    position: relative;
-    z-index: 1;
-  }
-
-  .eat-grid {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    justify-content: center;
     gap: 1rem;
   }
-  .eat-grid li { display: flex; }
+  .layer-nodes li { display: flex; }
+
+  /* The Cook column is the bottleneck; emphasise it slightly. */
+  .layer[data-layer="cook"] .card {
+    border-color: rgba(210, 84, 59, 0.35);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  }
 
   /* ============================================================
-   *  Mobile — collapse to single column, drop SVG curves entirely
+   *  Mobile — single column, no ribbons
    * ============================================================ */
   @media (max-width: 720px) {
-    .production { grid-template-columns: 1fr; gap: 1.2rem; }
-    .eat-grid { grid-template-columns: 1fr; }
+    .lane {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    .layer-nodes { justify-content: flex-start; }
+    .ribbons { display: none; }
   }
 </style>

@@ -1,0 +1,78 @@
+---
+/**
+ * CookSection — where heat enters.
+ *
+ * The recipe(s) used to assemble the dish. Card pattern.
+ */
+
+import Card from './Card.astro';
+import type { JourneyCookNode } from '~/lib/journey';
+
+interface Props {
+  recipes: JourneyCookNode[];
+}
+
+const { recipes } = Astro.props;
+---
+
+<section id="cook" class="journey-section section-cook">
+  <div class="container">
+    <header class="section-head">
+      <p class="stage-eyebrow">3 · Cook</p>
+      <h2>
+        Then, the kitchen.
+      </h2>
+      <p class="section-lead">
+        Heat, time, salt, fat, acid — the recipe that turns the
+        ingredients into something more than their sum.
+      </p>
+    </header>
+
+    <ul class="recipes-grid">
+      {recipes.map((r) => (
+        <li>
+          <Card
+            href={`/recipes/${r.slug}/`}
+            imageUrl={r.heroUrl}
+            kindLabel="Recipe"
+            label={r.label}
+            meta={r.meta}
+          />
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .section-cook {
+    position: relative;
+    padding: 6rem 0;
+    background: linear-gradient(180deg, rgba(10, 13, 17, 1) 0%, rgba(28, 18, 14, 1) 50%, rgba(10, 13, 17, 1) 100%);
+  }
+
+  .section-head { max-width: 60ch; margin: 0 0 3rem; }
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0.4rem 0 1rem;
+  }
+  .section-lead {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .recipes-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    max-width: 720px;
+  }
+  .recipes-grid li { display: flex; }
+</style>

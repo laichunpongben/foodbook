@@ -1,8 +1,12 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import AssemblyGraph from '~/components/AssemblyGraph.astro';
-import { getAssemblyGraph } from '~/lib/assembly';
+import SunSection from '~/components/SunSection.astro';
+import PlantSection from '~/components/PlantSection.astro';
+import CookSection from '~/components/CookSection.astro';
+import PlateSection from '~/components/PlateSection.astro';
+import EatSection from '~/components/EatSection.astro';
+import { getJourney } from '~/lib/journey';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
@@ -14,9 +18,11 @@ export async function getStaticPaths() {
 
 const { dish } = Astro.props;
 const { Content } = await render(dish);
-const slug = dish.id.replace(/^dishes\//, '');
-const graph = await getAssemblyGraph(dish);
-const heroUrl = dish.data.heroUrl ?? `${dish.data.hero}-3840.jpg`;
+const journey = await getJourney(dish);
+
+const hasIngredients = journey.ingredients.length > 0;
+const hasRecipes = journey.cook.length > 0;
+const hasEats = journey.eat.length > 0;
 ---
 
 <BaseLayout
@@ -24,145 +30,72 @@ const heroUrl = dish.data.heroUrl ?? `${dish.data.hero}-3840.jpg`;
   description={dish.data.tagline}
   unlisted={dish.data.visibility === 'unlisted'}
 >
-  <section class="dish-view" style={`--hero-url: url('${heroUrl}')`}>
-    <div class="dish-view-bg" transition:name={`dish-${slug}-hero`}></div>
-    <div class="dish-view-scrim"></div>
+  <article class="dish-journey">
+    <!-- 1 · Sun — frames the energy story -->
+    <SunSection />
 
-    <header class="dish-view-head">
-      <div class="container">
-        {dish.data.origin && <p class="eyebrow">{dish.data.origin}</p>}
-        <h1 set:html={dish.data.title} />
-        {dish.data.tagline && <p class="lead">{dish.data.tagline}</p>}
-      </div>
-    </header>
+    <!-- 2 · Plant — ingredients with their origins -->
+    {hasIngredients && <PlantSection ingredients={journey.ingredients} />}
 
-    <div class="dish-view-graph">
-      <div class="container">
-        <AssemblyGraph graph={graph} />
-      </div>
-    </div>
+    <!-- 3 · Cook — the recipe(s) -->
+    {hasRecipes && <CookSection recipes={journey.cook} />}
 
-    <a class="dish-view-more" href="#prose" aria-label="Read more">
-      <span>Read</span>
-      <span class="chev" aria-hidden="true">↓</span>
-    </a>
-  </section>
+    <!-- 4 · Plate — the reveal: the assembled dish -->
+    <PlateSection dish={journey.dish} />
 
-  <article id="prose" class="container dish-prose">
-    {dish.data.prologue && (
-      <section class="prologue">
-        <h2 set:html={dish.data.prologue.heading} />
-        <p set:html={dish.data.prologue.prose} />
-      </section>
-    )}
+    <!-- 5 · Eat — meals + restaurants -->
+    {hasEats && <EatSection eats={journey.eat} />}
 
-    <Content />
+    <!-- Prose body (prologue / MDX content / finale) -->
+    {(dish.data.prologue || dish.data.finale) && (
+      <section class="dish-prose">
+        <div class="container">
+          {dish.data.prologue && (
+            <section class="prologue">
+              <h2 set:html={dish.data.prologue.heading} />
+              <p set:html={dish.data.prologue.prose} />
+            </section>
+          )}
 
-    {dish.data.finale && (
-      <section class="finale">
-        <h2 set:html={dish.data.finale.heading} />
-        <p set:html={dish.data.finale.prose} />
+          <Content />
+
+          {dish.data.finale && (
+            <section class="finale">
+              <h2 set:html={dish.data.finale.heading} />
+              <p set:html={dish.data.finale.prose} />
+            </section>
+          )}
+        </div>
       </section>
     )}
   </article>
 </BaseLayout>
 
-<style>
-  .dish-view {
-    position: relative;
-    /* At least one viewport so the hero backdrop has presence; allowed
-     * to grow when the assembly gallery extends past the fold. */
-    min-height: calc(100svh - 60px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+<style is:global>
+  /* Shared rhythm across all section components — global so each
+   * section component doesn't have to redeclare the same eyebrow + */
+  .journey-section { width: 100%; }
 
-  .dish-view-bg {
-    position: absolute;
-    inset: 0;
-    background-image: var(--hero-url);
-    background-size: cover;
-    background-position: center;
-    background-color: #0a0d11;
-    z-index: 0;
-    /* Slightly desaturate + dim so cards stay legible. */
-    filter: saturate(0.85) brightness(0.45);
-    transform: scale(1.02);
-  }
-
-  .dish-view-scrim {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(60% 50% at 20% 0%, rgba(10,13,17,0.55), transparent 70%),
-      linear-gradient(180deg, rgba(10,13,17,0.45) 0%, rgba(10,13,17,0.65) 50%, rgba(10,13,17,0.85) 100%);
-    z-index: 1;
-  }
-
-  .dish-view-head,
-  .dish-view-graph,
-  .dish-view-more {
-    position: relative;
-    z-index: 2;
-  }
-
-  .dish-view-head {
-    padding: 3.5rem 0 1rem;
-  }
-
-  .dish-view-head h1 {
-    max-width: 22ch;
-    text-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.6);
-  }
-
-  .dish-view-head .lead {
-    margin-top: 0.75rem;
-    max-width: 60ch;
-    font-size: 1.05rem;
-    color: var(--ink-soft);
-    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
-  }
-
-  .dish-view-graph {
-    padding: 2rem 0 3rem;
-    width: 100%;
-    flex: 1;
-  }
-
-  .dish-view-more {
-    align-self: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 1.5rem auto;
-    padding: 0.5rem 0.9rem;
-    color: var(--ink-soft);
-    font-size: 0.82rem;
-    letter-spacing: 0.16em;
+  .journey-section .stage-eyebrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    text-decoration: none;
+    color: var(--ink-mute);
+    margin: 0;
+    padding: 0.32rem 0.7rem;
     border: 1px solid var(--rule);
     border-radius: 999px;
-    background: rgba(15, 18, 24, 0.6);
-    backdrop-filter: blur(6px);
+    background: rgba(15, 18, 24, 0.5);
+    backdrop-filter: blur(4px);
   }
+</style>
 
-  .dish-view-more .chev {
-    transition: transform 0.2s ease;
-  }
-
-  .dish-view-more:hover .chev {
-    transform: translateY(2px);
-  }
-
+<style>
   .dish-prose {
-    padding: 4rem 0 6rem;
-  }
-
-  .dish-prose .prologue h2,
-  .dish-prose .finale h2 {
-    margin-bottom: 0.6rem;
+    background: rgba(10, 13, 17, 1);
+    padding: 5rem 0 7rem;
   }
 
   .dish-prose .prologue,
@@ -171,23 +104,8 @@ const heroUrl = dish.data.heroUrl ?? `${dish.data.hero}-3840.jpg`;
     max-width: var(--measure);
   }
 
-  /* Tighter viewport handling: on a 600-700px tall window the graph would
-   * push the prose link off; let the section grow if cards force it. */
-  @media (max-height: 700px) and (min-width: 721px) {
-    .dish-view {
-      min-height: auto;
-      padding-bottom: 2rem;
-    }
-  }
-
-  @media (max-width: 720px) {
-    /* Stacked mode — relax the single-screen constraint so the
-     * chain breathes vertically. */
-    .dish-view {
-      min-height: auto;
-      grid-template-rows: auto auto auto;
-    }
-    .dish-view-graph { padding: 1.5rem 0 2.5rem; }
-    .dish-view-more { margin-top: 1rem; }
+  .dish-prose .prologue h2,
+  .dish-prose .finale h2 {
+    margin-bottom: 0.6rem;
   }
 </style>

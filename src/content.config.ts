@@ -124,8 +124,19 @@ const dishes = defineCollection({
 const ingredientSchema = z.object({
   /** Free-text quantity + ingredient, e.g. "1.2 kg San Marzano tomatoes". */
   text: z.string(),
-  /** Optional provenance — slug of a farm/producer entry. The renderer
-   *  links the ingredient to that farm and pins it on the provenance map. */
+  /** Short display name for the ingredient ("Plum tomatoes"). Required
+   *  for the journey view to render each ingredient as its own card.
+   *  Without it the renderer falls back to a stripped form of `text`. */
+  name: z.string().optional(),
+  /** Absolute URL for the ingredient's hero image. Used by the Plant
+   *  section to show each ingredient as a card with its own photo. */
+  heroUrl: z.string().url().optional(),
+  /** Optional growth note — "ripens 80 days from seed", "pressed in
+   *  early autumn", "fermented for 3 years". Shown on the ingredient
+   *  card. */
+  growthNote: z.string().optional(),
+  /** Optional provenance — slug of a farm/garden/producer entry. The
+   *  renderer links the ingredient to its origin. */
   from: z.string().optional(),
   /** Optional ingredient group, e.g. "for the sauce" / "for finishing". */
   group: z.string().optional(),

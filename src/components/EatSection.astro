@@ -1,0 +1,99 @@
+---
+/**
+ * EatSection — where the dish landed.
+ *
+ * Meals + restaurants where the dish was (or is) eaten. Auto-fill
+ * grid of Card components; visited vs discovered status carried
+ * through to the card variant.
+ */
+
+import Card from './Card.astro';
+import type { JourneyEatNode } from '~/lib/journey';
+
+interface Props {
+  eats: JourneyEatNode[];
+}
+
+const { eats } = Astro.props;
+
+const href = (n: JourneyEatNode): string =>
+  n.kind === 'meal' ? `/meals/${n.slug}/` : `/restaurants/${n.slug}/`;
+
+const kindLabel = (n: JourneyEatNode): string => {
+  if (n.kind === 'meal') return 'Meal';
+  return n.status === 'visited' ? 'Restaurant · visited' : 'Restaurant · discovered';
+};
+
+const variant = (n: JourneyEatNode): 'default' | 'visited' | 'discovered' => {
+  if (n.kind !== 'restaurant') return 'default';
+  return n.status ?? 'discovered';
+};
+---
+
+<section id="eat" class="journey-section section-eat">
+  <div class="container">
+    <header class="section-head">
+      <p class="stage-eyebrow">5 · Eat</p>
+      <h2>
+        Then, the table.
+      </h2>
+      <p class="section-lead">
+        The meals where this dish appeared, and the restaurants known
+        to serve it. The energy that started as light becomes the
+        energy that builds a body.
+      </p>
+    </header>
+
+    <ul class="eats-grid">
+      {eats.map((n) => (
+        <li>
+          <Card
+            href={href(n)}
+            imageUrl={n.heroUrl}
+            kindLabel={kindLabel(n)}
+            label={n.label}
+            meta={n.meta}
+            facts={n.facts}
+            variant={variant(n)}
+          />
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .section-eat {
+    position: relative;
+    padding: 6rem 0 8rem;
+    background: linear-gradient(180deg, rgba(10, 13, 17, 1) 0%, rgba(18, 18, 22, 1) 100%);
+  }
+
+  .section-head { max-width: 60ch; margin: 0 0 3rem; }
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0.4rem 0 1rem;
+  }
+  .section-lead {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .eats-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .eats-grid li { display: flex; }
+
+  @media (max-width: 720px) {
+    .eats-grid { grid-template-columns: 1fr; }
+  }
+</style>

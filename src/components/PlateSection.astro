@@ -1,0 +1,96 @@
+---
+/**
+ * PlateSection — the reveal.
+ *
+ * After the journey, the dish itself. Big hero photo, title, tagline.
+ * This is the climax of the page — what all the light, growing,
+ * picking, and cooking became.
+ */
+
+import type { JourneyDish } from '~/lib/journey';
+
+interface Props {
+  dish: JourneyDish;
+}
+
+const { dish } = Astro.props;
+const photoUrl = dish.heroUrl ?? (dish.hero ? `${dish.hero}-3840.jpg` : '');
+---
+
+<section id="plate" class="journey-section section-plate" style={photoUrl ? `--plate-hero: url('${photoUrl}')` : undefined}>
+  <div class="plate-backdrop" transition:name={`dish-${dish.slug}-hero`}></div>
+  <div class="plate-scrim"></div>
+  <div class="container plate-content">
+    <p class="stage-eyebrow">4 · Plate</p>
+    {dish.origin && <p class="origin-pill">{dish.origin}</p>}
+    <h1 class="plate-title" set:html={dish.title} />
+    {dish.tagline && <p class="plate-tagline">{dish.tagline}</p>}
+  </div>
+</section>
+
+<style>
+  .section-plate {
+    position: relative;
+    min-height: 80vh;
+    padding: 8rem 0 6rem;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .plate-backdrop {
+    position: absolute;
+    inset: 0;
+    background-image: var(--plate-hero);
+    background-size: cover;
+    background-position: center;
+    background-color: #0a0d11;
+    z-index: 0;
+  }
+
+  .plate-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 50% at 30% 70%, rgba(0, 0, 0, 0.5), transparent 70%),
+      linear-gradient(180deg, rgba(10, 13, 17, 0.45) 0%, rgba(10, 13, 17, 0.85) 100%);
+    z-index: 1;
+  }
+
+  .plate-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .origin-pill {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.74rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+    margin: 0.8rem 0;
+    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .plate-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 6vw, 5rem);
+    line-height: 1.02;
+    max-width: 18ch;
+    margin: 0.3rem 0 0;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  .plate-tagline {
+    margin: 1rem 0 0;
+    max-width: 50ch;
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+</style>
