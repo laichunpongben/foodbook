@@ -32,7 +32,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://foodbook.ex
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
     />
-    {cookMode && <link rel="stylesheet" href="/styles/cook-mode.css" />}
 
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}

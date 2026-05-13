@@ -45,7 +45,7 @@ const heroDish = dishes[0];
     <div class="dish-grid">
       {dishes.map((dish) => (
         <DishCard
-          slug={dish.id.replace(/\/index$/, '')}
+          slug={dish.id.replace(/^dishes\//, '')}
           title={dish.data.title}
           tagline={dish.data.tagline}
           hero={dish.data.hero}

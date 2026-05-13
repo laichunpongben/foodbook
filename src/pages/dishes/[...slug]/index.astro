@@ -6,7 +6,7 @@ import LifecycleStepper from '~/components/LifecycleStepper.astro';
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
   return dishes.map((dish) => ({
-    params: { slug: dish.id.replace(/\/index$/, '') },
+    params: { slug: dish.id.replace(/^dishes\//, '') },
     props: { dish },
   }));
 }
@@ -23,7 +23,7 @@ const stageLabels: Record<StageKey, string> = {
   eat: 'Eat',
 };
 
-const slug = dish.id.replace(/\/index$/, '');
+const slug = dish.id.replace(/^dishes\//, '');
 const stages = dish.data.stages ?? {};
 ---
 

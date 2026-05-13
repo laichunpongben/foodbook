@@ -1,11 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import '~/styles/cook-mode.css';
 
 export async function getStaticPaths() {
   const recipes = await getCollection('recipes');
   return recipes.map((recipe) => ({
-    params: { slug: recipe.id },
+    params: { slug: recipe.id.replace(/^recipes\//, '') },
     props: { recipe },
   }));
 }
