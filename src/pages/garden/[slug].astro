@@ -1,0 +1,57 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import AppearsIn from '~/components/AppearsIn.astro';
+import { dishesReferencing } from '~/lib/back-refs';
+
+export async function getStaticPaths() {
+  const beds = await getCollection('garden');
+  return beds.map((g) => ({
+    params: { slug: g.id.replace(/^garden\//, '') },
+    props: { bed: g },
+  }));
+}
+
+const { bed } = Astro.props;
+const slug = bed.id.replace(/^garden\//, '');
+const { Content } = await render(bed);
+const dishes = await dishesReferencing('garden', slug);
+const d = bed.data;
+---
+
+<BaseLayout
+  title={`${d.plant} · ${d.bed}`}
+  description={`Garden log: ${d.plant}`}
+  unlisted={d.visibility === 'unlisted'}
+>
+  <article class="entity container">
+    <a class="back" href="/">← Dishes</a>
+
+    <p class="eyebrow">Grow · {d.bed}</p>
+    <h1>{d.plant}</h1>
+    <p class="lead">
+      Planted <strong>{d.planted}</strong>
+      {d.harvested && <> · harvested <strong>{d.harvested}</strong></>}
+    </p>
+
+    {d.yieldNote && <p><strong>Yield:</strong> {d.yieldNote}</p>}
+    {d.note && <p set:html={d.note} />}
+
+    <Content />
+
+    <AppearsIn dishes={dishes} label="Used in" />
+  </article>
+</BaseLayout>
+
+<style>
+  .entity { padding: 4rem 0 6rem; max-width: 760px; }
+  .back {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+  }
+  .back:hover { color: var(--paprika); }
+</style>

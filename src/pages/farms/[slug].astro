@@ -1,0 +1,101 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import AppearsIn from '~/components/AppearsIn.astro';
+import { dishesReferencing } from '~/lib/back-refs';
+
+export async function getStaticPaths() {
+  const farms = await getCollection('farms');
+  return farms.map((f) => ({
+    params: { slug: f.id.replace(/^farms\//, '') },
+    props: { farm: f },
+  }));
+}
+
+const { farm } = Astro.props;
+const slug = farm.id.replace(/^farms\//, '');
+const { Content } = await render(farm);
+const dishes = await dishesReferencing('farm', slug);
+const d = farm.data;
+
+const monthName = (m: number) =>
+  ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1] ?? String(m);
+---
+
+<BaseLayout
+  title={d.name}
+  description={`${d.kind} · ${d.location}`}
+  unlisted={d.visibility === 'unlisted'}
+>
+  <article class="entity container">
+    <a class="back" href="/world/">← Map</a>
+
+    <p class="eyebrow">Source · {d.kind}</p>
+    <h1>{d.name}</h1>
+    <p class="lead">
+      {d.location}{d.country && `, ${d.country}`}
+    </p>
+
+    {d.note && <p set:html={d.note} />}
+
+    <Content />
+
+    {d.products.length > 0 && (
+      <section>
+        <p class="eyebrow">Products</p>
+        <ul class="chips">
+          {d.products.map((p) => <li>{p}</li>)}
+        </ul>
+      </section>
+    )}
+
+    {d.seasonalWindow.length > 0 && (
+      <section>
+        <p class="eyebrow">In season</p>
+        <ul>
+          {d.seasonalWindow.map((w) => (
+            <li><strong>{w.product}</strong> · {monthName(w.from)} – {monthName(w.to)}</li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {d.url && (
+      <p>
+        <a class="cite" href={d.url} target="_blank" rel="noopener">Website ↗</a>
+      </p>
+    )}
+
+    <AppearsIn dishes={dishes} label="Used in" />
+  </article>
+</BaseLayout>
+
+<style>
+  .entity { padding: 4rem 0 6rem; max-width: 760px; }
+  .back {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+  }
+  .back:hover { color: var(--paprika); }
+  .chips {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .chips li {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  .cite { font-size: 0.88rem; color: var(--paprika); }
+  section { margin-top: 2.5rem; }
+</style>

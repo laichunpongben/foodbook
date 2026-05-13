@@ -1,0 +1,64 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { dishesReferencing } from '~/lib/back-refs';
+import AppearsIn from '~/components/AppearsIn.astro';
+
+export async function getStaticPaths() {
+  const meals = await getCollection('meals');
+  return meals.map((m) => ({
+    params: { slug: m.id.replace(/^meals\//, '') },
+    props: { meal: m },
+  }));
+}
+
+const { meal } = Astro.props;
+const slug = meal.id.replace(/^meals\//, '');
+const { Content } = await render(meal);
+const dishes = await dishesReferencing('meal', slug);
+const d = meal.data;
+---
+
+<BaseLayout
+  title={d.title}
+  description={`Meal on ${d.date}`}
+  unlisted={d.visibility === 'unlisted'}
+>
+  <article class="entity container">
+    <a class="back" href="/">← Dishes</a>
+
+    <p class="eyebrow">Meal · {d.date}{d.occasion && ` · ${d.occasion}`}</p>
+    <h1>{d.title}</h1>
+    <p class="lead">
+      At {d.location === 'home' ? 'home' : <a href={`/restaurants/${d.location}/`}>{d.location}</a>}
+      {d.companionCount !== undefined && d.companionCount > 0 && <>{' · '}{d.companionCount} at the table</>}
+    </p>
+
+    <Content />
+
+    {d.dishes.length > 0 && (
+      <section>
+        <p class="eyebrow">Dishes served</p>
+        <ul>
+          {d.dishes.map((s) => <li><a href={`/dishes/${s}/`}>{s}</a></li>)}
+        </ul>
+      </section>
+    )}
+
+    <AppearsIn dishes={dishes} label="Referenced by" />
+  </article>
+</BaseLayout>
+
+<style>
+  .entity { padding: 4rem 0 6rem; max-width: 760px; }
+  .back {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+  }
+  .back:hover { color: var(--paprika); }
+  section { margin-top: 2.5rem; }
+</style>

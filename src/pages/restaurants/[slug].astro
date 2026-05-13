@@ -1,0 +1,99 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import AppearsIn from '~/components/AppearsIn.astro';
+import { dishesReferencing } from '~/lib/back-refs';
+
+export async function getStaticPaths() {
+  const restaurants = await getCollection('restaurants');
+  return restaurants.map((r) => ({
+    params: { slug: r.id.replace(/^restaurants\//, '') },
+    props: { restaurant: r },
+  }));
+}
+
+const { restaurant } = Astro.props;
+const slug = restaurant.id.replace(/^restaurants\//, '');
+const { Content } = await render(restaurant);
+const dishes = await dishesReferencing('restaurant', slug);
+
+const d = restaurant.data;
+const visited = (d.visits ?? []).length > 0;
+const discovered = d.discoveredVia;
+---
+
+<BaseLayout
+  title={d.name}
+  description={`${d.cuisine ?? 'Restaurant'} in ${d.city}`}
+  unlisted={d.visibility === 'unlisted'}
+>
+  <article class="entity container">
+    <a class="back" href="/world/">← Map</a>
+
+    <p class="eyebrow">
+      {visited ? 'Restaurant · visited' : 'Restaurant · discovered'}
+      {discovered && discovered.source && <> · via {discovered.source}</>}
+    </p>
+
+    <h1>{d.name}</h1>
+
+    <p class="lead">
+      {[d.cuisine, d.city, d.country].filter(Boolean).join(' · ')}
+      {' · '}
+      <span class="price">{d.priceBand}</span>
+    </p>
+
+    {discovered?.signature && (
+      <p class="signature">
+        <strong>Signature:</strong> {discovered.signature}
+      </p>
+    )}
+
+    {discovered?.url && (
+      <p>
+        <a class="cite" href={discovered.url} target="_blank" rel="noopener">
+          Source: {discovered.source} ↗
+        </a>
+      </p>
+    )}
+
+    <Content />
+
+    {visited && (
+      <section class="visits">
+        <p class="eyebrow">Visits · {d.visits.length}</p>
+        <ul>
+          {d.visits.map((v) => (
+            <li>
+              <strong>{v.date}</strong>
+              {v.dishes.length > 0 && <> — ordered: {v.dishes.join(', ')}</>}
+              {v.note && <div class="visit-note">{v.note}</div>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <AppearsIn dishes={dishes} label="Known to serve" />
+  </article>
+</BaseLayout>
+
+<style>
+  .entity { padding: 4rem 0 6rem; max-width: 760px; }
+  .back {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+  }
+  .back:hover { color: var(--paprika); }
+  .signature { margin-top: 1.2rem; color: var(--ink-soft); }
+  .cite { font-size: 0.88rem; color: var(--paprika); }
+  .price { color: var(--olive); }
+  .visits { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .visits ul { list-style: none; padding: 0; margin: 1rem 0 0; }
+  .visits li { padding: 0.5rem 0; }
+  .visit-note { color: var(--ink-mute); font-size: 0.9rem; margin-top: 0.25rem; }
+</style>
