@@ -31,7 +31,7 @@ export type Node =
   | (BaseNode & { kind: 'garden' })
   | (BaseNode & { kind: 'recipe' })
   | (BaseNode & { kind: 'meal' })
-  | (BaseNode & { kind: 'restaurant' });
+  | (BaseNode & { kind: 'restaurant'; status: 'visited' | 'discovered'; sourceUrl?: string });
 
 export interface DishHead {
   slug: string;
@@ -174,13 +174,25 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
     ...restaurantSlugs
       .map((s) => restaurantsMap.get(s))
       .filter((r): r is CollectionEntry<'restaurants'> => Boolean(r))
-      .map((r) => ({
-        kind: 'restaurant' as const,
-        slug: r.id.replace(/^restaurants\//, ''),
-        label: r.data.name,
-        meta: `${r.data.priceBand} · ${r.data.city}`,
-        facts: r.data.cuisine ? [r.data.cuisine] : [],
-      })),
+      .map((r) => {
+        const visited = (r.data.visits ?? []).length > 0;
+        const status: 'visited' | 'discovered' = visited ? 'visited' : 'discovered';
+        const meta = visited
+          ? `${r.data.priceBand} · ${r.data.city}`
+          : `${r.data.priceBand} · ${r.data.city} · via ${r.data.discoveredVia?.source ?? 'research'}`;
+        const facts: string[] = [];
+        if (r.data.discoveredVia?.signature) facts.push(r.data.discoveredVia.signature);
+        else if (r.data.cuisine) facts.push(r.data.cuisine);
+        return {
+          kind: 'restaurant' as const,
+          slug: r.id.replace(/^restaurants\//, ''),
+          label: r.data.name,
+          meta,
+          facts,
+          status,
+          sourceUrl: r.data.discoveredVia?.url,
+        };
+      }),
   ];
 
   return {

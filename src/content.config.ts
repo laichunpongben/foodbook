@@ -169,6 +169,19 @@ const visitSchema = z.object({
   meal: z.string().optional(),
 });
 
+/** If a restaurant entry was added via research rather than a personal
+ *  visit, `discoveredVia` documents the source. The Eat column on the
+ *  dish page reads this and renders the card as "Discovered · …"
+ *  instead of "Visited · …". `visits` is typically empty in this case
+ *  but is not required to be — a visited restaurant can also carry a
+ *  discovery note documenting how you first heard of it. */
+const discoveredViaSchema = z.object({
+  source: z.string(),                          // "TasteAtlas", "Eating Europe"
+  url: z.string().url().optional(),
+  /** Specific signature that matches the dish — "Tagliatelle al ragù". */
+  signature: z.string().optional(),
+});
+
 const restaurants = defineCollection({
   loader: glob({ pattern: 'restaurants/*.mdx', base: './src/content' }),
   schema: z.object({
@@ -184,6 +197,7 @@ const restaurants = defineCollection({
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     visits: z.array(visitSchema).default([]),
+    discoveredVia: discoveredViaSchema.optional(),
   }),
 });
 
