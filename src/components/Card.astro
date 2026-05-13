@@ -1,0 +1,160 @@
+---
+/**
+ * Card — the foodbook content card.
+ *
+ * Used as a node in the assembly graph (both production chain and eat
+ * gallery) and as the building block for other surfaces. Traditional
+ * content-card pattern: a 4:3 image block on top, body below with
+ * kind tag + label + meta + optional facts.
+ *
+ * Variants:
+ *   default     — neutral border, used everywhere by default.
+ *   visited     — olive border, used for personal restaurant visits.
+ *   discovered  — dashed paprika border + paprika kind tag, used for
+ *                 research-sourced restaurants (not personally visited).
+ *
+ * The `nodeId` prop wires the card into the assembly graph's connector
+ * + hover-highlight logic. Cards used outside the graph omit it.
+ */
+
+interface Props {
+  href: string;
+  imageUrl?: string;
+  kindLabel: string;
+  label: string;
+  meta?: string;
+  facts?: string[];
+  variant?: 'default' | 'visited' | 'discovered';
+  /** Slugified node id for connector wiring + hover highlighting. */
+  nodeId?: string;
+}
+
+const {
+  href,
+  imageUrl,
+  kindLabel,
+  label,
+  meta,
+  facts,
+  variant = 'default',
+  nodeId,
+} = Astro.props;
+---
+
+<a
+  class:list={['card', `card--${variant}`]}
+  href={href}
+  data-node-id={nodeId}
+>
+  <div
+    class="card-image"
+    style={imageUrl ? `background-image: url('${imageUrl}')` : undefined}
+  />
+  <div class="card-body">
+    <span class="card-kind">{kindLabel}</span>
+    <span class="card-label" set:html={label} />
+    {meta && <span class="card-meta">{meta}</span>}
+    {facts && facts.length > 0 && (
+      <ul class="card-facts">
+        {facts.map((f) => <li>{f}</li>)}
+      </ul>
+    )}
+  </div>
+</a>
+
+<style>
+  /* ============================================================
+   *  Container
+   * ============================================================ */
+  .card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 18, 24, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.2s ease, border-color 0.2s ease,
+                box-shadow 0.2s ease, opacity 0.25s ease;
+  }
+
+  .card.faded { opacity: 0.32; }
+
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(210, 84, 59, 0.55);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+
+  /* ============================================================
+   *  Image block
+   * ============================================================ */
+  .card-image {
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: #0a0d11;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ============================================================
+   *  Body block
+   * ============================================================ */
+  .card-body {
+    padding: 0.8rem 0.95rem 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    line-height: 1.35;
+  }
+
+  .card-kind {
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .card-label {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .card-meta {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+
+  .card-facts {
+    list-style: none;
+    padding: 0;
+    margin: 0.2rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .card-facts li {
+    font-size: 0.78rem;
+    color: var(--ink-mute);
+    line-height: 1.4;
+  }
+
+  /* ============================================================
+   *  Variants
+   * ============================================================ */
+  .card--visited {
+    border-color: rgba(141, 178, 95, 0.55);
+  }
+
+  .card--discovered {
+    border-style: dashed;
+    border-color: rgba(232, 119, 90, 0.32);
+  }
+  .card--discovered .card-kind {
+    color: rgba(232, 119, 90, 0.92);
+  }
+</style>
