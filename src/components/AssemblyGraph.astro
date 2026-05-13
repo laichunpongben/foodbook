@@ -1,19 +1,17 @@
 ---
 /**
- * AssemblyGraph — the chain leading to a dish, all on one screen.
+ * AssemblyGraph — the four-stage lifecycle of a dish.
  *
- * Four columns:  Sources  →  Recipes  →  Dish  →  Eats
+ *   Source  →  Grow  →  Cook  →  Eat
  *
- * Each card carries enough context (location, time, key ingredients,
- * date) that the reader does not have to click through to understand
- * what the node is. The whole graph is sized to the viewport.
+ * The dish itself is NOT a node here — it's the subject of the
+ * lifecycle and lives as the page header. Stages with no entries
+ * collapse cleanly. Each card carries enough context (location,
+ * time, key ingredients, date) that no click-through is needed.
  *
- * A SVG overlay draws cubic-bezier connectors between adjacent columns;
- * recomputed on resize, fonts-ready, and Astro page-load.
- *
- * Below 720px the layout stacks vertically (graph becomes a chain of
- * cards with short vertical connectors). With prefers-reduced-motion,
- * the SVG is suppressed and a static accent border replaces the curves.
+ * A SVG overlay draws cubic-bezier connectors between adjacent
+ * populated stages; recomputed on resize, fonts-ready, and Astro
+ * page-load. Below 720px the graph stacks vertically.
  */
 
 import type { AssemblyGraph, Node } from '~/lib/assembly';
@@ -29,7 +27,6 @@ const href = (n: Node): string => {
     case 'farm':       return `/farms/${n.slug}/`;
     case 'garden':     return `/garden/${n.slug}/`;
     case 'recipe':     return `/recipes/${n.slug}/`;
-    case 'dish':       return `/dishes/${n.slug}/`;
     case 'meal':       return `/meals/${n.slug}/`;
     case 'restaurant': return `/restaurants/${n.slug}/`;
   }
@@ -40,7 +37,6 @@ const glyph = (kind: Node['kind']): string => {
     case 'farm':       return '◖';
     case 'garden':     return '✿';
     case 'recipe':     return '✎';
-    case 'dish':       return '◆';
     case 'meal':       return '◐';
     case 'restaurant': return '☖';
   }
@@ -48,24 +44,24 @@ const glyph = (kind: Node['kind']): string => {
 
 const kindLabel = (kind: Node['kind']): string => {
   switch (kind) {
-    case 'farm':       return 'Source';
-    case 'garden':     return 'Grown';
+    case 'farm':       return 'Producer';
+    case 'garden':     return 'Garden';
     case 'recipe':     return 'Recipe';
-    case 'dish':       return 'Dish';
-    case 'meal':       return 'Eaten';
-    case 'restaurant': return 'Eaten out';
+    case 'meal':       return 'Meal';
+    case 'restaurant': return 'Restaurant';
   }
 };
 
+// Lifecycle order. Drop empty stages so they don't take up a column.
 const columns = [
-  { id: 'sources', heading: 'Sources', nodes: graph.sources },
-  { id: 'recipes', heading: 'Cook',    nodes: graph.recipes },
-  { id: 'dish',    heading: 'Dish',    nodes: [graph.dish] },
-  { id: 'eats',    heading: 'Eat',     nodes: graph.eats },
+  { id: 'source', heading: 'Source', nodes: graph.source },
+  { id: 'grow',   heading: 'Grow',   nodes: graph.grow },
+  { id: 'cook',   heading: 'Cook',   nodes: graph.cook },
+  { id: 'eat',    heading: 'Eat',    nodes: graph.eat },
 ].filter((c) => c.nodes.length > 0);
 ---
 
-<section class="assembly" aria-label="How this dish was assembled">
+<section class="assembly" aria-label={`Lifecycle of ${graph.dish.label}`}>
   <div class="assembly-grid" data-columns={columns.length}>
     <svg class="assembly-edges" aria-hidden="true" preserveAspectRatio="none">
       <defs>
@@ -76,9 +72,12 @@ const columns = [
       </defs>
     </svg>
 
-    {columns.map((col) => (
+    {columns.map((col, i) => (
       <div class={`assembly-col col-${col.id}`} data-col={col.id}>
-        <p class="col-heading">{col.heading}</p>
+        <p class="col-heading">
+          <span class="col-step">{i + 1}</span>
+          <span>{col.heading}</span>
+        </p>
         <ul class="col-nodes">
           {col.nodes.map((n) => (
             <li>
@@ -106,8 +105,6 @@ const columns = [
 </section>
 
 <script>
-  // Recompute connector paths between adjacent columns. Runs on load,
-  // resize, font-ready, and Astro page-load.
   function draw(root: HTMLElement) {
     const svg = root.querySelector('svg.assembly-edges') as SVGSVGElement | null;
     const grid = root.querySelector('.assembly-grid') as HTMLElement | null;
@@ -207,10 +204,7 @@ const columns = [
 </script>
 
 <style>
-  .assembly {
-    width: 100%;
-    margin: 0;
-  }
+  .assembly { width: 100%; margin: 0; }
 
   .assembly-grid {
     position: relative;
@@ -255,12 +249,30 @@ const columns = [
   }
 
   .col-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
     font-family: var(--font-body);
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--ink-mute);
-    margin: 0 0 0.4rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .col-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0;
+    color: var(--paprika);
+    background: rgba(15, 18, 24, 0.5);
   }
 
   .col-nodes {
@@ -354,20 +366,6 @@ const columns = [
   .node-recipe     .node-glyph { color: var(--paprika); }
   .node-meal       .node-glyph { color: var(--ink); }
   .node-restaurant .node-glyph { color: var(--ink); }
-
-  /* The dish node — visual anchor. Paprika border + a soft inner ring. */
-  .node-dish {
-    border-color: rgba(210, 84, 59, 0.55);
-    box-shadow:
-      0 0 0 1px rgba(210, 84, 59, 0.28),
-      0 8px 28px rgba(0, 0, 0, 0.45);
-  }
-  .node-dish .node-label {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    line-height: 1.15;
-  }
-  .node-dish .node-glyph { color: var(--paprika); }
 
   @media (max-width: 720px) {
     .assembly-grid {
