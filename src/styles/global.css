@@ -1,0 +1,267 @@
+/* Foodbook — dark editorial theme.
+ * Kitchen mode is in cook-mode.css and only loaded by /recipes/<slug>/cook.
+ * See ADR-0003.
+ */
+
+:root {
+  --bg: #0a0d11;
+  --ink: #faf8f4;
+  --ink-soft: #c2c8d0;
+  --ink-mute: #8b95a3;
+  --paprika: #d2543b;     /* accent — replaces italic emphasis */
+  --olive: #5d6e44;       /* secondary accent (also kitchen-mode primary) */
+  --rule: rgba(250, 248, 244, 0.08);
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  --measure: 68ch;
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--paprika);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 0.07em;
+}
+
+a:hover { color: var(--paprika); }
+
+/* No italic anywhere — see ADR-0003. */
+em, i {
+  font-style: normal;
+  color: var(--paprika);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+h1 { font-size: clamp(2.4rem, 5.5vw, 4.4rem); line-height: 1.04; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.18; }
+h3 { font-size: 1.2rem; line-height: 1.3; }
+
+p, li { max-width: var(--measure); }
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 500;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 1rem var(--gutter);
+  background: linear-gradient(180deg, rgba(10,13,17,0.92), rgba(10,13,17,0.4));
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.site-header .brand {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.92rem;
+}
+
+.site-header nav a {
+  text-decoration: none;
+  color: var(--ink-soft);
+}
+
+.site-header nav a:hover { color: var(--paprika); }
+
+/* Lifecycle stepper: four dots — source / grow / cook / eat. */
+.lifecycle-stepper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 0;
+  border-block: 1px solid var(--rule);
+}
+
+.lifecycle-stepper .dot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--ink-mute);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lifecycle-stepper .dot::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-mute);
+  opacity: 0.5;
+}
+
+.lifecycle-stepper .dot.active { color: var(--ink); }
+.lifecycle-stepper .dot.active::before {
+  background: var(--paprika);
+  opacity: 1;
+  box-shadow: 0 0 0 4px rgba(210, 84, 59, 0.15);
+}
+
+.lifecycle-stepper .dot.empty { opacity: 0.4; pointer-events: none; }
+
+/* Dish card on landing. */
+.dish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0 4rem;
+}
+
+.dish-card {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 6px;
+  text-decoration: none;
+  background: #11161c;
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.dish-card:hover { transform: translateY(-3px); }
+
+.dish-card .photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.dish-card:hover .photo { transform: scale(1.04); }
+
+.dish-card .overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%);
+}
+
+.dish-card .meta {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem 1.1rem 1.1rem;
+  color: var(--ink);
+}
+
+.dish-card .meta .title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1.15;
+  margin-bottom: 0.25rem;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+
+.dish-card .meta .tagline {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+}
+
+/* Hero — landing, dish, seasons pages. */
+.hero {
+  position: relative;
+  min-height: 70vh;
+  padding: 6rem var(--gutter) 4rem;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.hero .hero-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #0a0d11;
+  z-index: -2;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 50% at 30% 100%, rgba(0,0,0,0.55), transparent),
+    linear-gradient(180deg, rgba(10,13,17,0.55), rgba(10,13,17,0.85));
+  z-index: -1;
+}
+
+.hero h1 {
+  text-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.7);
+  max-width: 18ch;
+}
+
+.hero .lead {
+  margin-top: 1rem;
+  max-width: 60ch;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+}
+
+footer.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 2.5rem var(--gutter);
+  margin-top: 6rem;
+  color: var(--ink-mute);
+  font-size: 0.88rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}

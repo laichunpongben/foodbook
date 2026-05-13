@@ -1,0 +1,69 @@
+---
+import '~/styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  description?: string;
+  unlisted?: boolean;
+  /** Toggle the cook-mode kitchen theme. Only set on /recipes/<slug>/cook. */
+  cookMode?: boolean;
+}
+
+const { title, description, unlisted = false, cookMode = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://foodbook.example').toString();
+---
+
+<!doctype html>
+<html lang="en" data-mode={cookMode ? 'cook' : 'editorial'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Foodbook</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonical} />
+    {unlisted && <meta name="robots" content="noindex,nofollow" />}
+
+    <!-- Fonts: async load via preconnect + font-display:swap declared upstream. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    />
+    {cookMode && <link rel="stylesheet" href="/styles/cook-mode.css" />}
+
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content={canonical} />
+
+    <ClientRouter />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">Foodbook</a>
+      <nav>
+        <a href="/">Dishes</a>
+        <a href="/world">World</a>
+        <a href="/seasons">Seasons</a>
+        <a href="/restaurants">Restaurants</a>
+        <a href="/farms">Farms</a>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          Foodbook — a static-site archive of the food lifecycle. Authored prose, AI-assisted
+          authoring (<a href="/about#ai">how</a>).
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

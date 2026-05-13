@@ -1,0 +1,82 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const recipes = await getCollection('recipes');
+  return recipes.map((recipe) => ({
+    params: { slug: recipe.id },
+    props: { recipe },
+  }));
+}
+
+const { recipe } = Astro.props;
+---
+
+<BaseLayout
+  title={`Cook · ${recipe.data.title}`}
+  cookMode={true}
+  unlisted={recipe.data.visibility === 'unlisted'}
+>
+  <section class="container" style="padding: 3rem 0 8rem;">
+    <p class="eyebrow">Cook mode</p>
+    <h1>{recipe.data.title}</h1>
+    <p style="color: var(--ink-soft);">{recipe.data.yield}</p>
+
+    <div id="cook-step-container" data-active="0">
+      {recipe.data.steps.map((step, i) => (
+        <div class="cook-step" data-step={i} style={i === 0 ? '' : 'display: none;'}>
+          <div class="ord">Step {i + 1} of {recipe.data.steps.length}</div>
+          <p>{step.text}</p>
+          {step.durationSeconds && (
+            <button class="timer-btn" data-duration={step.durationSeconds} style="margin-top: 1rem;">
+              ⏱ Start {Math.round(step.durationSeconds / 60)} min timer
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+
+    <div class="cook-controls">
+      <button id="cook-prev">← Prev</button>
+      <button id="cook-next" class="primary">Next →</button>
+    </div>
+
+    <button id="cook-mic" class="cook-mic" aria-label="Voice coach (rate-limited)" title="Voice coach">🎙</button>
+  </section>
+</BaseLayout>
+
+<script>
+  // Step navigation. Real coach hooks up via /api/coach (see ADR-0004).
+  const container = document.getElementById('cook-step-container');
+  const steps = container?.querySelectorAll<HTMLElement>('.cook-step') ?? [];
+  let active = 0;
+
+  function go(to: number) {
+    if (to < 0 || to >= steps.length) return;
+    steps[active].style.display = 'none';
+    active = to;
+    steps[active].style.display = '';
+    container!.dataset.active = String(active);
+  }
+
+  document.getElementById('cook-next')?.addEventListener('click', () => go(active + 1));
+  document.getElementById('cook-prev')?.addEventListener('click', () => go(active - 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'j' || e.key === ' ') { e.preventDefault(); go(active + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'k')                  { e.preventDefault(); go(active - 1); }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.timer-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const ms = Number(btn.dataset.duration) * 1000;
+      btn.disabled = true;
+      btn.textContent = '⏱ Running…';
+      setTimeout(() => {
+        btn.textContent = '⏱ Done';
+        try { new Audio('/timer-ping.mp3').play().catch(() => {}); } catch {}
+      }, ms);
+    });
+  });
+</script>

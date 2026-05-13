@@ -1,0 +1,86 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const recipes = await getCollection('recipes');
+  return recipes.map((recipe) => ({
+    params: { slug: recipe.id },
+    props: { recipe },
+  }));
+}
+
+const { recipe } = Astro.props;
+const { Content } = await render(recipe);
+
+// Group ingredients by their `group` field, preserving order of first occurrence.
+const groups = new Map<string, typeof recipe.data.ingredients>();
+for (const ing of recipe.data.ingredients) {
+  const k = ing.group ?? '';
+  if (!groups.has(k)) groups.set(k, []);
+  groups.get(k)!.push(ing);
+}
+---
+
+<BaseLayout
+  title={recipe.data.title}
+  description={`${recipe.data.yield}${recipe.data.timeCook ? ` · ${recipe.data.timeCook}` : ''}`}
+  unlisted={recipe.data.visibility === 'unlisted'}
+>
+  <section class="container" style="padding: 4rem 0;">
+    <p class="eyebrow">Recipe</p>
+    <h1>{recipe.data.title}</h1>
+    <p class="lead">
+      {recipe.data.yield}
+      {recipe.data.timePrep && <> · prep {recipe.data.timePrep}</>}
+      {recipe.data.timeCook && <> · cook {recipe.data.timeCook}</>}
+    </p>
+
+    <p style="margin-top: 1.5rem;">
+      <a href={`/recipes/${recipe.id}/cook`} style="font-weight: 500;">→ Open in cook mode</a>
+    </p>
+
+    {recipe.data.attribution && (
+      <p style="color: var(--ink-mute); font-size: 0.88rem; margin-top: 1rem;">
+        {recipe.data.attribution}
+      </p>
+    )}
+
+    <h2 style="margin-top: 3rem;">Ingredients</h2>
+    {[...groups.entries()].map(([groupName, items]) => (
+      <>
+        {groupName && <h3 style="margin-top: 1.5rem;">{groupName}</h3>}
+        <ul>
+          {items.map((ing) => (
+            <li>
+              {ing.text}
+              {ing.from && <> — <a href={`/farms/${ing.from}/`}>{ing.from}</a></>}
+            </li>
+          ))}
+        </ul>
+      </>
+    ))}
+
+    <h2 style="margin-top: 3rem;">Method</h2>
+    <ol>
+      {recipe.data.steps.map((step) => (
+        <li style="margin-bottom: 1rem;">
+          {step.text}
+          {step.durationSeconds && (
+            <span style="color: var(--ink-mute); margin-left: 0.5rem; font-size: 0.9rem;">
+              · {Math.round(step.durationSeconds / 60)} min
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
+
+    {recipe.data.notes && (
+      <>
+        <h2 style="margin-top: 3rem;">Notes</h2>
+        <Content />
+        <pre style="white-space: pre-wrap; font-family: var(--font-body); color: var(--ink-soft);">{recipe.data.notes}</pre>
+      </>
+    )}
+  </section>
+</BaseLayout>

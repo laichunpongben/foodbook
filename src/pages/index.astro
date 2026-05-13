@@ -1,0 +1,56 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import DishCard from '~/components/DishCard.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const allDishes = await getCollection('dishes');
+const dishes = publicOnly(allDishes).sort((a, b) => {
+  const ad = a.data.firstMade ?? '0000-00-00';
+  const bd = b.data.firstMade ?? '0000-00-00';
+  return bd.localeCompare(ad);
+});
+
+// Pick a hero dish — the most recent, with a hero photo.
+const heroDish = dishes[0];
+---
+
+<BaseLayout
+  title="Foodbook"
+  description="An archive of the food lifecycle — farms, gardens, kitchens, restaurants."
+>
+  <section class="hero">
+    {heroDish && (
+      <div
+        class="hero-photo"
+        style={`background-image: url(${heroDish.data.hero}-2560.jpg)`}
+      />
+    )}
+    <div class="container">
+      <p class="eyebrow">An archive of the food lifecycle</p>
+      <h1 set:html={heroDish?.data.title ?? 'Source. Grow. Cook. Eat.'} />
+      <p class="lead">
+        Foodbook follows a dish (or an ingredient) through up to four lifecycle stages —
+        the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
+        the meal where it landed. Each entry weaves them together.
+      </p>
+    </div>
+  </section>
+
+  <section class="container">
+    <h2>Recent dishes</h2>
+    {dishes.length === 0 && (
+      <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
+    )}
+    <div class="dish-grid">
+      {dishes.map((dish) => (
+        <DishCard
+          slug={dish.id.replace(/\/index$/, '')}
+          title={dish.data.title}
+          tagline={dish.data.tagline}
+          hero={dish.data.hero}
+        />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,124 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import LifecycleStepper from '~/components/LifecycleStepper.astro';
+
+export async function getStaticPaths() {
+  const dishes = await getCollection('dishes');
+  return dishes.map((dish) => ({
+    params: { slug: dish.id.replace(/\/index$/, '') },
+    props: { dish },
+  }));
+}
+
+const { dish } = Astro.props;
+const { Content } = await render(dish);
+
+const stageOrder = ['source', 'grow', 'cook', 'eat'] as const;
+type StageKey = typeof stageOrder[number];
+const stageLabels: Record<StageKey, string> = {
+  source: 'Source',
+  grow: 'Grow',
+  cook: 'Cook',
+  eat: 'Eat',
+};
+
+const slug = dish.id.replace(/\/index$/, '');
+const stages = dish.data.stages ?? {};
+---
+
+<BaseLayout
+  title={dish.data.shortTitle}
+  description={dish.data.tagline}
+  unlisted={dish.data.visibility === 'unlisted'}
+>
+  <article>
+    <section class="hero">
+      <div
+        class="hero-photo"
+        style={`background-image: url(${dish.data.hero}-3840.jpg)`}
+        transition:name={`dish-${slug}-hero`}
+      />
+      <div class="container">
+        {dish.data.origin && <p class="eyebrow">{dish.data.origin}</p>}
+        <h1 set:html={dish.data.title} />
+        {dish.data.tagline && <p class="lead">{dish.data.tagline}</p>}
+      </div>
+    </section>
+
+    <div class="container">
+      <LifecycleStepper stages={stages} slug={slug} />
+
+      {dish.data.prologue && (
+        <section class="prologue">
+          <h2 set:html={dish.data.prologue.heading} />
+          <p set:html={dish.data.prologue.prose} />
+        </section>
+      )}
+
+      <Content />
+
+      {stageOrder.map((key) => {
+        const stage = stages[key];
+        if (!stage) return null;
+        return (
+          <section id={`stage-${key}`} class={`stage stage-${key}`}>
+            <p class="eyebrow">{stageLabels[key]}</p>
+            {stage.note && <p set:html={stage.note} />}
+            {(stage.farms?.length ?? 0) > 0 && (
+              <p>
+                <strong>Farms:</strong>{' '}
+                {stage.farms.map((s, i) => (
+                  <>
+                    {i > 0 && ', '}
+                    <a href={`/farms/${s}/`}>{s}</a>
+                  </>
+                ))}
+              </p>
+            )}
+            {(stage.recipes?.length ?? 0) > 0 && (
+              <p>
+                <strong>Recipes:</strong>{' '}
+                {stage.recipes.map((s, i) => (
+                  <>
+                    {i > 0 && ', '}
+                    <a href={`/recipes/${s}/`}>{s}</a>
+                  </>
+                ))}
+              </p>
+            )}
+            {(stage.restaurants?.length ?? 0) > 0 && (
+              <p>
+                <strong>Eaten at:</strong>{' '}
+                {stage.restaurants.map((s, i) => (
+                  <>
+                    {i > 0 && ', '}
+                    <a href={`/restaurants/${s}/`}>{s}</a>
+                  </>
+                ))}
+              </p>
+            )}
+            {(stage.meals?.length ?? 0) > 0 && (
+              <p>
+                <strong>Meals:</strong>{' '}
+                {stage.meals.map((s, i) => (
+                  <>
+                    {i > 0 && ', '}
+                    <a href={`/meals/${s}/`}>{s}</a>
+                  </>
+                ))}
+              </p>
+            )}
+          </section>
+        );
+      })}
+
+      {dish.data.finale && (
+        <section class="finale">
+          <h2 set:html={dish.data.finale.heading} />
+          <p set:html={dish.data.finale.prose} />
+        </section>
+      )}
+    </div>
+  </article>
+</BaseLayout>

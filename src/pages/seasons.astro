@@ -1,0 +1,51 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const farms = publicOnly(await getCollection('farms'));
+const month = new Date().getMonth() + 1; // 1–12
+
+// In season this month — naive scan; a real impl in src/lib/seasons.ts
+// handles wrap-around (e.g. squash from=10 to=2) and hemisphere flips.
+function inSeason(from: number, to: number, m: number): boolean {
+  if (from <= to) return m >= from && m <= to;
+  return m >= from || m <= to;
+}
+
+const inSeasonNow: Array<{ product: string; farm: string }> = [];
+for (const farm of farms) {
+  for (const win of farm.data.seasonalWindow ?? []) {
+    if (inSeason(win.from, win.to, month)) {
+      inSeasonNow.push({ product: win.product, farm: farm.data.name });
+    }
+  }
+}
+
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+---
+
+<BaseLayout
+  title="Seasons"
+  description="What's in season right now — drawn from farm + producer windows."
+>
+  <section class="container" style="padding: 4rem 0;">
+    <p class="eyebrow">{monthNames[month - 1]}</p>
+    <h1>In season now</h1>
+    <p class="lead">
+      Drawn from the seasonal windows authored on each farm and producer entry.
+      A future seasonal wheel will lay this out as an SVG ring; for now, a list.
+    </p>
+
+    {inSeasonNow.length === 0 && (
+      <p>No farms have a seasonal window covering this month yet.</p>
+    )}
+    <ul style="columns: 2; gap: 2rem; padding: 0; list-style: none; margin-top: 2rem;">
+      {inSeasonNow.map((row) => (
+        <li style="padding: 0.4rem 0; border-bottom: 1px solid var(--rule);">
+          <strong>{row.product}</strong> <span style="color: var(--ink-mute);"> — {row.farm}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>

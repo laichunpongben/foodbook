@@ -1,0 +1,33 @@
+{
+  "name": "foodbook",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Static-site archive of the food lifecycle — farms, gardens, kitchens, restaurants. Astro on Cloudflare Pages.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "extract": "node scripts/ai-extract-recipe.mjs",
+    "embeddings": "node scripts/build-embeddings.mjs",
+    "check:refs": "node scripts/check-refs.mjs",
+    "check:leaks": "bash scripts/check-no-leaks.sh"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.0.0",
+    "@astrojs/mdx": "^4.0.0",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.7.2",
+    "astro": "^5.0.0",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.12",
+    "vitest": "^4.1.6"
+  }
+}

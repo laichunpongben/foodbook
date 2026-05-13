@@ -1,0 +1,31 @@
+---
+/**
+ * Landing-page dish card. Hero photo, title, optional tagline.
+ * Uses view-transition shared-element naming so the hero photo
+ * morphs into the dish page's hero (Travelbook ADR-0010 pattern).
+ */
+
+interface Props {
+  slug: string;
+  title: string;
+  tagline?: string;
+  hero: string;
+}
+
+const { slug, title, tagline, hero } = Astro.props;
+// Hero stems point at /photos/<...>; the proxy appends a size suffix.
+const photoUrl = `${hero}-1280.jpg`;
+---
+
+<a class="dish-card" href={`/dishes/${slug}/`} aria-label={title}>
+  <div
+    class="photo"
+    style={`background-image: url(${photoUrl})`}
+    transition:name={`dish-${slug}-hero`}
+  />
+  <div class="overlay" />
+  <div class="meta">
+    <div class="title" set:html={title} />
+    {tagline && <div class="tagline">{tagline}</div>}
+  </div>
+</a>

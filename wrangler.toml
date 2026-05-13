@@ -1,0 +1,20 @@
+name = "foodbook"
+compatibility_date = "2026-05-13"
+pages_build_output_dir = "./dist"
+
+# R2 bucket binding — photo storage (originals + 4 resized variants).
+# Bucket itself is provisioned out-of-band; see docs/architecture.md "Photo pipeline".
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "foodbook-photos"
+
+# KV namespace for AI route rate-limiting + monthly budget counter.
+# Provisioned out-of-band; replace id with the real namespace before deploy.
+[[kv_namespaces]]
+binding = "AI_LIMITS"
+id = "REPLACE_ME_AI_LIMITS_KV_ID"
+
+# Anthropic + Voyage API keys must be set as Pages secrets, not committed:
+#   wrangler pages secret put ANTHROPIC_API_KEY
+#   wrangler pages secret put VOYAGE_API_KEY
+#   wrangler pages secret put EXTRACT_TOKEN

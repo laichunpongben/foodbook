@@ -1,0 +1,61 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const farms = publicOnly(await getCollection('farms'));
+const restaurants = publicOnly(await getCollection('restaurants'));
+
+const pins = [
+  ...farms.map((f) => ({ kind: 'farm', name: f.data.name, lat: f.data.lat, lng: f.data.lng, slug: f.id })),
+  ...restaurants.map((r) => ({ kind: 'restaurant', name: r.data.name, lat: r.data.lat, lng: r.data.lng, slug: r.id })),
+];
+---
+
+<BaseLayout
+  title="World"
+  description="A map of where food comes from — farms, producers, markets, restaurants."
+>
+  <section class="container" style="padding: 4rem 0;">
+    <p class="eyebrow">Terroir + table</p>
+    <h1>World food map</h1>
+    <p class="lead">
+      Farms, producers, and markets on one layer; restaurants and tables on another.
+      Leaflet + CARTO Dark Matter tiles, same engine as the sibling Travelbook project.
+    </p>
+    <div id="food-map" style="height: 70vh; margin-top: 2rem; border-radius: 6px; overflow: hidden;" data-pins={JSON.stringify(pins)} />
+  </section>
+</BaseLayout>
+
+<script>
+  // Minimal placeholder map; full setup lives in src/lib/map/food.ts (see architecture.md).
+  // Loads Leaflet lazily so the bundle stays light on every other page.
+  const el = document.getElementById('food-map');
+  if (el && el.dataset.pins) {
+    const pins = JSON.parse(el.dataset.pins);
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      // @ts-expect-error global L from leaflet
+      const map = L.map(el).setView([20, 0], 2);
+      // @ts-expect-error global L from leaflet
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap, © CARTO',
+        maxZoom: 19,
+      }).addTo(map);
+      for (const pin of pins) {
+        // @ts-expect-error global L
+        L.circleMarker([pin.lat, pin.lng], {
+          radius: 6,
+          color: pin.kind === 'farm' ? '#5d6e44' : '#d2543b',
+          fillOpacity: 0.9,
+        }).bindPopup(`<strong>${pin.name}</strong><br/><em>${pin.kind}</em>`).addTo(map);
+      }
+    };
+    document.head.appendChild(script);
+  }
+</script>
