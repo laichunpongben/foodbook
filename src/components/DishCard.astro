@@ -9,12 +9,13 @@ interface Props {
   slug: string;
   title: string;
   tagline?: string;
-  hero: string;
+  hero?: string;
+  heroUrl?: string;
 }
 
-const { slug, title, tagline, hero } = Astro.props;
-// Hero stems point at /photos/<...>; the proxy appends a size suffix.
-const photoUrl = `${hero}-1280.jpg`;
+const { slug, title, tagline, hero, heroUrl } = Astro.props;
+// Prefer heroUrl (absolute) when set; fall back to the path stem at -1280.
+const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
 ---
 
 <a class="dish-card" href={`/dishes/${slug}/`} aria-label={title}>

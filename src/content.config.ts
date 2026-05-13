@@ -93,6 +93,10 @@ const dishes = defineCollection({
     shortTitle: z.string(),                         // plain text for stats/tooltips
     /** Path stem (no size suffix): /photos/dishes/<slug>/hero */
     hero: z.string(),
+    /** Absolute URL to an external image (e.g. Wikimedia). Takes precedence
+     *  over `hero` when set — used for entries that don't have local R2
+     *  photos yet. Renderer should not append size suffixes to this. */
+    heroUrl: z.string().url().optional(),
     /** One-line editorial tagline under the title. */
     tagline: z.string().optional(),
     /** Geographic / cultural origin label, e.g. "Naples, Italy". Free text. */
@@ -143,6 +147,7 @@ const recipes = defineCollection({
     timePrep: z.string().optional(),                // "15 min"
     timeCook: z.string().optional(),                // "2 h"
     hero: z.string().optional(),
+    heroUrl: z.string().url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     /** Attribution. If AI was used in extraction, say so — never lie about
@@ -194,6 +199,7 @@ const restaurants = defineCollection({
     priceBand,
     /** Path stem for a hero photo, if any. */
     hero: z.string().optional(),
+    heroUrl: z.string().url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     visits: z.array(visitSchema).default([]),
@@ -226,6 +232,7 @@ const farms = defineCollection({
     products: z.array(z.string()).default([]),
     seasonalWindow: z.array(seasonalWindowSchema).default([]),
     hero: z.string().optional(),
+    heroUrl: z.string().url().optional(),
     visibility,
     /** Free editorial note about the producer. */
     note: z.string().optional(),
@@ -247,6 +254,7 @@ const meals = defineCollection({
     dishes: z.array(z.string()).default([]),
     /** Path stems for photos. */
     photos: z.array(z.string()).default([]),
+    heroUrl: z.string().url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     /** Companion count, no names. Names should not enter the repo. */
@@ -264,6 +272,7 @@ const garden = defineCollection({
     planted: isoDate,
     harvested: isoDate.optional(),
     yieldNote: z.string().optional(),               // "≈ 2 kg over 4 weeks"
+    heroUrl: z.string().url().optional(),
     visibility,
     note: z.string().optional(),
   }),

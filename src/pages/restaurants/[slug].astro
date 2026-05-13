@@ -27,6 +27,11 @@ const discovered = d.discoveredVia;
   description={`${d.cuisine ?? 'Restaurant'} in ${d.city}`}
   unlisted={d.visibility === 'unlisted'}
 >
+  {d.heroUrl && (
+    <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>
+      <div class="banner-scrim"></div>
+    </div>
+  )}
   <article class="entity container">
     <a class="back" href="/world/">← Map</a>
 
@@ -79,7 +84,20 @@ const discovered = d.discoveredVia;
 </BaseLayout>
 
 <style>
-  .entity { padding: 4rem 0 6rem; max-width: 760px; }
+  .entity-banner {
+    position: relative;
+    height: 38vh;
+    min-height: 240px;
+    background-size: cover;
+    background-position: center;
+    background-color: #0a0d11;
+  }
+  .banner-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(10,13,17,0.25) 0%, rgba(10,13,17,0.9) 100%);
+  }
+  .entity { padding: 3rem 0 6rem; max-width: 760px; }
   .back {
     display: inline-block;
     margin-bottom: 2rem;

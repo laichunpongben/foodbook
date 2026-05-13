@@ -23,7 +23,7 @@ const heroDish = dishes[0];
     {heroDish && (
       <div
         class="hero-photo"
-        style={`background-image: url(${heroDish.data.hero}-2560.jpg)`}
+        style={`background-image: url('${heroDish.data.heroUrl ?? `${heroDish.data.hero}-2560.jpg`}')`}
       />
     )}
     <div class="container">
@@ -49,6 +49,7 @@ const heroDish = dishes[0];
           title={dish.data.title}
           tagline={dish.data.tagline}
           hero={dish.data.hero}
+          heroUrl={dish.data.heroUrl}
         />
       ))}
     </div>

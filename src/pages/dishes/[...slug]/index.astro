@@ -16,7 +16,7 @@ const { dish } = Astro.props;
 const { Content } = await render(dish);
 const slug = dish.id.replace(/^dishes\//, '');
 const graph = await getAssemblyGraph(dish);
-const heroUrl = `${dish.data.hero}-3840.jpg`;
+const heroUrl = dish.data.heroUrl ?? `${dish.data.hero}-3840.jpg`;
 ---
 
 <BaseLayout
@@ -24,7 +24,7 @@ const heroUrl = `${dish.data.hero}-3840.jpg`;
   description={dish.data.tagline}
   unlisted={dish.data.visibility === 'unlisted'}
 >
-  <section class="dish-view" style={`--hero-url: url(${heroUrl})`}>
+  <section class="dish-view" style={`--hero-url: url('${heroUrl}')`}>
     <div class="dish-view-bg" transition:name={`dish-${slug}-hero`}></div>
     <div class="dish-view-scrim"></div>
 

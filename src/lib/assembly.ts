@@ -24,6 +24,9 @@ interface BaseNode {
   /** Up to ~3 free-text bullets shown beneath the label so the reader
    *  gets the gist of *what this thing is* without opening it. */
   facts?: string[];
+  /** Image URL used as the card's visual focal element. Falls back to
+   *  the kind-tinted gradient when absent. */
+  heroUrl?: string;
 }
 
 export type Node =
@@ -39,6 +42,7 @@ export interface DishHead {
   tagline?: string;
   origin?: string;
   hero?: string;
+  heroUrl?: string;
 }
 
 export interface AssemblyGraph {
@@ -128,6 +132,7 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
       label: f.data.name,
       meta: `${f.data.kind} · ${f.data.location}`,
       facts: (f.data.products ?? []).slice(0, 3),
+      heroUrl: f.data.heroUrl,
     }));
 
   const grow: Node[] = gardenSlugs
@@ -144,6 +149,7 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
           : `Planted ${g.data.planted}`,
         ...(g.data.yieldNote ? [g.data.yieldNote] : []),
       ],
+      heroUrl: g.data.heroUrl,
     }));
 
   const cook: Node[] = recipes.map((r) => {
@@ -157,6 +163,7 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
       label: r.data.title,
       meta: time ? `${r.data.yield} · ${time}` : r.data.yield,
       facts: topIngredients.length ? [topIngredients.join(', ')] : [],
+      heroUrl: r.data.heroUrl,
     };
   });
 
@@ -170,6 +177,7 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
         label: m.data.title,
         meta: [m.data.date, m.data.occasion].filter(Boolean).join(' · '),
         facts: m.data.location && m.data.location !== 'home' ? [`At ${m.data.location}`] : ['At home'],
+        heroUrl: m.data.heroUrl,
       })),
     ...restaurantSlugs
       .map((s) => restaurantsMap.get(s))
@@ -191,6 +199,7 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
           facts,
           status,
           sourceUrl: r.data.discoveredVia?.url,
+          heroUrl: r.data.heroUrl,
         };
       }),
   ];
@@ -206,6 +215,7 @@ export async function getAssemblyGraph(dish: CollectionEntry<'dishes'>): Promise
       tagline: dish.data.tagline,
       origin: dish.data.origin,
       hero: dish.data.hero,
+      heroUrl: dish.data.heroUrl,
     },
   };
 }
