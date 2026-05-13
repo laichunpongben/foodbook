@@ -1,0 +1,379 @@
+---
+/**
+ * AssemblyGraph — the chain leading to a dish, all on one screen.
+ *
+ * Four columns:  Sources  →  Recipes  →  Dish  →  Eats
+ *
+ * Each card carries enough context (location, time, key ingredients,
+ * date) that the reader does not have to click through to understand
+ * what the node is. The whole graph is sized to the viewport.
+ *
+ * A SVG overlay draws cubic-bezier connectors between adjacent columns;
+ * recomputed on resize, fonts-ready, and Astro page-load.
+ *
+ * Below 720px the layout stacks vertically (graph becomes a chain of
+ * cards with short vertical connectors). With prefers-reduced-motion,
+ * the SVG is suppressed and a static accent border replaces the curves.
+ */
+
+import type { AssemblyGraph, Node } from '~/lib/assembly';
+
+interface Props {
+  graph: AssemblyGraph;
+}
+
+const { graph } = Astro.props;
+
+const href = (n: Node): string => {
+  switch (n.kind) {
+    case 'farm':       return `/farms/${n.slug}/`;
+    case 'garden':     return `/garden/${n.slug}/`;
+    case 'recipe':     return `/recipes/${n.slug}/`;
+    case 'dish':       return `/dishes/${n.slug}/`;
+    case 'meal':       return `/meals/${n.slug}/`;
+    case 'restaurant': return `/restaurants/${n.slug}/`;
+  }
+};
+
+const glyph = (kind: Node['kind']): string => {
+  switch (kind) {
+    case 'farm':       return '◖';
+    case 'garden':     return '✿';
+    case 'recipe':     return '✎';
+    case 'dish':       return '◆';
+    case 'meal':       return '◐';
+    case 'restaurant': return '☖';
+  }
+};
+
+const kindLabel = (kind: Node['kind']): string => {
+  switch (kind) {
+    case 'farm':       return 'Source';
+    case 'garden':     return 'Grown';
+    case 'recipe':     return 'Recipe';
+    case 'dish':       return 'Dish';
+    case 'meal':       return 'Eaten';
+    case 'restaurant': return 'Eaten out';
+  }
+};
+
+const columns = [
+  { id: 'sources', heading: 'Sources', nodes: graph.sources },
+  { id: 'recipes', heading: 'Cook',    nodes: graph.recipes },
+  { id: 'dish',    heading: 'Dish',    nodes: [graph.dish] },
+  { id: 'eats',    heading: 'Eat',     nodes: graph.eats },
+].filter((c) => c.nodes.length > 0);
+---
+
+<section class="assembly" aria-label="How this dish was assembled">
+  <div class="assembly-grid" data-columns={columns.length}>
+    <svg class="assembly-edges" aria-hidden="true" preserveAspectRatio="none">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+        </marker>
+      </defs>
+    </svg>
+
+    {columns.map((col) => (
+      <div class={`assembly-col col-${col.id}`} data-col={col.id}>
+        <p class="col-heading">{col.heading}</p>
+        <ul class="col-nodes">
+          {col.nodes.map((n) => (
+            <li>
+              <a
+                class={`node node-${n.kind}`}
+                href={href(n)}
+                data-node-id={`${col.id}--${n.slug}`}
+              >
+                <span class="node-glyph" aria-hidden="true">{glyph(n.kind)}</span>
+                <span class="node-kind-tag">{kindLabel(n.kind)}</span>
+                <span class="node-label" set:html={n.label} />
+                {n.meta && <span class="node-meta">{n.meta}</span>}
+                {n.facts && n.facts.length > 0 && (
+                  <ul class="node-facts">
+                    {n.facts.map((f) => <li>{f}</li>)}
+                  </ul>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>
+
+<script>
+  // Recompute connector paths between adjacent columns. Runs on load,
+  // resize, font-ready, and Astro page-load.
+  function draw(root: HTMLElement) {
+    const svg = root.querySelector('svg.assembly-edges') as SVGSVGElement | null;
+    const grid = root.querySelector('.assembly-grid') as HTMLElement | null;
+    if (!svg || !grid) return;
+
+    svg.querySelectorAll('path.edge').forEach((p) => p.remove());
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+
+    const rect = grid.getBoundingClientRect();
+    svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+    svg.style.width = `${rect.width}px`;
+    svg.style.height = `${rect.height}px`;
+
+    const cols = Array.from(root.querySelectorAll<HTMLElement>('.assembly-col'));
+    const stacked = matchMedia('(max-width: 720px)').matches;
+
+    for (let i = 0; i < cols.length - 1; i++) {
+      const fromNodes = Array.from(cols[i].querySelectorAll<HTMLAnchorElement>('.node'));
+      const toNodes = Array.from(cols[i + 1].querySelectorAll<HTMLAnchorElement>('.node'));
+
+      for (const from of fromNodes) {
+        for (const to of toNodes) {
+          const fr = from.getBoundingClientRect();
+          const tr = to.getBoundingClientRect();
+
+          let x1: number, y1: number, x2: number, y2: number;
+          let c1x: number, c1y: number, c2x: number, c2y: number;
+          if (stacked) {
+            x1 = fr.left + fr.width / 2 - rect.left;
+            y1 = fr.bottom - rect.top;
+            x2 = tr.left + tr.width / 2 - rect.left;
+            y2 = tr.top - rect.top;
+            const dy = Math.max(20, (y2 - y1) * 0.55);
+            c1x = x1; c1y = y1 + dy;
+            c2x = x2; c2y = y2 - dy;
+          } else {
+            x1 = fr.right - rect.left;
+            y1 = fr.top + fr.height / 2 - rect.top;
+            x2 = tr.left - rect.left;
+            y2 = tr.top + tr.height / 2 - rect.top;
+            const dx = Math.max(30, (x2 - x1) * 0.55);
+            c1x = x1 + dx; c1y = y1;
+            c2x = x2 - dx; c2y = y2;
+          }
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`);
+          path.setAttribute('class', 'edge');
+          path.dataset.from = from.dataset.nodeId ?? '';
+          path.dataset.to = to.dataset.nodeId ?? '';
+          svg.appendChild(path);
+        }
+      }
+    }
+  }
+
+  function init() {
+    const root = document.querySelector('.assembly') as HTMLElement | null;
+    if (!root) return;
+    draw(root);
+    const ro = new ResizeObserver(() => draw(root));
+    ro.observe(root);
+    root.addEventListener('mouseover', (e) => {
+      const node = (e.target as HTMLElement).closest<HTMLAnchorElement>('.node');
+      if (!node) return;
+      const id = node.dataset.nodeId;
+      root.querySelectorAll<SVGPathElement>('path.edge').forEach((p) => {
+        p.classList.toggle('lit', p.dataset.from === id || p.dataset.to === id);
+      });
+      root.querySelectorAll<HTMLAnchorElement>('.node').forEach((n) => n.classList.remove('faded'));
+      const touched = new Set<string>([id ?? '']);
+      root.querySelectorAll<SVGPathElement>('path.edge.lit').forEach((p) => {
+        if (p.dataset.from) touched.add(p.dataset.from);
+        if (p.dataset.to) touched.add(p.dataset.to);
+      });
+      root.querySelectorAll<HTMLAnchorElement>('.node').forEach((n) => {
+        if (!touched.has(n.dataset.nodeId ?? '')) n.classList.add('faded');
+      });
+    });
+    root.addEventListener('mouseleave', () => {
+      root.querySelectorAll<SVGPathElement>('path.edge.lit').forEach((p) => p.classList.remove('lit'));
+      root.querySelectorAll<HTMLAnchorElement>('.node.faded').forEach((n) => n.classList.remove('faded'));
+    });
+    if ('fonts' in document) {
+      document.fonts.ready.then(() => draw(root));
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  document.addEventListener('astro:page-load', init);
+</script>
+
+<style>
+  .assembly {
+    width: 100%;
+    margin: 0;
+  }
+
+  .assembly-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+    gap: clamp(1rem, 3vw, 2.5rem);
+    align-items: stretch;
+  }
+
+  .assembly-grid[data-columns="3"] { --cols: 3; }
+  .assembly-grid[data-columns="2"] { --cols: 2; }
+  .assembly-grid[data-columns="1"] { --cols: 1; }
+
+  .assembly-edges {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+    color: var(--ink-mute);
+    z-index: 0;
+  }
+
+  .assembly-edges .edge {
+    fill: none;
+    stroke: rgba(250, 248, 244, 0.22);
+    stroke-width: 1.25;
+    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+  }
+
+  .assembly-edges .edge.lit {
+    stroke: var(--paprika);
+    stroke-width: 1.75;
+  }
+
+  .assembly-col {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+
+  .col-heading {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 0.4rem;
+  }
+
+  .col-nodes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .node {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.55rem;
+    padding: 0.7rem 0.8rem 0.75rem;
+    background: rgba(15, 18, 24, 0.78);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    color: var(--ink);
+    text-decoration: none;
+    line-height: 1.3;
+    backdrop-filter: blur(6px);
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                transform 0.2s ease, opacity 0.25s ease;
+  }
+
+  .node.faded { opacity: 0.32; }
+
+  .node:hover {
+    background-color: rgba(20, 24, 32, 0.92);
+    border-color: rgba(210, 84, 59, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .node-glyph {
+    grid-row: 1 / 4;
+    align-self: start;
+    font-size: 1.1rem;
+    line-height: 1;
+    margin-top: 0.18rem;
+    color: var(--ink-mute);
+  }
+
+  .node-kind-tag {
+    grid-column: 2;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 0.1rem;
+  }
+
+  .node-label {
+    grid-column: 2;
+    font-family: var(--font-body);
+    font-size: 0.97rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .node-meta {
+    grid-column: 2;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 0.15rem;
+  }
+
+  .node-facts {
+    grid-column: 2;
+    list-style: none;
+    padding: 0;
+    margin: 0.35rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .node-facts li {
+    font-size: 0.78rem;
+    color: var(--ink-mute);
+    line-height: 1.35;
+  }
+
+  /* Per-kind glyph accents. */
+  .node-farm       .node-glyph { color: var(--olive); }
+  .node-garden     .node-glyph { color: var(--olive); }
+  .node-recipe     .node-glyph { color: var(--paprika); }
+  .node-meal       .node-glyph { color: var(--ink); }
+  .node-restaurant .node-glyph { color: var(--ink); }
+
+  /* The dish node — visual anchor. Paprika border + a soft inner ring. */
+  .node-dish {
+    border-color: rgba(210, 84, 59, 0.55);
+    box-shadow:
+      0 0 0 1px rgba(210, 84, 59, 0.28),
+      0 8px 28px rgba(0, 0, 0, 0.45);
+  }
+  .node-dish .node-label {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    line-height: 1.15;
+  }
+  .node-dish .node-glyph { color: var(--paprika); }
+
+  @media (max-width: 720px) {
+    .assembly-grid {
+      grid-template-columns: 1fr;
+      gap: 0.9rem;
+    }
+    .col-heading { margin-top: 0.6rem; }
+  }
+</style>

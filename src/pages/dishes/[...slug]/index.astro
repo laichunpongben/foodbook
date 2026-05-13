@@ -1,7 +1,8 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import LifecycleStepper from '~/components/LifecycleStepper.astro';
+import AssemblyGraph from '~/components/AssemblyGraph.astro';
+import { getAssemblyGraph } from '~/lib/assembly';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
@@ -13,18 +14,9 @@ export async function getStaticPaths() {
 
 const { dish } = Astro.props;
 const { Content } = await render(dish);
-
-const stageOrder = ['source', 'grow', 'cook', 'eat'] as const;
-type StageKey = typeof stageOrder[number];
-const stageLabels: Record<StageKey, string> = {
-  source: 'Source',
-  grow: 'Grow',
-  cook: 'Cook',
-  eat: 'Eat',
-};
-
 const slug = dish.id.replace(/^dishes\//, '');
-const stages = dish.data.stages ?? {};
+const graph = await getAssemblyGraph(dish);
+const heroUrl = `${dish.data.hero}-3840.jpg`;
 ---
 
 <BaseLayout
@@ -32,93 +24,171 @@ const stages = dish.data.stages ?? {};
   description={dish.data.tagline}
   unlisted={dish.data.visibility === 'unlisted'}
 >
-  <article>
-    <section class="hero">
-      <div
-        class="hero-photo"
-        style={`background-image: url(${dish.data.hero}-3840.jpg)`}
-        transition:name={`dish-${slug}-hero`}
-      />
+  <section class="dish-view" style={`--hero-url: url(${heroUrl})`}>
+    <div class="dish-view-bg" transition:name={`dish-${slug}-hero`}></div>
+    <div class="dish-view-scrim"></div>
+
+    <header class="dish-view-head">
       <div class="container">
         {dish.data.origin && <p class="eyebrow">{dish.data.origin}</p>}
         <h1 set:html={dish.data.title} />
         {dish.data.tagline && <p class="lead">{dish.data.tagline}</p>}
       </div>
-    </section>
+    </header>
 
-    <div class="container">
-      <LifecycleStepper stages={stages} slug={slug} />
-
-      {dish.data.prologue && (
-        <section class="prologue">
-          <h2 set:html={dish.data.prologue.heading} />
-          <p set:html={dish.data.prologue.prose} />
-        </section>
-      )}
-
-      <Content />
-
-      {stageOrder.map((key) => {
-        const stage = stages[key];
-        if (!stage) return null;
-        return (
-          <section id={`stage-${key}`} class={`stage stage-${key}`}>
-            <p class="eyebrow">{stageLabels[key]}</p>
-            {stage.note && <p set:html={stage.note} />}
-            {(stage.farms?.length ?? 0) > 0 && (
-              <p>
-                <strong>Farms:</strong>{' '}
-                {stage.farms.map((s, i) => (
-                  <>
-                    {i > 0 && ', '}
-                    <a href={`/farms/${s}/`}>{s}</a>
-                  </>
-                ))}
-              </p>
-            )}
-            {(stage.recipes?.length ?? 0) > 0 && (
-              <p>
-                <strong>Recipes:</strong>{' '}
-                {stage.recipes.map((s, i) => (
-                  <>
-                    {i > 0 && ', '}
-                    <a href={`/recipes/${s}/`}>{s}</a>
-                  </>
-                ))}
-              </p>
-            )}
-            {(stage.restaurants?.length ?? 0) > 0 && (
-              <p>
-                <strong>Eaten at:</strong>{' '}
-                {stage.restaurants.map((s, i) => (
-                  <>
-                    {i > 0 && ', '}
-                    <a href={`/restaurants/${s}/`}>{s}</a>
-                  </>
-                ))}
-              </p>
-            )}
-            {(stage.meals?.length ?? 0) > 0 && (
-              <p>
-                <strong>Meals:</strong>{' '}
-                {stage.meals.map((s, i) => (
-                  <>
-                    {i > 0 && ', '}
-                    <a href={`/meals/${s}/`}>{s}</a>
-                  </>
-                ))}
-              </p>
-            )}
-          </section>
-        );
-      })}
-
-      {dish.data.finale && (
-        <section class="finale">
-          <h2 set:html={dish.data.finale.heading} />
-          <p set:html={dish.data.finale.prose} />
-        </section>
-      )}
+    <div class="dish-view-graph">
+      <div class="container">
+        <AssemblyGraph graph={graph} />
+      </div>
     </div>
+
+    <a class="dish-view-more" href="#prose" aria-label="Read more">
+      <span>Read</span>
+      <span class="chev" aria-hidden="true">↓</span>
+    </a>
+  </section>
+
+  <article id="prose" class="container dish-prose">
+    {dish.data.prologue && (
+      <section class="prologue">
+        <h2 set:html={dish.data.prologue.heading} />
+        <p set:html={dish.data.prologue.prose} />
+      </section>
+    )}
+
+    <Content />
+
+    {dish.data.finale && (
+      <section class="finale">
+        <h2 set:html={dish.data.finale.heading} />
+        <p set:html={dish.data.finale.prose} />
+      </section>
+    )}
   </article>
 </BaseLayout>
+
+<style>
+  .dish-view {
+    position: relative;
+    /* Sticky header is ~60px; leave the rest of the viewport for the
+     * graph + title so the whole picture lands in one screen. */
+    min-height: calc(100svh - 60px);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+  }
+
+  .dish-view-bg {
+    position: absolute;
+    inset: 0;
+    background-image: var(--hero-url);
+    background-size: cover;
+    background-position: center;
+    background-color: #0a0d11;
+    z-index: 0;
+    /* Slightly desaturate + dim so cards stay legible. */
+    filter: saturate(0.85) brightness(0.45);
+    transform: scale(1.02);
+  }
+
+  .dish-view-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 50% at 20% 0%, rgba(10,13,17,0.55), transparent 70%),
+      linear-gradient(180deg, rgba(10,13,17,0.45) 0%, rgba(10,13,17,0.65) 50%, rgba(10,13,17,0.85) 100%);
+    z-index: 1;
+  }
+
+  .dish-view-head,
+  .dish-view-graph,
+  .dish-view-more {
+    position: relative;
+    z-index: 2;
+  }
+
+  .dish-view-head {
+    padding: 3.5rem 0 1rem;
+  }
+
+  .dish-view-head h1 {
+    max-width: 22ch;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.6);
+  }
+
+  .dish-view-head .lead {
+    margin-top: 0.75rem;
+    max-width: 60ch;
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+
+  .dish-view-graph {
+    align-self: center;
+    padding: 2rem 0 3rem;
+    width: 100%;
+  }
+
+  .dish-view-more {
+    align-self: end;
+    justify-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 auto 1.5rem;
+    padding: 0.5rem 0.9rem;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: rgba(15, 18, 24, 0.6);
+    backdrop-filter: blur(6px);
+  }
+
+  .dish-view-more .chev {
+    transition: transform 0.2s ease;
+  }
+
+  .dish-view-more:hover .chev {
+    transform: translateY(2px);
+  }
+
+  .dish-prose {
+    padding: 4rem 0 6rem;
+  }
+
+  .dish-prose .prologue h2,
+  .dish-prose .finale h2 {
+    margin-bottom: 0.6rem;
+  }
+
+  .dish-prose .prologue,
+  .dish-prose .finale {
+    margin: 2.5rem 0;
+    max-width: var(--measure);
+  }
+
+  /* Tighter viewport handling: on a 600-700px tall window the graph would
+   * push the prose link off; let the section grow if cards force it. */
+  @media (max-height: 700px) and (min-width: 721px) {
+    .dish-view {
+      min-height: auto;
+      padding-bottom: 2rem;
+    }
+  }
+
+  @media (max-width: 720px) {
+    /* Stacked mode — relax the single-screen constraint so the
+     * chain breathes vertically. */
+    .dish-view {
+      min-height: auto;
+      grid-template-rows: auto auto auto;
+    }
+    .dish-view-graph { padding: 1.5rem 0 2.5rem; }
+    .dish-view-more { margin-top: 1rem; }
+  }
+</style>
