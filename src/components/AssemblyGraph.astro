@@ -1,20 +1,23 @@
 ---
 /**
- * AssemblyGraph — the chain leading to a dish, asymmetrically.
+ * AssemblyGraph — the chain leading to a dish.
  *
- *   PRODUCTION CHAIN  →  Source → Grow → Cook    (3-col grid)
- *   ───────────────────────────────────────────
- *   CONSUMPTION GALLERY →  Eat                   (responsive auto-fill grid)
+ *   PRODUCTION CHAIN   Source ──→ Grow ──→ Cook
+ *                                          │
+ *                                       trunk
+ *                                          │
+ *                          ┌──── branches ────┐
+ *                          ▼     ▼     ▼     ▼
+ *   CONSUMPTION GALLERY    Eat   Eat   Eat   Eat  (responsive grid)
  *
- * The lifecycle has four stages, but their cardinality is asymmetric:
- * production typically has 1–3 entries per stage; Eat lists every meal
- * + every restaurant where the dish is served, which scales much wider.
- * Splitting at the natural seam keeps every card readable and the
- * lifecycle order intact.
+ * Cubic-bezier connectors between every pair of adjacent production
+ * stages, then a single "trunk" drops from each last-production-stage
+ * card to a manifold point, from which "branches" fan out to every
+ * card in the Eat gallery. One dish, many tables — the lineage stays
+ * legible even though the Eat layout is a 2-D grid below.
  *
- * Card markup + styling lives in <Card>; stage headings in
- * <StageHeading>. This file owns *only* the layout: production grid,
- * connector SVG, the "to the table" bridge, and the eat-gallery grid.
+ * Card + stage heading live in their own components. This file owns
+ * the chain SVG, the layout grid, and the hover-highlight wiring.
  */
 
 import type { AssemblyGraph, Node } from '~/lib/assembly';
@@ -52,8 +55,6 @@ const kindLabel = (n: Node): string => {
 const variant = (n: Node): 'default' | 'visited' | 'discovered' =>
   n.kind === 'restaurant' ? n.status : 'default';
 
-/* ---------- stages ---------- */
-
 const productionStages = [
   { id: 'source', step: 1, label: 'Source', nodes: graph.source },
   { id: 'grow',   step: 2, label: 'Grow',   nodes: graph.grow },
@@ -65,17 +66,19 @@ const hasEat = graph.eat.length > 0;
 ---
 
 <section class="assembly" aria-label={`Lifecycle of ${graph.dish.label}`}>
+  <!-- Chain SVG spans the whole section; draws production curves +
+       trunk/branches from the last production stage to every Eat card. -->
+  <svg class="chain-edges" aria-hidden="true" preserveAspectRatio="none">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+      </marker>
+    </defs>
+  </svg>
+
   {hasProduction && (
     <div class="production" style={`--prod-cols: ${productionStages.length}`}>
-      <svg class="production-edges" aria-hidden="true" preserveAspectRatio="none">
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
-                  markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-          </marker>
-        </defs>
-      </svg>
-
       {productionStages.map((stage) => (
         <div class={`stage stage-${stage.id}`} data-stage={stage.id}>
           <StageHeading step={stage.step} label={stage.label} />
@@ -100,16 +103,8 @@ const hasEat = graph.eat.length > 0;
     </div>
   )}
 
-  {hasProduction && hasEat && (
-    <div class="to-eat" aria-hidden="true">
-      <span class="to-eat-line"></span>
-      <span class="to-eat-label">↓ to the table</span>
-      <span class="to-eat-line"></span>
-    </div>
-  )}
-
   {hasEat && (
-    <div class="eat">
+    <div class="eat" data-last-stage={productionStages[productionStages.length - 1]?.id ?? ''}>
       <StageHeading step={4} label="Eat" />
       <ul class="eat-grid">
         {graph.eat.map((n) => (
@@ -132,63 +127,125 @@ const hasEat = graph.eat.length > 0;
 </section>
 
 <script>
-  /**
-   * Production-row connectors. Cubic-bezier curves from every card in
-   * stage N to every card in stage N+1, recomputed on resize and on
-   * Astro page-load. Honors prefers-reduced-motion. Hover highlights
-   * the subgraph touching a card and fades unconnected production cards.
-   */
-  function draw(root: HTMLElement) {
-    const svg = root.querySelector('svg.production-edges') as SVGSVGElement | null;
-    const prod = root.querySelector('.production') as HTMLElement | null;
-    if (!svg || !prod) return;
+  import { link, curveBumpX, curveBumpY } from 'd3-shape';
 
-    svg.querySelectorAll('path.edge').forEach((p) => p.remove());
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /* d3-shape link generators. Each takes a {source: [x,y], target: [x,y]}
+   * and returns an SVG path string with a smooth cubic bezier between the
+   * two — curveBumpX flows horizontally (production row), curveBumpY
+   * flows vertically (trunk and branches into the Eat gallery). */
+  const horizontalLink = link(curveBumpX) as unknown as
+    (d: { source: [number, number]; target: [number, number] }) => string;
+  const verticalLink = link(curveBumpY) as unknown as
+    (d: { source: [number, number]; target: [number, number] }) => string;
+
+  function clearEdges(svg: SVGSVGElement) {
+    svg.querySelectorAll('path.edge, path.trunk, path.branch').forEach((p) => p.remove());
+  }
+
+  function makePath(
+    svg: SVGSVGElement, d: string, cls: string, from: string, to: string,
+  ): SVGPathElement {
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', cls);
+    if (from) path.dataset.from = from;
+    if (to) path.dataset.to = to;
+    svg.appendChild(path);
+    return path;
+  }
+
+  function drawProductionCurve(
+    svg: SVGSVGElement, anchor: DOMRect,
+    from: HTMLElement, to: HTMLElement, stacked: boolean,
+  ) {
+    const fr = from.getBoundingClientRect();
+    const tr = to.getBoundingClientRect();
+    let d: string;
+    if (stacked) {
+      d = verticalLink({
+        source: [fr.left + fr.width / 2 - anchor.left, fr.bottom - anchor.top],
+        target: [tr.left + tr.width / 2 - anchor.left, tr.top - anchor.top],
+      });
+    } else {
+      d = horizontalLink({
+        source: [fr.right - anchor.left, fr.top + fr.height / 2 - anchor.top],
+        target: [tr.left - anchor.left, tr.top + tr.height / 2 - anchor.top],
+      });
+    }
+    makePath(svg, d, 'edge', from.dataset.nodeId ?? '', to.dataset.nodeId ?? '');
+  }
+
+  function drawTrunkAndBranches(
+    svg: SVGSVGElement, anchor: DOMRect,
+    lastStageCards: HTMLElement[], eatCards: HTMLElement[],
+  ) {
+    if (lastStageCards.length === 0 || eatCards.length === 0) return;
+    // Manifold sits 28px above the topmost Eat card. Trunks drop to it,
+    // branches fan out from it to each Eat card's top-centre using
+    // d3-shape's vertical curve generator.
+    const eatTops = eatCards.map((c) => c.getBoundingClientRect().top - anchor.top);
+    const manifoldY = Math.min(...eatTops) - 28;
+
+    for (const last of lastStageCards) {
+      const cr = last.getBoundingClientRect();
+      const trunkX = cr.left + cr.width / 2 - anchor.left;
+      const trunkTopY = cr.bottom - anchor.top;
+
+      makePath(
+        svg,
+        `M ${trunkX} ${trunkTopY} L ${trunkX} ${manifoldY}`,
+        'trunk',
+        last.dataset.nodeId ?? '',
+        '',
+      );
+
+      for (const eat of eatCards) {
+        const er = eat.getBoundingClientRect();
+        const ex = er.left + er.width / 2 - anchor.left;
+        const ey = er.top - anchor.top;
+        const d = verticalLink({
+          source: [trunkX, manifoldY],
+          target: [ex, ey],
+        });
+        makePath(svg, d, 'branch', last.dataset.nodeId ?? '', eat.dataset.nodeId ?? '');
+      }
+    }
+  }
+
+  function draw(root: HTMLElement) {
+    const svg = root.querySelector('svg.chain-edges') as SVGSVGElement | null;
+    if (!svg) return;
+    clearEdges(svg);
+
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const rect = prod.getBoundingClientRect();
-    svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
-    svg.style.width = `${rect.width}px`;
-    svg.style.height = `${rect.height}px`;
+    const anchor = root.getBoundingClientRect();
+    svg.setAttribute('viewBox', `0 0 ${anchor.width} ${anchor.height}`);
+    svg.style.width = `${anchor.width}px`;
+    svg.style.height = `${anchor.height}px`;
 
-    const stages = Array.from(root.querySelectorAll<HTMLElement>('.production .stage'));
     const stacked = matchMedia('(max-width: 720px)').matches;
 
+    // (1) Production curves between adjacent stages.
+    const stages = Array.from(root.querySelectorAll<HTMLElement>('.production .stage'));
     for (let i = 0; i < stages.length - 1; i++) {
       const fromCards = Array.from(stages[i].querySelectorAll<HTMLAnchorElement>('.card'));
       const toCards = Array.from(stages[i + 1].querySelectorAll<HTMLAnchorElement>('.card'));
-
       for (const from of fromCards) {
         for (const to of toCards) {
-          const fr = from.getBoundingClientRect();
-          const tr = to.getBoundingClientRect();
-          let x1: number, y1: number, x2: number, y2: number;
-          let c1x: number, c1y: number, c2x: number, c2y: number;
-          if (stacked) {
-            x1 = fr.left + fr.width / 2 - rect.left;
-            y1 = fr.bottom - rect.top;
-            x2 = tr.left + tr.width / 2 - rect.left;
-            y2 = tr.top - rect.top;
-            const dy = Math.max(20, (y2 - y1) * 0.55);
-            c1x = x1; c1y = y1 + dy;
-            c2x = x2; c2y = y2 - dy;
-          } else {
-            x1 = fr.right - rect.left;
-            y1 = fr.top + fr.height / 2 - rect.top;
-            x2 = tr.left - rect.left;
-            y2 = tr.top + tr.height / 2 - rect.top;
-            const dx = Math.max(30, (x2 - x1) * 0.55);
-            c1x = x1 + dx; c1y = y1;
-            c2x = x2 - dx; c2y = y2;
-          }
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`);
-          path.setAttribute('class', 'edge');
-          path.dataset.from = from.dataset.nodeId ?? '';
-          path.dataset.to = to.dataset.nodeId ?? '';
-          svg.appendChild(path);
+          drawProductionCurve(svg, anchor, from, to, stacked);
         }
       }
+    }
+
+    // (2) Trunk + branches from last production stage to every Eat card.
+    const lastStage = stages[stages.length - 1];
+    if (lastStage) {
+      const lastCards = Array.from(lastStage.querySelectorAll<HTMLAnchorElement>('.card'));
+      const eatCards = Array.from(root.querySelectorAll<HTMLAnchorElement>('.eat .card'));
+      drawTrunkAndBranches(svg, anchor, lastCards, eatCards);
     }
   }
 
@@ -197,20 +254,21 @@ const hasEat = graph.eat.length > 0;
       const card = (e.target as HTMLElement).closest<HTMLAnchorElement>('.card');
       if (!card) return;
       const id = card.dataset.nodeId;
-      root.querySelectorAll<SVGPathElement>('path.edge').forEach((p) => {
-        p.classList.toggle('lit', p.dataset.from === id || p.dataset.to === id);
-      });
+      root.querySelectorAll<SVGPathElement>('path.edge, path.trunk, path.branch')
+        .forEach((p) => {
+          p.classList.toggle('lit', p.dataset.from === id || p.dataset.to === id);
+        });
       const touched = new Set<string>([id ?? '']);
-      root.querySelectorAll<SVGPathElement>('path.edge.lit').forEach((p) => {
+      root.querySelectorAll<SVGPathElement>('path.lit').forEach((p) => {
         if (p.dataset.from) touched.add(p.dataset.from);
         if (p.dataset.to) touched.add(p.dataset.to);
       });
-      root.querySelectorAll<HTMLAnchorElement>('.production .card').forEach((c) => {
+      root.querySelectorAll<HTMLAnchorElement>('.card').forEach((c) => {
         c.classList.toggle('faded', !touched.has(c.dataset.nodeId ?? ''));
       });
     });
     root.addEventListener('mouseleave', () => {
-      root.querySelectorAll<SVGPathElement>('path.edge.lit')
+      root.querySelectorAll<SVGPathElement>('path.lit')
         .forEach((p) => p.classList.remove('lit'));
       root.querySelectorAll<HTMLAnchorElement>('.card.faded')
         .forEach((c) => c.classList.remove('faded'));
@@ -238,27 +296,17 @@ const hasEat = graph.eat.length > 0;
 
 <style>
   /* ============================================================
-   *  Outer rhythm
+   *  Outer rhythm — chain SVG overlays the whole assembly
    * ============================================================ */
   .assembly {
+    position: relative;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 3rem;
   }
 
-  /* ============================================================
-   *  Production chain — 3 columns side by side
-   * ============================================================ */
-  .production {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(var(--prod-cols, 3), minmax(0, 1fr));
-    gap: clamp(1rem, 3vw, 2rem);
-    align-items: start;
-  }
-
-  .production-edges {
+  .chain-edges {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -267,21 +315,70 @@ const hasEat = graph.eat.length > 0;
     z-index: 0;
   }
 
-  .production-edges .edge {
+  /* Shared base for every chain path. */
+  .chain-edges path {
     fill: none;
-    stroke: rgba(250, 248, 244, 0.22);
-    stroke-width: 1.25;
-    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+    stroke-linecap: round;
+    transition: stroke 0.25s ease, stroke-width 0.25s ease;
+    /* Pathlength normalises stroke-dasharray to a 0–1 scale so the
+     * draw-in animation works the same for short trunks and long
+     * branches alike. */
+    pathLength: 1;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: drawIn 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
-  .production-edges .edge.lit {
+  @keyframes drawIn {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chain-edges path {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Production curves — thin, neutral; light up paprika on hover. */
+  .chain-edges .edge {
+    stroke: rgba(250, 248, 244, 0.24);
+    stroke-width: 1.25;
+  }
+
+  /* Trunk — vertical drop from last production card to the manifold. */
+  .chain-edges .trunk {
+    stroke: rgba(232, 119, 90, 0.55);
+    stroke-width: 1.5;
+    animation-delay: 0.2s;
+  }
+
+  /* Branches — curves from manifold to every Eat card. Staggered draw. */
+  .chain-edges .branch {
+    stroke: rgba(232, 119, 90, 0.34);
+    stroke-width: 1;
+    animation-delay: 0.55s;
+  }
+
+  .chain-edges .lit {
     stroke: var(--paprika);
-    stroke-width: 1.75;
+    stroke-width: 1.8;
+    stroke-opacity: 1;
+  }
+
+  /* ============================================================
+   *  Production chain — 3 columns side by side
+   * ============================================================ */
+  .production {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(var(--prod-cols, 3), minmax(0, 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+    align-items: start;
   }
 
   .stage {
-    position: relative;
-    z-index: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -298,31 +395,13 @@ const hasEat = graph.eat.length > 0;
   .stage-nodes li { display: flex; }
 
   /* ============================================================
-   *  Bridge between production and consumption
-   * ============================================================ */
-  .to-eat {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    margin: 0.5rem 0 -0.5rem;
-  }
-  .to-eat-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--rule), transparent);
-  }
-  .to-eat-label {
-    font-family: var(--font-body);
-    font-size: 0.74rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-    white-space: nowrap;
-  }
-
-  /* ============================================================
    *  Consumption gallery — responsive auto-fill grid
    * ============================================================ */
+  .eat {
+    position: relative;
+    z-index: 1;
+  }
+
   .eat-grid {
     list-style: none;
     padding: 0;
@@ -334,15 +413,10 @@ const hasEat = graph.eat.length > 0;
   .eat-grid li { display: flex; }
 
   /* ============================================================
-   *  Mobile — stack production columns, collapse gallery to single
+   *  Mobile — collapse to single column, drop SVG curves entirely
    * ============================================================ */
   @media (max-width: 720px) {
-    .production {
-      grid-template-columns: 1fr;
-      gap: 1.2rem;
-    }
-    .eat-grid {
-      grid-template-columns: 1fr;
-    }
+    .production { grid-template-columns: 1fr; gap: 1.2rem; }
+    .eat-grid { grid-template-columns: 1fr; }
   }
 </style>
