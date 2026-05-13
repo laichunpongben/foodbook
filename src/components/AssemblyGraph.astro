@@ -208,14 +208,14 @@ const columns = [
 </script>
 
 <style>
-  .assembly { width: 100%; margin: 0; height: 100%; display: flex; }
+  .assembly { width: 100%; margin: 0; }
 
   .assembly-grid {
     position: relative;
     display: grid;
     grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
     gap: clamp(1rem, 3vw, 2rem);
-    align-items: stretch;
+    align-items: start;     /* don't force columns to match heights */
     width: 100%;
   }
 
@@ -287,22 +287,28 @@ const columns = [
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
-    flex: 1;
   }
 
-  .col-nodes li {
-    display: flex;
-    flex: 1;
-    min-height: 96px;
+  /* When a column carries > 3 nodes, switch to a 2-column sub-grid so
+   * the dense column's total height stays close to the sparser columns'.
+   * Without this the Eat column with 6 cards is 6× taller than Source
+   * with 1, and Source's card stretches to 4–5× its natural aspect. */
+  .col-nodes:has(> li:nth-child(4)) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
   }
+
+  .col-nodes li { display: flex; }
 
   /* Image-led card. The hero photo becomes the card's background; text
-   * is overlaid at the bottom on a soft gradient scrim. Cards flex to
-   * fill the column so the whole graph stays in one viewport. */
+   * is overlaid at the bottom on a soft gradient scrim. Aspect-ratio is
+   * fixed so cards never stretch into unreadable portrait strips just
+   * because their column happens to be the tallest. */
   .node {
     position: relative;
     width: 100%;
-    min-height: 0;
+    aspect-ratio: 4 / 3;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -318,6 +324,12 @@ const columns = [
     overflow: hidden;
     isolation: isolate;
     transition: border-color 0.2s ease, transform 0.2s ease, opacity 0.25s ease;
+  }
+
+  /* In the sub-grid (dense columns), each card is narrower; widen the
+   * aspect a touch so text isn't crushed against a tiny photo. */
+  .col-nodes:has(> li:nth-child(4)) .node {
+    aspect-ratio: 5 / 4;
   }
 
   .node.faded { opacity: 0.32; }
