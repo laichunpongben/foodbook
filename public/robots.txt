@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-Sitemap: https://foodbook.example/sitemap-index.xml
+Sitemap: https://food.databookman.com/sitemap-index.xml
 
 # Unlisted entries emit their own noindex meta tag at the page level.
 # AI scrapers are not blocked here — opt out per-entry via visibility: unlisted.

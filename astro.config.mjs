@@ -9,7 +9,7 @@ import sitemap from '@astrojs/sitemap';
 // the /photos/[...path] R2 proxy. Until then, plain static build is enough
 // and avoids needing R2/KV bindings to deploy.
 export default defineConfig({
-  site: 'https://foodbook.pages.dev',
+  site: 'https://food.databookman.com',
   output: 'static',
   integrations: [
     mdx(),
