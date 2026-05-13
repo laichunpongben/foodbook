@@ -1,17 +1,23 @@
 ---
 /**
- * AssemblyGraph — the four-stage lifecycle of a dish.
+ * AssemblyGraph — the chain leading to a dish, asymmetrically.
  *
- *   Source  →  Grow  →  Cook  →  Eat
+ *   PRODUCTION CHAIN (3-col):  Source → Grow → Cook
+ *   ──────────────────────────────────────────────────
+ *   CONSUMPTION GALLERY:        Eat (responsive grid)
  *
- * The dish itself is NOT a node here — it's the subject of the
- * lifecycle and lives as the page header. Stages with no entries
- * collapse cleanly. Each card carries enough context (location,
- * time, key ingredients, date) that no click-through is needed.
+ * The lifecycle has four stages, but their cardinality is asymmetric:
+ * production stages typically have 1–3 entries each (a few farms, one
+ * garden bed, one recipe), whereas Eat can list many places the dish
+ * was served. Forcing all four into one grid either crushes the Eat
+ * cards into illegible sub-cells or balloons the page with empty space
+ * in the production columns. Splitting at the natural seam keeps every
+ * card readable and the lifecycle order intact.
  *
- * A SVG overlay draws cubic-bezier connectors between adjacent
- * populated stages; recomputed on resize, fonts-ready, and Astro
- * page-load. Below 720px the graph stacks vertically.
+ * Cards use the traditional content-card pattern — image on top, text
+ * block below — so the image is recognizable AND the label/meta/facts
+ * read clearly. Cubic-bezier connectors curve between production
+ * stages; a visual marker (↓ TO THE TABLE) bridges production to Eat.
  */
 
 import type { AssemblyGraph, Node } from '~/lib/assembly';
@@ -32,16 +38,6 @@ const href = (n: Node): string => {
   }
 };
 
-const glyph = (kind: Node['kind']): string => {
-  switch (kind) {
-    case 'farm':       return '◖';
-    case 'garden':     return '✿';
-    case 'recipe':     return '✎';
-    case 'meal':       return '◐';
-    case 'restaurant': return '☖';
-  }
-};
-
 const kindLabel = (n: Node): string => {
   switch (n.kind) {
     case 'farm':       return 'Producer';
@@ -52,84 +48,134 @@ const kindLabel = (n: Node): string => {
   }
 };
 
-// Lifecycle order. Drop empty stages so they don't take up a column.
-const columns = [
-  { id: 'source', heading: 'Source', nodes: graph.source },
-  { id: 'grow',   heading: 'Grow',   nodes: graph.grow },
-  { id: 'cook',   heading: 'Cook',   nodes: graph.cook },
-  { id: 'eat',    heading: 'Eat',    nodes: graph.eat },
+const productionStages = [
+  { id: 'source', heading: 'Source', step: 1, nodes: graph.source },
+  { id: 'grow',   heading: 'Grow',   step: 2, nodes: graph.grow },
+  { id: 'cook',   heading: 'Cook',   step: 3, nodes: graph.cook },
 ].filter((c) => c.nodes.length > 0);
+
+const hasProduction = productionStages.length > 0;
+const hasEat = graph.eat.length > 0;
 ---
 
 <section class="assembly" aria-label={`Lifecycle of ${graph.dish.label}`}>
-  <div class="assembly-grid" data-columns={columns.length}>
-    <svg class="assembly-edges" aria-hidden="true" preserveAspectRatio="none">
-      <defs>
-        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
-                markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-        </marker>
-      </defs>
-    </svg>
+  {hasProduction && (
+    <div class="production" style={`--prod-cols: ${productionStages.length}`}>
+      <svg class="production-edges" aria-hidden="true" preserveAspectRatio="none">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+          </marker>
+        </defs>
+      </svg>
 
-    {columns.map((col, i) => (
-      <div class={`assembly-col col-${col.id}`} data-col={col.id}>
-        <p class="col-heading">
-          <span class="col-step">{i + 1}</span>
-          <span>{col.heading}</span>
-        </p>
-        <ul class="col-nodes">
-          {col.nodes.map((n) => (
-            <li>
-              <a
-                class={`node node-${n.kind} ${n.kind === 'restaurant' ? `is-${n.status}` : ''}`}
-                href={href(n)}
-                data-node-id={`${col.id}--${n.slug}`}
+      {productionStages.map((stage) => (
+        <div class={`stage stage-${stage.id}`} data-stage={stage.id}>
+          <p class="stage-heading">
+            <span class="step">{stage.step}</span>
+            <span>{stage.heading}</span>
+          </p>
+          <ul class="stage-nodes">
+            {stage.nodes.map((n) => (
+              <li>
+                <a
+                  class={`node node-${n.kind}`}
+                  href={href(n)}
+                  data-node-id={`${stage.id}--${n.slug}`}
+                >
+                  <div
+                    class="node-image"
+                    style={n.heroUrl ? `background-image: url('${n.heroUrl}')` : undefined}
+                  />
+                  <div class="node-body">
+                    <span class="node-kind-tag">{kindLabel(n)}</span>
+                    <span class="node-label" set:html={n.label} />
+                    {n.meta && <span class="node-meta">{n.meta}</span>}
+                    {n.facts && n.facts.length > 0 && (
+                      <ul class="node-facts">
+                        {n.facts.map((f) => <li>{f}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {hasProduction && hasEat && (
+    <div class="to-eat" aria-hidden="true">
+      <span class="to-eat-line"></span>
+      <span class="to-eat-label">↓ to the table</span>
+      <span class="to-eat-line"></span>
+    </div>
+  )}
+
+  {hasEat && (
+    <div class="eat">
+      <p class="stage-heading">
+        <span class="step">4</span>
+        <span>Eat</span>
+      </p>
+      <ul class="eat-grid">
+        {graph.eat.map((n) => (
+          <li>
+            <a
+              class={`node node-${n.kind} ${n.kind === 'restaurant' ? `is-${n.status}` : ''}`}
+              href={href(n)}
+              data-node-id={`eat--${n.slug}`}
+            >
+              <div
+                class="node-image"
                 style={n.heroUrl ? `background-image: url('${n.heroUrl}')` : undefined}
-              >
-                <span class="node-scrim" aria-hidden="true"></span>
-                <span class="node-content">
-                  <span class="node-glyph" aria-hidden="true">{glyph(n.kind)}</span>
-                  <span class="node-kind-tag">{kindLabel(n)}</span>
-                  <span class="node-label" set:html={n.label} />
-                  {n.meta && <span class="node-meta">{n.meta}</span>}
-                  {n.facts && n.facts.length > 0 && (
-                    <ul class="node-facts">
-                      {n.facts.map((f) => <li>{f}</li>)}
-                    </ul>
-                  )}
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))}
-  </div>
+              />
+              <div class="node-body">
+                <span class="node-kind-tag">{kindLabel(n)}</span>
+                <span class="node-label" set:html={n.label} />
+                {n.meta && <span class="node-meta">{n.meta}</span>}
+                {n.facts && n.facts.length > 0 && (
+                  <ul class="node-facts">
+                    {n.facts.map((f) => <li>{f}</li>)}
+                  </ul>
+                )}
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
 </section>
 
 <script>
+  // Recompute production-row connectors. Only spans the production stages
+  // (Source → Grow → Cook); the Eat gallery has no incoming connector
+  // because the "↓ to the table" marker covers that visual bridge.
   function draw(root: HTMLElement) {
-    const svg = root.querySelector('svg.assembly-edges') as SVGSVGElement | null;
-    const grid = root.querySelector('.assembly-grid') as HTMLElement | null;
-    if (!svg || !grid) return;
+    const svg = root.querySelector('svg.production-edges') as SVGSVGElement | null;
+    const prod = root.querySelector('.production') as HTMLElement | null;
+    if (!svg || !prod) return;
 
     svg.querySelectorAll('path.edge').forEach((p) => p.remove());
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) return;
 
-    const rect = grid.getBoundingClientRect();
+    const rect = prod.getBoundingClientRect();
     svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
     svg.style.width = `${rect.width}px`;
     svg.style.height = `${rect.height}px`;
 
-    const cols = Array.from(root.querySelectorAll<HTMLElement>('.assembly-col'));
+    const stages = Array.from(root.querySelectorAll<HTMLElement>('.production .stage'));
     const stacked = matchMedia('(max-width: 720px)').matches;
 
-    for (let i = 0; i < cols.length - 1; i++) {
-      const fromNodes = Array.from(cols[i].querySelectorAll<HTMLAnchorElement>('.node'));
-      const toNodes = Array.from(cols[i + 1].querySelectorAll<HTMLAnchorElement>('.node'));
+    for (let i = 0; i < stages.length - 1; i++) {
+      const fromNodes = Array.from(stages[i].querySelectorAll<HTMLAnchorElement>('.node'));
+      const toNodes = Array.from(stages[i + 1].querySelectorAll<HTMLAnchorElement>('.node'));
 
       for (const from of fromNodes) {
         for (const to of toNodes) {
@@ -186,7 +232,8 @@ const columns = [
         if (p.dataset.from) touched.add(p.dataset.from);
         if (p.dataset.to) touched.add(p.dataset.to);
       });
-      root.querySelectorAll<HTMLAnchorElement>('.node').forEach((n) => {
+      // Only fade nodes in production (Eat gallery isn't part of the highlight graph).
+      root.querySelectorAll<HTMLAnchorElement>('.production .node').forEach((n) => {
         if (!touched.has(n.dataset.nodeId ?? '')) n.classList.add('faded');
       });
     });
@@ -208,22 +255,23 @@ const columns = [
 </script>
 
 <style>
-  .assembly { width: 100%; margin: 0; }
-
-  .assembly-grid {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
-    gap: clamp(1rem, 3vw, 2rem);
-    align-items: start;     /* don't force columns to match heights */
+  .assembly {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
   }
 
-  .assembly-grid[data-columns="3"] { --cols: 3; }
-  .assembly-grid[data-columns="2"] { --cols: 2; }
-  .assembly-grid[data-columns="1"] { --cols: 1; }
+  /* ---- Production chain — 3 columns side by side ---- */
+  .production {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--prod-cols, 3), minmax(0, 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+    align-items: start;
+  }
 
-  .assembly-edges {
+  .production-edges {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -232,28 +280,60 @@ const columns = [
     z-index: 0;
   }
 
-  .assembly-edges .edge {
+  .production-edges .edge {
     fill: none;
     stroke: rgba(250, 248, 244, 0.22);
     stroke-width: 1.25;
     transition: stroke 0.2s ease, stroke-width 0.2s ease;
   }
 
-  .assembly-edges .edge.lit {
+  .production-edges .edge.lit {
     stroke: var(--paprika);
     stroke-width: 1.75;
   }
 
-  .assembly-col {
+  .stage {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
     min-width: 0;
   }
 
-  .col-heading {
+  /* ---- Bridge from production to consumption ---- */
+  .to-eat {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 0.5rem 0 -0.5rem;
+  }
+  .to-eat-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--rule), transparent);
+  }
+  .to-eat-label {
+    font-family: var(--font-body);
+    font-size: 0.74rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    white-space: nowrap;
+  }
+
+  /* ---- Eat gallery — responsive auto-fill grid ---- */
+  .eat-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .eat-grid li { display: flex; }
+
+  /* ---- Stage heading ---- */
+  .stage-heading {
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -262,166 +342,112 @@ const columns = [
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--ink-mute);
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.7rem;
   }
 
-  .col-step {
+  .step {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.55rem;
-    height: 1.55rem;
+    width: 1.6rem;
+    height: 1.6rem;
     border: 1px solid var(--rule);
     border-radius: 50%;
     font-family: var(--font-display);
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     letter-spacing: 0;
     color: var(--paprika);
-    background: rgba(15, 18, 24, 0.5);
+    background: rgba(15, 18, 24, 0.6);
   }
 
-  .col-nodes {
+  .stage-nodes {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.7rem;
   }
+  .stage-nodes li { display: flex; }
 
-  /* When a column carries > 3 nodes, switch to a 2-column sub-grid so
-   * the dense column's total height stays close to the sparser columns'.
-   * Without this the Eat column with 6 cards is 6× taller than Source
-   * with 1, and Source's card stretches to 4–5× its natural aspect. */
-  .col-nodes:has(> li:nth-child(4)) {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .col-nodes li { display: flex; }
-
-  /* Image-led card. The hero photo becomes the card's background; text
-   * is overlaid at the bottom on a soft gradient scrim. Aspect-ratio is
-   * fixed so cards never stretch into unreadable portrait strips just
-   * because their column happens to be the tallest. */
+  /* ============================================================
+   *  Card — image on top, body below. Traditional content card.
+   * ============================================================ */
   .node {
-    position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    background-color: #11151a;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background: rgba(15, 18, 24, 0.92);
     border: 1px solid var(--rule);
-    border-radius: 8px;
-    color: var(--ink);
-    text-decoration: none;
-    line-height: 1.3;
+    border-radius: 10px;
     overflow: hidden;
-    isolation: isolate;
-    transition: border-color 0.2s ease, transform 0.2s ease, opacity 0.25s ease;
-  }
-
-  /* In the sub-grid (dense columns), each card is narrower; widen the
-   * aspect a touch so text isn't crushed against a tiny photo. */
-  .col-nodes:has(> li:nth-child(4)) .node {
-    aspect-ratio: 5 / 4;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.2s ease, border-color 0.2s ease,
+                box-shadow 0.2s ease, opacity 0.2s ease;
   }
 
   .node.faded { opacity: 0.32; }
 
   .node:hover {
+    transform: translateY(-2px);
     border-color: rgba(210, 84, 59, 0.55);
-    transform: translateY(-1px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   }
 
-  /* Gradient scrim keeps the overlaid text legible regardless of photo. */
-  .node-scrim {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    background:
-      linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.85) 100%);
-  }
-  .node:not([style*="background-image"]) {
-    background: linear-gradient(160deg, rgba(20,24,32,1), rgba(10,13,17,1));
+  .node-image {
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: #0a0d11;
+    border-bottom: 1px solid var(--rule);
   }
 
-  .node-content {
-    position: relative;
-    z-index: 1;
-    padding: 0.65rem 0.8rem 0.75rem;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    column-gap: 0.55rem;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.7), 0 0 12px rgba(0,0,0,0.4);
-  }
-
-  .node-glyph {
-    grid-row: 1 / 4;
-    align-self: start;
-    font-size: 1.1rem;
-    line-height: 1;
-    margin-top: 0.18rem;
-    color: var(--ink-soft);
+  .node-body {
+    padding: 0.8rem 0.95rem 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    line-height: 1.35;
   }
 
   .node-kind-tag {
-    grid-column: 2;
-    font-size: 0.62rem;
+    font-size: 0.66rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(250, 248, 244, 0.78);
-    margin-bottom: 0.1rem;
+    color: var(--ink-mute);
   }
 
   .node-label {
-    grid-column: 2;
     font-family: var(--font-body);
-    font-size: 0.97rem;
     font-weight: 500;
+    font-size: 1rem;
     color: var(--ink);
   }
 
   .node-meta {
-    grid-column: 2;
-    font-size: 0.78rem;
-    color: rgba(250, 248, 244, 0.72);
-    margin-top: 0.15rem;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
   }
 
   .node-facts {
-    grid-column: 2;
     list-style: none;
     padding: 0;
-    margin: 0.3rem 0 0;
+    margin: 0.2rem 0 0;
     display: flex;
     flex-direction: column;
-    gap: 0.08rem;
+    gap: 0.1rem;
   }
-
   .node-facts li {
-    font-size: 0.76rem;
-    color: rgba(250, 248, 244, 0.7);
-    line-height: 1.35;
+    font-size: 0.78rem;
+    color: var(--ink-mute);
+    line-height: 1.4;
   }
 
-  /* Per-kind glyph accents — small color cue on top of the photo. */
-  .node-farm       .node-glyph { color: rgba(141, 178, 95, 0.95); }
-  .node-garden     .node-glyph { color: rgba(141, 178, 95, 0.95); }
-  .node-recipe     .node-glyph { color: rgba(232, 119, 90, 0.95); }
-  .node-meal       .node-glyph { color: rgba(250, 248, 244, 0.95); }
-  .node-restaurant .node-glyph { color: rgba(250, 248, 244, 0.95); }
-
-  /* Discovered restaurants — dashed border + tinted kind-tag so it's
-   * obvious at-a-glance the entry is sourced via research, not visited. */
+  /* Discovered restaurants — accent so they read differently from visited. */
   .node-restaurant.is-discovered {
     border-style: dashed;
-    border-color: rgba(250, 248, 244, 0.22);
+    border-color: rgba(232, 119, 90, 0.32);
   }
   .node-restaurant.is-discovered .node-kind-tag {
     color: rgba(232, 119, 90, 0.92);
@@ -431,10 +457,13 @@ const columns = [
   }
 
   @media (max-width: 720px) {
-    .assembly-grid {
+    .production {
       grid-template-columns: 1fr;
-      gap: 0.9rem;
+      gap: 1.2rem;
     }
-    .col-heading { margin-top: 0.6rem; }
+    .eat-grid {
+      grid-template-columns: 1fr;
+    }
+    .stage-heading { margin-top: 0.6rem; }
   }
 </style>
