@@ -18,6 +18,14 @@ const slug = meal.id.replace(/^meals\//, '');
 const { Content } = await render(meal);
 const dishes = await dishesReferencing('meal', slug);
 const d = meal.data;
+
+const allDishes = await getCollection('dishes');
+const dishLabel = new Map(
+  allDishes.map((entry) => [
+    entry.id.replace(/^dishes\//, '').replace(/\/index$/, ''),
+    entry.data.shortTitle ?? entry.data.title,
+  ]),
+);
 ---
 
 <BaseLayout
@@ -44,7 +52,7 @@ const d = meal.data;
       <section>
         <p class="eyebrow">Dishes served</p>
         <ul>
-          {d.dishes.map((s) => <li><a href={`/dishes/${s}/`}>{s}</a></li>)}
+          {d.dishes.map((s) => <li><a href={`/dishes/${s}/`}>{dishLabel.get(s) ?? s}</a></li>)}
         </ul>
       </section>
     )}

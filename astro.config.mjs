@@ -20,7 +20,9 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: (page) => !page.includes('/_drafts/'),
+      filter: (page) =>
+        !page.includes('/_drafts/') &&
+        !page.includes('/farms/unknown-origin/'),
     }),
     pagefind(),
   ],
