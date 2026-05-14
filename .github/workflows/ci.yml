@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Astro type-check
+        run: npm run check
+
+      - name: Cross-collection ref check
+        run: npm run check:refs
+
+      - name: Secret-leak scan
+        run: npm run check:leaks
+
+      - name: Build
+        run: npm run build
+
+      - name: Content-drift guard
+        # Ensure every public content entry actually emits a page.
+        # Fails CI when a new dish/farm/recipe was added but the build can't produce it.
+        run: |
+          set -euo pipefail
+          for kind in dishes farms recipes restaurants; do
+            src=$(find "src/content/$kind" -mindepth 1 -maxdepth 1 \( -type d -o -name '*.mdx' \) | wc -l | tr -d ' ')
+            built=$(find "dist/$kind" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+            echo "$kind: src=$src built=$built"
+            if [ "$built" -lt "$src" ]; then
+              echo "::error::$kind drift: $built of $src entries built"
+              exit 1
+            fi
+          done
