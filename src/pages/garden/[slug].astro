@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { isHidden } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const beds = await getCollection('garden');
@@ -22,7 +23,7 @@ const d = bed.data;
 <BaseLayout
   title={`${d.plant} · ${d.bed}`}
   description={`Garden log: ${d.plant}`}
-  unlisted={d.visibility === 'unlisted'}
+  unlisted={isHidden(bed)}
 >
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>

@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { isHidden } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const restaurants = await getCollection('restaurants');
@@ -25,7 +26,7 @@ const discovered = d.discoveredVia;
 <BaseLayout
   title={d.name}
   description={`${d.cuisine ?? 'Restaurant'} in ${d.city}`}
-  unlisted={d.visibility === 'unlisted'}
+  unlisted={isHidden(restaurant)}
 >
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>

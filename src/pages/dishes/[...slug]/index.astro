@@ -7,6 +7,7 @@ import CookSection from '~/components/CookSection.astro';
 import PlateSection from '~/components/PlateSection.astro';
 import EatSection from '~/components/EatSection.astro';
 import { getJourney } from '~/lib/journey';
+import { isHidden } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
@@ -28,7 +29,7 @@ const hasEats = journey.eat.length > 0;
 <BaseLayout
   title={dish.data.shortTitle}
   description={dish.data.tagline}
-  unlisted={dish.data.visibility === 'unlisted'}
+  unlisted={isHidden(dish)}
 >
   <article class="dish-journey">
     <!-- 1 · Sun — frames the energy story -->

@@ -17,6 +17,7 @@
  */
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { isHidden } from '~/lib/visibility';
 import '~/styles/cook-mode.css';
 
 export async function getStaticPaths() {
@@ -58,7 +59,7 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
 <BaseLayout
   title={`Cook · ${recipe.data.title}`}
   cookMode={true}
-  unlisted={recipe.data.visibility === 'unlisted'}
+  unlisted={isHidden(recipe)}
 >
   <section class="cook-band">
     <div class="container">

@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import AppearsIn from '~/components/AppearsIn.astro';
+import { isHidden } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const meals = await getCollection('meals');
@@ -17,12 +18,21 @@ const slug = meal.id.replace(/^meals\//, '');
 const { Content } = await render(meal);
 const dishes = await dishesReferencing('meal', slug);
 const d = meal.data;
+
+// Map referenced dish + restaurant slugs to their display titles so the
+// page shows human names ("Tomato Ragu", "Rezdora") instead of raw slugs.
+const allDishes = await getCollection('dishes');
+const allRestaurants = await getCollection('restaurants');
+const bare = (id: string) => id.replace(/^[^/]+\//, '');
+const dishTitle = new Map(allDishes.map((x) => [bare(x.id), x.data.shortTitle ?? x.data.title]));
+const restaurantName = new Map(allRestaurants.map((x) => [bare(x.id), x.data.name]));
+const locationName = d.location === 'home' ? null : restaurantName.get(d.location) ?? d.location;
 ---
 
 <BaseLayout
   title={d.title}
   description={`Meal on ${d.date}`}
-  unlisted={d.visibility === 'unlisted'}
+  unlisted={isHidden(meal)}
 >
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>
@@ -35,7 +45,7 @@ const d = meal.data;
     <p class="eyebrow">Meal · {d.date}{d.occasion && ` · ${d.occasion}`}</p>
     <h1>{d.title}</h1>
     <p class="lead">
-      At {d.location === 'home' ? 'home' : <a href={`/restaurants/${d.location}/`}>{d.location}</a>}
+      At {d.location === 'home' ? 'home' : <a href={`/restaurants/${d.location}/`}>{locationName}</a>}
       {d.companionCount !== undefined && d.companionCount > 0 && <>{' · '}{d.companionCount} at the table</>}
     </p>
 
@@ -45,7 +55,11 @@ const d = meal.data;
       <section>
         <p class="eyebrow">Dishes served</p>
         <ul>
-          {d.dishes.map((s) => <li><a href={`/dishes/${s}/`}>{s}</a></li>)}
+          {d.dishes.map((s) => (
+            <li>
+              <a href={`/dishes/${s}/`} set:html={dishTitle.get(s) ?? s} />
+            </li>
+          ))}
         </ul>
       </section>
     )}

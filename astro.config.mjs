@@ -14,7 +14,13 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: (page) => !page.includes('/_drafts/'),
+      filter: (page) =>
+        !page.includes('/_drafts/') &&
+        // Exclude placeholder/demo seed pages (visibility: example in frontmatter).
+        // These render with <meta robots noindex>, but search engines shouldn't
+        // discover them through the sitemap either. Keep this in sync with
+        // src/lib/visibility.ts isPublic().
+        !page.includes('/example-'),
     }),
   ],
   prefetch: {

@@ -42,7 +42,10 @@ import { glob } from 'astro/loaders';
 /* ----- shared primitives ----- */
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
-const visibility = z.enum(['public', 'unlisted']).default('public');
+// 'example' marks seed/placeholder entries kept for tests + demo; they are
+// excluded from listings AND emit <meta robots noindex>, but remain
+// reachable at their slug so docs/links don't break.
+const visibility = z.enum(['public', 'unlisted', 'example']).default('public');
 const priceBand = z.enum(['$', '$$', '$$$', '$$$$']);
 
 /** Tags. Open set — add as needed. Keeps `/seasons` and the related rail
