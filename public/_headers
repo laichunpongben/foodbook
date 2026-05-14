@@ -1,0 +1,36 @@
+# Cloudflare Pages picks up _headers and applies these at the edge.
+# Path-pattern rules cascade; the most specific match wins.
+#
+# CSP ships Report-Only first; after 1-2 weeks of clean RUM reports,
+# rename the header to Content-Security-Policy to enforce.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://*.tile.openstreetmap.org; connect-src 'self' https://static.cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Vary: Accept-Encoding
+
+# Content-hashed assets — name changes when contents change.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Pagefind search index — fragment/index files are content-hashed by name.
+/pagefind/fragment/*
+  Cache-Control: public, max-age=31536000, immutable
+/pagefind/index/*
+  Cache-Control: public, max-age=31536000, immutable
+# Entry points are not hashed; refresh daily.
+/pagefind/*.js
+  Cache-Control: public, max-age=86400
+/pagefind/*.css
+  Cache-Control: public, max-age=86400
+
+/favicon.svg
+  Cache-Control: public, max-age=86400
+/favicon.ico
+  Cache-Control: public, max-age=86400
+/og-default.svg
+  Cache-Control: public, max-age=86400
