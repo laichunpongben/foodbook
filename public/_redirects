@@ -1,0 +1,3 @@
+# Catch-all so Cloudflare Pages returns HTTP 404 on unknown paths instead
+# of the SPA fallback (which serves /index.html with 200 — a soft-404).
+/*  /404.html  404
