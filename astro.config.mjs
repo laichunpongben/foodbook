@@ -12,6 +12,11 @@ import pagefind from 'astro-pagefind';
 export default defineConfig({
   site: 'https://food.databookman.com',
   output: 'static',
+  build: {
+    // Inline tiny CSS chunks (under ~4 KB) into the HTML head to skip
+    // a round-trip on cold loads. Astro keeps large bundles external.
+    inlineStylesheets: 'auto',
+  },
   integrations: [
     mdx(),
     sitemap({
