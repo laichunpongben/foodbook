@@ -2,6 +2,8 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import { dishesReferencing } from '~/lib/back-refs';
 
 export async function getStaticPaths() {
@@ -20,6 +22,30 @@ const dishes = await dishesReferencing('restaurant', slug);
 const d = restaurant.data;
 const visited = (d.visits ?? []).length > 0;
 const discovered = d.discoveredVia;
+
+const site = Astro.site!;
+const restaurantUrl = entryUrl(site, 'restaurants', slug);
+const restaurantLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'Restaurant',
+  name: d.name,
+  url: restaurantUrl,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: d.city,
+    ...(d.country && { addressCountry: d.country }),
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: d.lat, longitude: d.lng },
+  priceRange: d.priceBand,
+  ...(d.cuisine && { servesCuisine: d.cuisine }),
+  ...(d.heroUrl && { image: d.heroUrl }),
+};
+
+const breadcrumbLd = breadcrumb(
+  site,
+  { label: 'Restaurants', kind: 'restaurants' },
+  { label: d.name, url: restaurantUrl },
+);
 ---
 
 <BaseLayout
@@ -30,6 +56,8 @@ const discovered = d.discoveredVia;
   heroUrl={d.heroUrl}
   ogType="article"
 >
+  <JsonLd data={restaurantLd} />
+  <JsonLd data={breadcrumbLd} />
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>
       <div class="banner-scrim"></div>

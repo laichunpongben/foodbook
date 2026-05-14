@@ -2,6 +2,8 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import { dishesReferencing } from '~/lib/back-refs';
 
 export async function getStaticPaths() {
@@ -20,6 +22,30 @@ const d = farm.data;
 
 const monthName = (m: number) =>
   ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1] ?? String(m);
+
+const site = Astro.site!;
+const farmUrl = entryUrl(site, 'farms', slug);
+const farmLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'LocalBusiness',
+  name: d.name,
+  url: farmUrl,
+  description: `${d.kind} · ${d.location}`,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: d.location,
+    ...(d.country && { addressCountry: d.country }),
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: d.lat, longitude: d.lng },
+  ...(d.heroUrl && { image: d.heroUrl }),
+  ...(d.url && { sameAs: [d.url] }),
+};
+
+const breadcrumbLd = breadcrumb(
+  site,
+  { label: 'Farms', kind: 'farms' },
+  { label: d.name, url: farmUrl },
+);
 ---
 
 <BaseLayout
@@ -30,6 +56,8 @@ const monthName = (m: number) =>
   heroUrl={d.heroUrl}
   ogType="article"
 >
+  <JsonLd data={farmLd} />
+  <JsonLd data={breadcrumbLd} />
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>
       <div class="banner-scrim"></div>

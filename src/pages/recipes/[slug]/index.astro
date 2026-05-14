@@ -1,6 +1,8 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 
 export async function getStaticPaths() {
   const recipes = await getCollection('recipes');
@@ -32,23 +34,72 @@ function findProducer(s: string): { href: string; label: string } | null {
   return null;
 }
 
-// Group ingredients by their `group` field, preserving order of first occurrence.
+// Group ingredients by `group` field, preserving order of first occurrence.
 const groups = new Map<string, typeof recipe.data.ingredients>();
 for (const ing of recipe.data.ingredients) {
   const k = ing.group ?? '';
   if (!groups.has(k)) groups.set(k, []);
   groups.get(k)!.push(ing);
 }
+
+/** Returns undefined for unparseable inputs; schema.org tolerates absence. */
+function isoDuration(s: string | undefined): string | undefined {
+  if (!s) return undefined;
+  const trimmed = s.trim().toLowerCase();
+  const hMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*h(?:our)?s?/);
+  const mMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*m(?:in)?(?:ute)?s?/);
+  const hours = hMatch ? Number(hMatch[1]) : 0;
+  const minutes = mMatch ? Number(mMatch[1]) : 0;
+  if (hours === 0 && minutes === 0) return undefined;
+  const totalMinutes = Math.round(hours * 60 + minutes);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `PT${h ? `${h}H` : ''}${m ? `${m}M` : ''}`;
+}
+
+const site = Astro.site!;
+const recipeUrl = entryUrl(site, 'recipes', slug);
+const description = `${recipe.data.yield}${recipe.data.timeCook ? ` · ${recipe.data.timeCook}` : ''}`;
+const prepIso = isoDuration(recipe.data.timePrep);
+const cookIso = isoDuration(recipe.data.timeCook);
+
+const recipeLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'Recipe',
+  name: recipe.data.title,
+  description,
+  recipeYield: recipe.data.yield,
+  url: recipeUrl,
+  // schema.org wants plain ingredient strings; entry-page UI keeps the structured refs.
+  recipeIngredient: recipe.data.ingredients.map((i) => i.text),
+  recipeInstructions: recipe.data.steps.map((s, i) => ({
+    '@type': 'HowToStep',
+    position: i + 1,
+    text: s.text,
+  })),
+  ...(prepIso && { prepTime: prepIso }),
+  ...(cookIso && { cookTime: cookIso }),
+  ...(recipe.data.heroUrl && { image: recipe.data.heroUrl }),
+  ...(recipe.data.attribution && { author: { '@type': 'Person', name: recipe.data.attribution } }),
+};
+
+const breadcrumbLd = breadcrumb(
+  site,
+  { label: 'Recipes', kind: 'recipes' },
+  { label: recipe.data.title, url: recipeUrl },
+);
 ---
 
 <BaseLayout
   title={recipe.data.title}
-  description={`${recipe.data.yield}${recipe.data.timeCook ? ` · ${recipe.data.timeCook}` : ''}`}
+  description={description}
   unlisted={recipe.data.visibility === 'unlisted'}
   hero={recipe.data.hero}
   heroUrl={recipe.data.heroUrl}
   ogType="article"
 >
+  <JsonLd data={recipeLd} />
+  <JsonLd data={breadcrumbLd} />
   <section class="container" style="padding: 4rem 0;">
     <p class="eyebrow">Recipe</p>
     <h1>{recipe.data.title}</h1>

@@ -1,0 +1,13 @@
+---
+interface Props {
+  data: Record<string, unknown>;
+}
+
+const { data } = Astro.props;
+// Escape `</` so a `</script>` token inside any string value can't close
+// our <script> tag prematurely. JSON.stringify never emits raw `<`, so
+// this is the only sequence that can cause the break.
+const json = JSON.stringify(data).replace(/<\//g, '<\\/');
+---
+
+<script type="application/ld+json" set:html={json} is:inline />
