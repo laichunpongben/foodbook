@@ -59,7 +59,15 @@ function isoDuration(s: string | undefined): string | undefined {
 
 const site = Astro.site!;
 const recipeUrl = entryUrl(site, 'recipes', slug);
-const description = `${recipe.data.yield}${recipe.data.timeCook ? ` · ${recipe.data.timeCook}` : ''}`;
+// Strip <em> markup from the recipe title for the meta description (plain text only).
+const plainTitle = recipe.data.title.replace(/<\/?em>/g, '');
+const description = [
+  plainTitle,
+  recipe.data.yield,
+  recipe.data.timePrep && `prep ${recipe.data.timePrep}`,
+  recipe.data.timeCook && `cook ${recipe.data.timeCook}`,
+  recipe.data.attribution && `via ${recipe.data.attribution}`,
+].filter(Boolean).join(' · ').slice(0, 155);
 const prepIso = isoDuration(recipe.data.timePrep);
 const cookIso = isoDuration(recipe.data.timeCook);
 
