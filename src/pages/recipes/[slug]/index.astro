@@ -11,7 +11,26 @@ export async function getStaticPaths() {
 }
 
 const { recipe } = Astro.props;
+const slug = recipe.id.replace(/^recipes\//, '');
 const { Content } = await render(recipe);
+
+// Look up the producer for an ingredient's `from` slug across farms and
+// garden collections. Returns the right href and display name, or null
+// if the slug doesn't resolve (renderer falls back to plain text).
+// glob loader includes the collection prefix in `id` (e.g. `farms/<slug>`),
+// so strip it when comparing to the bare `ing.from`.
+const farms = await getCollection('farms');
+const gardens = await getCollection('garden');
+function bare(id: string): string {
+  return id.replace(/^[^/]+\//, '');
+}
+function findProducer(s: string): { href: string; label: string } | null {
+  const farm = farms.find((f) => bare(f.id) === s);
+  if (farm) return { href: `/farms/${bare(farm.id)}/`, label: farm.data.name };
+  const garden = gardens.find((g) => bare(g.id) === s);
+  if (garden) return { href: `/garden/${bare(garden.id)}/`, label: garden.data.plant };
+  return null;
+}
 
 // Group ingredients by their `group` field, preserving order of first occurrence.
 const groups = new Map<string, typeof recipe.data.ingredients>();
@@ -37,7 +56,7 @@ for (const ing of recipe.data.ingredients) {
     </p>
 
     <p style="margin-top: 1.5rem;">
-      <a href={`/recipes/${recipe.id}/cook`} style="font-weight: 500;">→ Open in cook mode</a>
+      <a href={`/recipes/${slug}/cook/`} style="font-weight: 500;">→ Open in cook mode</a>
     </p>
 
     {recipe.data.attribution && (
@@ -51,12 +70,16 @@ for (const ing of recipe.data.ingredients) {
       <>
         {groupName && <h3 style="margin-top: 1.5rem;">{groupName}</h3>}
         <ul>
-          {items.map((ing) => (
-            <li>
-              {ing.text}
-              {ing.from && <> — <a href={`/farms/${ing.from}/`}>{ing.from}</a></>}
-            </li>
-          ))}
+          {items.map((ing) => {
+            const producer = ing.from ? findProducer(ing.from) : null;
+            return (
+              <li>
+                {ing.text}
+                {producer && <> — <a href={producer.href}>{producer.label}</a></>}
+                {ing.from && !producer && <> — <span>{ing.from}</span></>}
+              </li>
+            );
+          })}
         </ul>
       </>
     ))}
