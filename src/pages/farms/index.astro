@@ -1,0 +1,62 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const farms = publicOnly(await getCollection('farms')).sort((a, b) =>
+  a.data.name.localeCompare(b.data.name),
+);
+
+// kind enum from src/content.config.ts — keep in sync until we export it from there.
+const kindLabels: Record<string, string> = {
+  farm: 'Farms',
+  producer: 'Producers',
+  orchard: 'Orchards',
+  dairy: 'Dairies',
+  mill: 'Mills',
+  market: 'Markets',
+  fishery: 'Fisheries',
+  forager: 'Foragers',
+};
+const kindOrder = Object.keys(kindLabels);
+
+const byKind = new Map<string, typeof farms>();
+for (const f of farms) {
+  const list = byKind.get(f.data.kind) ?? [];
+  list.push(f);
+  byKind.set(f.data.kind, list);
+}
+const groups = kindOrder
+  .map((k) => [k, byKind.get(k) ?? []] as const)
+  .filter(([, list]) => list.length > 0);
+---
+
+<BaseLayout title="Farms & producers" description={`${farms.length} sources in the archive.`}>
+  <section class="container index-page">
+    <p class="eyebrow">Source</p>
+    <h1>Farms & producers</h1>
+    <p class="lead">
+      {farms.length} growers, dairies, mills, and markets — the upstream side of every dish.
+      See also: <a href="/world/">the map</a>.
+    </p>
+
+    {groups.map(([kind, list]) => (
+      <div class="index-group">
+        <h2>{kindLabels[kind]}</h2>
+        <ul class="index-list">
+          {list.map((f) => (
+            <li>
+              <a href={`/farms/${f.id.replace(/^farms\//, '')}/`}>{f.data.name}</a>
+              <span class="meta">{f.data.location}{f.data.country && `, ${f.data.country}`}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .index-list { gap: 0.6rem; margin-top: 0.8rem; }
+  .index-list a { font-size: 1.1rem; }
+</style>

@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+// shortTitle drives the sort key because title may contain authored <em>.
+const dishes = publicOnly(await getCollection('dishes')).sort((a, b) =>
+  a.data.shortTitle.localeCompare(b.data.shortTitle, undefined, { sensitivity: 'base' }),
+);
+---
+
+<BaseLayout title="Dishes" description={`${dishes.length} dishes in the archive.`}>
+  <section class="container index-page">
+    <p class="eyebrow">Dishes</p>
+    <h1>Dishes</h1>
+    <p class="lead">Every dish in the archive — {dishes.length} entries, alphabetical.</p>
+
+    <ul class="index-list dish-list">
+      {dishes.map((d) => (
+        <li>
+          {/* title may contain authored <em>; safe to set:html. */}
+          <a href={`/dishes/${d.id.replace(/^dishes\//, '')}/`} set:html={d.data.title} />
+          {d.data.tagline && <span class="tagline">{d.data.tagline}</span>}
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .dish-list { gap: 1rem; }
+  .dish-list li { padding-bottom: 1rem; border-bottom: 1px solid var(--rule); gap: 0.2rem; }
+  .dish-list a { font-size: 1.25rem; }
+</style>
