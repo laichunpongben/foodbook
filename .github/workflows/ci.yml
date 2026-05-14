@@ -30,6 +30,9 @@ jobs:
       - name: Secret-leak scan
         run: npm run check:leaks
 
+      - name: Tests
+        run: npm test
+
       - name: Build
         run: npm run build
 
