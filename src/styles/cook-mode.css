@@ -13,6 +13,13 @@
   --rule: rgba(26, 26, 24, 0.12);
 }
 
+/* Cook mode focus ring — ink against parchment for high contrast. */
+:root[data-mode="cook"] :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 :root[data-mode="cook"] body {
   font-size: 20px;
   line-height: 1.55;
