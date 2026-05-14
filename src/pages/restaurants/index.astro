@@ -1,0 +1,51 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const restaurants = publicOnly(await getCollection('restaurants')).sort((a, b) =>
+  a.data.name.localeCompare(b.data.name),
+);
+
+// Pre-sorted by name above; Map preserves insertion order, so each
+// city group inherits alphabetical order without a second sort.
+const byCity = new Map<string, typeof restaurants>();
+for (const r of restaurants) {
+  const list = byCity.get(r.data.city) ?? [];
+  list.push(r);
+  byCity.set(r.data.city, list);
+}
+const cities = [...byCity.entries()].sort(([a], [b]) => a.localeCompare(b));
+---
+
+<BaseLayout title="Restaurants" description={`${restaurants.length} restaurants in the archive.`}>
+  <section class="container index-page">
+    <p class="eyebrow">Eat</p>
+    <h1>Restaurants</h1>
+    <p class="lead">
+      {restaurants.length} restaurants — visited and discovered. Each one with at least one
+      dish worth tracing. See also: <a href="/world/">the map</a>.
+    </p>
+
+    {cities.map(([city, list]) => (
+      <div class="index-group">
+        <h2>{city}</h2>
+        <ul class="index-list">
+          {list.map((r) => (
+            <li>
+              <a href={`/restaurants/${r.id.replace(/^restaurants\//, '')}/`}>{r.data.name}</a>
+              <span class="meta">
+                {[r.data.cuisine, r.data.priceBand].filter(Boolean).join(' · ')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .index-list { gap: 0.6rem; margin-top: 0.8rem; }
+  .index-list a { font-size: 1.1rem; }
+</style>

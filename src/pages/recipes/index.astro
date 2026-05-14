@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const recipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+---
+
+<BaseLayout title="Recipes" description={`${recipes.length} recipes in the archive.`}>
+  <section class="container index-page">
+    <p class="eyebrow">Cook</p>
+    <h1>Recipes</h1>
+    <p class="lead">
+      {recipes.length} cookable recipes — yields, timing, and ingredient provenance.
+      Each opens in <em>cook mode</em> for kitchen use.
+    </p>
+
+    <ul class="index-list divided">
+      {recipes.map((r) => (
+        <li>
+          <a href={`/recipes/${r.id.replace(/^recipes\//, '')}/`}>{r.data.title}</a>
+          <span class="meta">
+            {[r.data.yield, r.data.timeCook].filter(Boolean).join(' · ')}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .divided li { padding-bottom: 0.8rem; border-bottom: 1px solid var(--rule); }
+</style>

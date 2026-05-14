@@ -259,6 +259,39 @@ footer.site-footer {
   font-size: 0.88rem;
 }
 
+/* Collection index pages — /dishes, /farms, /recipes, /restaurants, /garden, /meals.
+ * Per-page overrides (e.g. font-size, gap, dividers) sit in the page's own <style> block. */
+.index-page { padding: 4rem 0 6rem; max-width: 720px; }
+.index-page .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+.index-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.index-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.index-list a {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+.index-list a:hover { color: var(--paprika); }
+.index-list .meta { color: var(--ink-mute); font-size: 0.88rem; }
+.index-list .tagline { color: var(--ink-mute); font-size: 0.92rem; }
+.index-page .index-group { margin-bottom: 2.5rem; }
+.index-page .index-group > h2 {
+  font-size: 1.1rem;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     transition-duration: 0.001ms !important;

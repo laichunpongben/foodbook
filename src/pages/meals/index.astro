@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const meals = publicOnly(await getCollection('meals')).sort((a, b) =>
+  b.data.date.localeCompare(a.data.date),
+);
+---
+
+<BaseLayout title="Meals" description={`${meals.length} meal events logged.`}>
+  <section class="container index-page">
+    <p class="eyebrow">Eat</p>
+    <h1>Meals</h1>
+    <p class="lead">
+      {meals.length} {meals.length === 1 ? 'meal' : 'meals'} logged — the moments where the lifecycle ends.
+    </p>
+
+    <ul class="index-list divided">
+      {meals.map((m) => (
+        <li>
+          <a href={`/meals/${m.id.replace(/^meals\//, '')}/`}>{m.data.title}</a>
+          <span class="meta">
+            {m.data.date}
+            {m.data.occasion && <> · {m.data.occasion}</>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .divided li { padding-bottom: 0.8rem; border-bottom: 1px solid var(--rule); }
+</style>

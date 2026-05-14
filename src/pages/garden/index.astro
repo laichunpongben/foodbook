@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const entries = publicOnly(await getCollection('garden')).sort((a, b) =>
+  b.data.planted.localeCompare(a.data.planted),
+);
+---
+
+<BaseLayout title="Garden" description={`${entries.length} garden beds tracked.`}>
+  <section class="container index-page">
+    <p class="eyebrow">Grow</p>
+    <h1>Garden</h1>
+    <p class="lead">
+      {entries.length} {entries.length === 1 ? 'bed' : 'beds'} tracked — what grew where, when it was planted, when it was harvested.
+    </p>
+
+    <ul class="index-list divided">
+      {entries.map((g) => (
+        <li>
+          <a href={`/garden/${g.id.replace(/^garden\//, '')}/`}>{g.data.plant}</a>
+          <span class="meta">
+            {g.data.bed} · planted {g.data.planted}
+            {g.data.harvested && <> · harvested {g.data.harvested}</>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .divided li { padding-bottom: 0.8rem; border-bottom: 1px solid var(--rule); }
+</style>
