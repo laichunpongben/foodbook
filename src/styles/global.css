@@ -76,6 +76,38 @@ p, li { max-width: var(--measure); }
   padding: 0 var(--gutter);
 }
 
+/* Skip-to-main-content link. Visually hidden until keyboard focus. */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 8px;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  background: var(--paprika);
+  color: var(--bg);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 8px;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Keyboard focus indicator. UA default has poor contrast on the dark
+ * background; this is the WCAG 2.4.7 / 1.4.11 fix. */
+:focus-visible {
+  outline: 2px solid var(--paprika);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+/* Don't suppress focus styles for everyone — only mouse users want them off. */
+:focus:not(:focus-visible) { outline: none; }
+
+main:focus { outline: none; }
+
 .site-header {
   position: sticky;
   top: 0;
@@ -95,20 +127,86 @@ p, li { max-width: var(--measure); }
   letter-spacing: -0.005em;
   text-decoration: none;
   color: var(--ink);
+  padding: 0.5rem 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .site-header nav {
   display: flex;
   gap: 1.5rem;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
 }
 
 .site-header nav a {
   text-decoration: none;
   color: var(--ink-soft);
+  padding: 0.5rem 0.25rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .site-header nav a:hover { color: var(--paprika); }
+.site-header nav a[aria-current="page"] {
+  color: var(--paprika);
+  font-weight: 600;
+}
+
+/* Hamburger toggle (desktop hidden; appears under 640px). */
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: 0;
+  padding: 0.5rem;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+.nav-toggle__bar {
+  width: 22px;
+  height: 2px;
+  background: var(--ink);
+  display: block;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(2) {
+  opacity: 0;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 640px) {
+  .site-header { gap: 1rem; }
+  .nav-toggle { display: inline-flex; }
+  .site-header nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem var(--gutter) 1rem;
+    background: rgba(10, 13, 17, 0.98);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--rule);
+  }
+  .site-header nav[data-open="false"] { display: none; }
+  .site-header nav a {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .site-header nav a:last-child { border-bottom: 0; }
+}
 
 /* Lifecycle stepper: four dots — source / grow / cook / eat. */
 .lifecycle-stepper {
