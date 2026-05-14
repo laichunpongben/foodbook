@@ -51,7 +51,12 @@ const breadcrumbLd = breadcrumb(
 
 <BaseLayout
   title={d.name}
-  description={`${d.cuisine ?? 'Restaurant'} in ${d.city}`}
+  description={[
+    d.cuisine ?? 'Restaurant',
+    `in ${d.city}${d.country ? `, ${d.country}` : ''}`,
+    d.priceBand && `price band ${d.priceBand}`,
+    discovered?.signature && `signature: ${discovered.signature}`,
+  ].filter(Boolean).join(' — ').slice(0, 155)}
   unlisted={d.visibility === 'unlisted'}
   hero={d.hero}
   heroUrl={d.heroUrl}
