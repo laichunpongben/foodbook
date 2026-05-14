@@ -1,0 +1,61 @@
+---
+/**
+ * WikiImage — responsive <img> for Wikimedia Commons URLs.
+ *
+ * Commons exposes `?width=N` on Special:FilePath as the public thumbnail
+ * contract. For non-Wikimedia URLs the renderer emits a single <img>
+ * without srcset — the caller picks the right pre-sized URL.
+ */
+
+interface Props {
+  url: string;
+  alt: string;
+  /** Set `eager` on the LCP image (hero/entity-banner); default `lazy`. */
+  loading?: 'eager' | 'lazy';
+  /** Use `high` only on the LCP image; default `auto`. */
+  fetchpriority?: 'high' | 'auto';
+  /** Display-size hint for srcset; ignored when srcset is absent. */
+  sizes?: string;
+  class?: string;
+  style?: string;
+}
+
+const {
+  url,
+  alt,
+  loading = 'lazy',
+  fetchpriority = 'auto',
+  sizes = '100vw',
+  class: className,
+  style,
+} = Astro.props;
+
+let srcset: string | undefined;
+let baseSrc = url;
+try {
+  const parsed = new URL(url);
+  if (parsed.hostname === 'commons.wikimedia.org' && parsed.pathname.startsWith('/wiki/Special:FilePath/')) {
+    parsed.searchParams.delete('width');
+    const base = parsed.toString();
+    const sep = base.includes('?') ? '&' : '?';
+    const at = (w: number) => `${base}${sep}width=${w} ${w}w`;
+    srcset = [480, 768, 1280, 1920].map(at).join(', ');
+    // Mobile-first base so phones don't ship the 1920w fallback if srcset is ignored.
+    baseSrc = `${base}${sep}width=768`;
+  }
+} catch {
+  // Relative URL or unparseable — fall through to a plain <img src={url}>.
+}
+---
+
+<img
+  src={baseSrc}
+  srcset={srcset}
+  sizes={srcset ? sizes : undefined}
+  alt={alt}
+  loading={loading}
+  decoding="async"
+  fetchpriority={fetchpriority}
+  class={className}
+  style={style}
+/>
