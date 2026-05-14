@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import AppearsIn from '~/components/AppearsIn.astro';
+import EntityBanner from '~/components/EntityBanner.astro';
 
 export async function getStaticPaths() {
   const meals = await getCollection('meals');
@@ -26,11 +27,7 @@ const d = meal.data;
   heroUrl={d.heroUrl}
   ogType="article"
 >
-  {d.heroUrl && (
-    <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>
-      <div class="banner-scrim"></div>
-    </div>
-  )}
+  {d.heroUrl && <EntityBanner url={d.heroUrl} alt={`${d.title} — meal on ${d.date}`} />}
   <article class="entity container">
     <a class="back" href="/">← Dishes</a>
 
@@ -57,19 +54,6 @@ const d = meal.data;
 </BaseLayout>
 
 <style>
-  .entity-banner {
-    position: relative;
-    height: 38vh;
-    min-height: 240px;
-    background-size: cover;
-    background-position: center;
-    background-color: #0a0d11;
-  }
-  .banner-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(10,13,17,0.25) 0%, rgba(10,13,17,0.9) 100%);
-  }
   .entity { padding: 3rem 0 6rem; max-width: 760px; }
   .back {
     display: inline-block;
