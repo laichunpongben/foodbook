@@ -79,10 +79,16 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
   </section>
 
   <section class="container cook-stage">
-    <div id="cook-step-container" data-active="0" data-total={recipe.data.steps.length}>
+    <div
+      id="cook-step-container"
+      data-active="0"
+      data-total={recipe.data.steps.length}
+      aria-live="polite"
+      aria-atomic="false"
+    >
       {recipe.data.steps.map((step, i) => (
-        <div class="cook-step" data-step={i} hidden={i !== 0}>
-          <div class="ord">Step {i + 1} of {recipe.data.steps.length}</div>
+        <div class="cook-step" data-step={i} role="group" aria-labelledby={`cook-ord-${i}`} hidden={i !== 0}>
+          <h2 class="ord" id={`cook-ord-${i}`} tabindex="-1">Step {i + 1} of {recipe.data.steps.length}</h2>
           <p>{step.text}</p>
           {step.durationSeconds && (
             <div class="cook-timer" data-duration={step.durationSeconds}>
@@ -100,8 +106,8 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
       ))}
     </div>
 
-    <div class="cook-controls">
-      <button id="cook-prev" type="button">← Prev</button>
+    <div class="cook-controls" role="group" aria-label="Step navigation">
+      <button id="cook-prev" type="button" aria-disabled="true">← Prev</button>
       <button id="cook-next" type="button" class="primary">Next →</button>
     </div>
 
@@ -133,10 +139,20 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
   const progressBar = document.getElementById('cook-progress-bar');
   let active = 0;
 
+  const prevBtn = document.getElementById('cook-prev') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('cook-next') as HTMLButtonElement | null;
+
   function paintProgress(): void {
     if (!progressBar) return;
     const pct = total > 1 ? (active / (total - 1)) * 100 : 100;
     progressBar.style.width = `${pct}%`;
+  }
+
+  function paintBoundaryState(): void {
+    // aria-disabled (not [disabled]) so the button stays focusable for SR users
+    // who want to confirm they are at the boundary.
+    prevBtn?.setAttribute('aria-disabled', String(active === 0));
+    nextBtn?.setAttribute('aria-disabled', String(active >= total - 1));
   }
 
   function go(to: number): void {
@@ -146,14 +162,24 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
     steps[active].hidden = false;
     if (container) container.dataset.active = String(active);
     paintProgress();
-    // Drop focus on a nav button so screen-readers re-announce the new step.
-    steps[active].focus?.();
+    paintBoundaryState();
+    // Move focus to the step heading so SRs announce it and keyboard users
+    // get a clear focus location. tabindex="-1" makes the heading focusable.
+    const heading = steps[active].querySelector<HTMLElement>('.ord');
+    heading?.focus();
   }
 
   paintProgress();
+  paintBoundaryState();
 
-  document.getElementById('cook-next')?.addEventListener('click', () => go(active + 1));
-  document.getElementById('cook-prev')?.addEventListener('click', () => go(active - 1));
+  prevBtn?.addEventListener('click', () => {
+    if (prevBtn.getAttribute('aria-disabled') === 'true') return;
+    go(active - 1);
+  });
+  nextBtn?.addEventListener('click', () => {
+    if (nextBtn.getAttribute('aria-disabled') === 'true') return;
+    go(active + 1);
+  });
 
   document.addEventListener('keydown', (e) => {
     const target = e.target as HTMLElement | null;
