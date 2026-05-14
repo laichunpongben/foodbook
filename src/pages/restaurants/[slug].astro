@@ -26,6 +26,9 @@ const discovered = d.discoveredVia;
   title={d.name}
   description={`${d.cuisine ?? 'Restaurant'} in ${d.city}`}
   unlisted={d.visibility === 'unlisted'}
+  hero={d.hero}
+  heroUrl={d.heroUrl}
+  ogType="article"
 >
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>

@@ -45,6 +45,9 @@ for (const ing of recipe.data.ingredients) {
   title={recipe.data.title}
   description={`${recipe.data.yield}${recipe.data.timeCook ? ` · ${recipe.data.timeCook}` : ''}`}
   unlisted={recipe.data.visibility === 'unlisted'}
+  hero={recipe.data.hero}
+  heroUrl={recipe.data.heroUrl}
+  ogType="article"
 >
   <section class="container" style="padding: 4rem 0;">
     <p class="eyebrow">Recipe</p>

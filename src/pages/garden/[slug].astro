@@ -23,6 +23,8 @@ const d = bed.data;
   title={`${d.plant} · ${d.bed}`}
   description={`Garden log: ${d.plant}`}
   unlisted={d.visibility === 'unlisted'}
+  heroUrl={d.heroUrl}
+  ogType="article"
 >
   {d.heroUrl && (
     <div class="entity-banner" style={`background-image: url('${d.heroUrl}')`}>
