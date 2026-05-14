@@ -28,16 +28,21 @@ const {
   heroUrl,
   ogType = 'website',
 } = Astro.props;
-const siteOrigin = Astro.site ?? 'https://foodbook.example';
-const canonical = new URL(Astro.url.pathname, siteOrigin).toString();
+// astro.config.mjs sets `site`; if a future reorganization drops it we want
+// the build to fail loudly rather than silently emit a wrong-domain canonical.
+if (!Astro.site) {
+  throw new Error('Astro.site must be set in astro.config.mjs');
+}
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const ogImage =
   heroUrl ??
-  (hero ? new URL(`${hero}-1280.jpg`, siteOrigin).toString() : null) ??
-  new URL('/og-default.svg', siteOrigin).toString();
+  (hero ? new URL(`${hero}-1280.jpg`, Astro.site).toString() : null) ??
+  new URL('/og-default.svg', Astro.site).toString();
 // Doubled-brand title bug: when title equals the site name (or is empty),
 // render a descriptive title instead of "Foodbook · Foodbook".
 const isBrandTitle = !title || title === SITE_NAME;
 const fullTitle = isBrandTitle ? `${SITE_NAME} — ${SITE_TAGLINE}` : `${title} · ${SITE_NAME}`;
+const currentYear = new Date().getFullYear();
 ---
 
 <!doctype html>
@@ -50,6 +55,7 @@ const fullTitle = isBrandTitle ? `${SITE_NAME} — ${SITE_TAGLINE}` : `${title} 
     <title>{fullTitle}</title>
     {description && <meta name="description" content={description} />}
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title="Foodbook" href="/rss.xml" />
     {unlisted && <meta name="robots" content="noindex,nofollow" />}
 
     <!-- Fonts: async load via preconnect + font-display:swap declared upstream. -->
@@ -108,6 +114,9 @@ const fullTitle = isBrandTitle ? `${SITE_NAME} — ${SITE_TAGLINE}` : `${title} 
         <p>
           Foodbook — a static-site archive of the food lifecycle. Authored prose, AI-assisted
           authoring (<a href="/about#ai">how</a>).
+        </p>
+        <p class="footer-meta">
+          &copy; {currentYear} Foodbook · <a href="/rss.xml">RSS</a> · <a href="/sitemap-index.xml">Sitemap</a>
         </p>
       </div>
     </footer>
