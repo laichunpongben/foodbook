@@ -1,0 +1,306 @@
+---
+/**
+ * SeasonalWheel — 12-month ring of in-season products.
+ *
+ *                          ·· Jan ··
+ *                    Dec  ╱        ╲  Feb
+ *                       ╱  ╭──────╮  ╲
+ *                  Nov │   │ MAY  │   │ Mar
+ *                       ╲  ╰──────╯  ╱
+ *                    Oct  ╲        ╱  Apr
+ *                          ··Jun··
+ *
+ *   - One concentric arc per product (widest windows on the outside).
+ *   - Products in season *now* are filled paprika; others olive at
+ *     low opacity.
+ *   - The current month's wedge glows behind the arcs.
+ *   - Month names sit outside the ring; the current month's label
+ *     is paprika.
+ *   - Below the wheel: a legend of products → farms, in arc order.
+ *
+ * Pure server-rendered SVG (no client JS). d3-shape generates the
+ * arc paths in the frontmatter.
+ */
+import { arc as d3Arc } from 'd3-shape';
+import {
+  collectProducts,
+  inSeason,
+  monthSpan,
+  windowAngles,
+  polarToCartesian,
+  MONTH_NAMES,
+  MONTH_NAMES_LONG,
+  TAU,
+  type Farm,
+} from '~/lib/seasons';
+
+interface Props {
+  farms: readonly Farm[];
+  /** Current month, 1-12. Passed in (not read from `new Date()`) so the
+   *  page can override for testing / hemisphere flips later. */
+  currentMonth: number;
+}
+
+const { farms, currentMonth } = Astro.props;
+const products = collectProducts(farms);
+
+/* ---------- geometry ---------- */
+
+const SIZE = 600;
+const CX = SIZE / 2;
+const CY = SIZE / 2;
+const OUTER_R = 260;
+const INNER_R = 110;           // inside this is the center disc
+const LABEL_R = 285;           // month names sit out here
+
+const ringCount = Math.max(products.length, 1);
+const ringGap = 3;
+const ringWidth = (OUTER_R - INNER_R) / ringCount;
+
+/* ---------- arc generators ---------- */
+
+interface ArcDatum { start: number; end: number }
+
+function ringArc(ringIndex: number) {
+  const r1 = INNER_R + ringIndex * ringWidth;
+  const r2 = r1 + ringWidth - ringGap;
+  return d3Arc<ArcDatum>()
+    .innerRadius(r1)
+    .outerRadius(r2)
+    .startAngle((d) => d.start)
+    .endAngle((d) => d.end)
+    .padAngle(0.004);
+}
+
+const monthWedge = d3Arc<ArcDatum>()
+  .innerRadius(INNER_R - 4)
+  .outerRadius(OUTER_R + 12)
+  .startAngle((d) => d.start)
+  .endAngle((d) => d.end);
+
+/* ---------- product rings ---------- */
+
+interface RenderedRing {
+  product: string;
+  farms: { name: string; slug: string }[];
+  from: number;
+  to: number;
+  active: boolean;
+  path: string;
+  /** Label position — midpoint of the arc, mid-radius. */
+  label: { x: number; y: number; show: boolean };
+}
+
+const rings: RenderedRing[] = products.map((p, i) => {
+  const [start, end] = windowAngles(p.from, p.to);
+  const path = ringArc(i)({ start, end }) ?? '';
+  const mid = (start + end) / 2;
+  const midR = INNER_R + i * ringWidth + (ringWidth - ringGap) / 2;
+  // Local coords — labels render inside the centre-translated <g>.
+  const { x, y } = polarToCartesian(0, 0, midR, mid);
+  return {
+    product: p.product,
+    farms: p.farms,
+    from: p.from,
+    to: p.to,
+    active: inSeason(p.from, p.to, currentMonth),
+    path,
+    label: { x, y, show: monthSpan(p.from, p.to) >= 2 },
+  };
+});
+
+/* ---------- current month highlight ---------- */
+
+const [monthStart, monthEnd] = windowAngles(currentMonth, currentMonth);
+const monthWedgePath = monthWedge({ start: monthStart, end: monthEnd }) ?? '';
+
+/* ---------- spokes + month labels ---------- */
+
+const spokes = Array.from({ length: 12 }, (_, i) => {
+  const a = (i / 12) * TAU;
+  const inner = polarToCartesian(CX, CY, INNER_R, a);
+  const outer = polarToCartesian(CX, CY, OUTER_R, a);
+  return { x1: inner.x, y1: inner.y, x2: outer.x, y2: outer.y };
+});
+
+const monthLabels = MONTH_NAMES.map((name, i) => {
+  const a = ((i + 0.5) / 12) * TAU;
+  const pt = polarToCartesian(CX, CY, LABEL_R, a);
+  return { name, x: pt.x, y: pt.y, isCurrent: i + 1 === currentMonth };
+});
+
+const currentMonthLong = MONTH_NAMES_LONG[currentMonth - 1];
+const yearLabel = new Date().getFullYear();
+---
+
+<figure class="seasonal-wheel" role="img" aria-label={`Seasonal wheel for ${currentMonthLong}`}>
+  {products.length === 0 ? (
+    <p class="empty">No seasonal windows authored yet — add a <code>seasonalWindow</code> to a farm entry.</p>
+  ) : (
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g transform={`translate(${CX} ${CY})`}>
+        {/* outer guide ring */}
+        <circle r={OUTER_R} fill="none" stroke="var(--rule)" stroke-width="1" />
+        <circle r={INNER_R} fill="none" stroke="var(--rule)" stroke-width="1" />
+
+        {/* current-month wedge — sits behind the arcs */}
+        <path d={monthWedgePath} class="month-wedge" />
+      </g>
+
+      {/* spokes — drawn in document coords (the helper bakes in the centre) */}
+      <g class="spokes">
+        {spokes.map((s) => (
+          <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="var(--rule)" stroke-width="1" />
+        ))}
+      </g>
+
+      {/* product arcs */}
+      <g transform={`translate(${CX} ${CY})`}>
+        {rings.map((r) => (
+          <path
+            d={r.path}
+            class={`arc${r.active ? ' arc--active' : ''}`}
+          >
+            <title>{r.product} · {MONTH_NAMES_LONG[r.from - 1]}–{MONTH_NAMES_LONG[r.to - 1]}</title>
+          </path>
+        ))}
+
+        {/* product labels at arc midpoints */}
+        {rings.filter((r) => r.label.show).map((r) => (
+          <text
+            x={r.label.x}
+            y={r.label.y}
+            class={`arc-label${r.active ? ' arc-label--active' : ''}`}
+            text-anchor="middle"
+            dominant-baseline="middle"
+          >
+            {r.product}
+          </text>
+        ))}
+      </g>
+
+      {/* month labels (outer) */}
+      <g class="month-labels">
+        {monthLabels.map((m) => (
+          <text
+            x={m.x}
+            y={m.y}
+            class={`month${m.isCurrent ? ' month--current' : ''}`}
+            text-anchor="middle"
+            dominant-baseline="middle"
+          >
+            {m.name}
+          </text>
+        ))}
+      </g>
+
+      {/* centre disc */}
+      <g transform={`translate(${CX} ${CY})`}>
+        <circle r={INNER_R - 10} fill="var(--bg)" stroke="var(--rule)" stroke-width="1" />
+        <text class="centre-eyebrow" text-anchor="middle" y="-22">In season</text>
+        <text class="centre-month" text-anchor="middle" y="14">{currentMonthLong}</text>
+        <text class="centre-year" text-anchor="middle" y="46">{yearLabel}</text>
+      </g>
+    </svg>
+  )}
+</figure>
+
+<style>
+  .seasonal-wheel {
+    margin: 3rem auto;
+    max-width: 600px;
+    padding: 0;
+  }
+
+  .seasonal-wheel svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .seasonal-wheel .empty {
+    color: var(--ink-mute);
+    text-align: center;
+    padding: 4rem 0;
+  }
+
+  /* arcs */
+  .arc {
+    fill: var(--olive);
+    fill-opacity: 0.32;
+    stroke: var(--olive);
+    stroke-opacity: 0.5;
+    stroke-width: 0.5;
+    transition: fill-opacity 0.3s ease;
+  }
+
+  .arc--active {
+    fill: var(--paprika);
+    fill-opacity: 0.85;
+    stroke: var(--paprika);
+    stroke-opacity: 1;
+  }
+
+  .arc-label {
+    fill: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    paint-order: stroke;
+    stroke: var(--bg);
+    stroke-width: 3;
+    stroke-linejoin: round;
+  }
+
+  .arc-label--active {
+    fill: var(--ink);
+    font-weight: 500;
+  }
+
+  /* month wedge — soft glow behind arcs */
+  .month-wedge {
+    fill: var(--paprika);
+    fill-opacity: 0.07;
+    stroke: var(--paprika);
+    stroke-opacity: 0.25;
+    stroke-width: 1;
+  }
+
+  /* month labels (outer ring) */
+  .month {
+    fill: var(--ink-mute);
+    font-family: var(--font-body);
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .month--current {
+    fill: var(--paprika);
+  }
+
+  /* centre disc */
+  .centre-eyebrow {
+    fill: var(--ink-mute);
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .centre-month {
+    fill: var(--ink);
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 500;
+  }
+
+  .centre-year {
+    fill: var(--ink-mute);
+    font-family: var(--font-body);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+  }
+</style>
