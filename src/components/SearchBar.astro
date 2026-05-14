@@ -1,0 +1,247 @@
+---
+/**
+ * SearchBar — Pagefind-backed site search.
+ *
+ * Pagefind builds a static index at the end of `astro build`. UI hydrates
+ * client-side; queries hit fetch() against the index. Custom widget because
+ * @pagefind/default-ui adds ~20 KB and ships a light palette.
+ */
+---
+
+<div class="search-bar" role="search" aria-label="Site search">
+  <label class="visually-hidden" for="site-search-input">Search Foodbook</label>
+  <input
+    id="site-search-input"
+    type="search"
+    name="q"
+    placeholder="Search dishes, recipes, farms, restaurants…"
+    autocomplete="off"
+  />
+  <button id="site-search-submit" type="button" class="search-bar__submit" aria-label="Search">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </button>
+  <p id="site-search-status" class="visually-hidden" aria-live="polite"></p>
+  <div id="site-search-results" class="search-bar__results" hidden></div>
+</div>
+
+<script>
+  type PagefindResult = {
+    id: string;
+    data: () => Promise<{
+      url: string;
+      meta?: { title?: string; image?: string };
+      excerpt: string;
+    }>;
+  };
+  type Pagefind = {
+    search: (q: string) => Promise<{ results: PagefindResult[] }>;
+  };
+
+  let pagefindPromise: Promise<Pagefind> | null = null;
+  function loadPagefind(): Promise<Pagefind> {
+    if (pagefindPromise) return pagefindPromise;
+    // String-hidden import bypasses Vite's static analysis — /pagefind/* only
+    // exists in dist/. Requires CSP 'unsafe-eval' (see public/_headers).
+    pagefindPromise = (new Function(
+      'return import("/pagefind/pagefind.js");',
+    )() as Promise<Pagefind>).catch((err: unknown) => {
+      // Surface the failure to retry on next focus; otherwise a single
+      // transient error wedges the widget for the whole session.
+      pagefindPromise = null;
+      throw err;
+    });
+    return pagefindPromise;
+  }
+
+  const input = document.getElementById('site-search-input') as HTMLInputElement | null;
+  const results = document.getElementById('site-search-results') as HTMLDivElement | null;
+  const status = document.getElementById('site-search-status') as HTMLElement | null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  // Stale-response guard: when typing pace straddles the debounce, the slower
+  // doSearch can overwrite newer results. The latest request's id wins.
+  let requestSeq = 0;
+
+  function renderHits(items: Array<{ url: string; meta?: { title?: string }; excerpt: string }>): void {
+    if (!results) return;
+    results.replaceChildren();
+    for (const it of items) {
+      const a = document.createElement('a');
+      a.className = 'search-bar__hit';
+      a.href = it.url;
+      const strong = document.createElement('strong');
+      strong.textContent = it.meta?.title ?? it.url;
+      const span = document.createElement('span');
+      span.className = 'search-bar__excerpt';
+      // Pagefind's excerpt contains <mark> tags for highlights; that is the
+      // one trusted-HTML path. Title and URL go through textContent above.
+      span.innerHTML = it.excerpt;
+      a.append(strong, span);
+      results.append(a);
+    }
+  }
+
+  function renderEmpty(text: string): void {
+    if (!results) return;
+    const p = document.createElement('p');
+    p.className = 'search-bar__empty';
+    p.textContent = text;
+    results.replaceChildren(p);
+  }
+
+  function announce(text: string): void {
+    if (status) status.textContent = text;
+  }
+
+  async function doSearch(q: string): Promise<void> {
+    if (!results) return;
+    const seq = ++requestSeq;
+    if (q.trim().length < 2) {
+      results.hidden = true;
+      results.replaceChildren();
+      announce('');
+      return;
+    }
+    try {
+      const pf = await loadPagefind();
+      const search = await pf.search(q);
+      const top = search.results.slice(0, 6);
+      const items = await Promise.all(top.map((r) => r.data()));
+      if (seq !== requestSeq) return;
+      results.hidden = false;
+      if (items.length === 0) {
+        renderEmpty('No matches.');
+        announce(`No matches for ${q}.`);
+        return;
+      }
+      renderHits(items);
+      announce(`${items.length} result${items.length === 1 ? '' : 's'} for ${q}.`);
+    } catch (err) {
+      if (seq !== requestSeq) return;
+      console.warn('Pagefind search failed', err);
+      results.hidden = false;
+      renderEmpty('Search index not available.');
+      announce('Search index not available.');
+    }
+  }
+
+  // Prefetch the Pagefind module on first focus so typing latency is near-zero.
+  input?.addEventListener('focus', () => { void loadPagefind(); }, { once: true });
+
+  input?.addEventListener('input', () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => doSearch(input.value), 150);
+  });
+
+  // Enter / button click: cancel any pending debounce and search immediately.
+  function flushSearch(): void {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (input) void doSearch(input.value);
+  }
+  input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); flushSearch(); } });
+  document.getElementById('site-search-submit')?.addEventListener('click', flushSearch);
+</script>
+
+<style>
+  .search-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 38rem;
+    margin: 1.5rem 0 0;
+    padding: 0.4rem 0.6rem;
+    background: rgba(17, 22, 28, 0.85);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+  }
+  .search-bar input {
+    flex: 1 1 auto;
+    background: transparent;
+    border: 0;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: 0.4rem 0.6rem;
+    outline: none;
+    min-width: 0;
+  }
+  .search-bar input::placeholder { color: var(--ink-mute); }
+  .search-bar__submit {
+    appearance: none;
+    background: var(--paprika);
+    border: 0;
+    color: var(--bg);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .search-bar__submit:hover { filter: brightness(1.1); }
+
+  .search-bar__results {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: #11161c;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.55);
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .search-bar__hit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .search-bar__hit:hover {
+    background: rgba(210, 84, 59, 0.12);
+    color: var(--ink);
+  }
+  .search-bar__hit strong {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.05rem;
+  }
+  .search-bar__excerpt {
+    font-size: 0.85rem;
+    color: var(--ink-mute);
+  }
+  .search-bar__excerpt :global(mark) {
+    background: rgba(210, 84, 59, 0.25);
+    color: var(--ink);
+    padding: 0 0.15rem;
+    border-radius: 2px;
+  }
+  .search-bar__empty {
+    color: var(--ink-mute);
+    font-size: 0.9rem;
+    padding: 0.6rem 0.8rem;
+    margin: 0;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

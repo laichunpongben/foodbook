@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import DishCard from '~/components/DishCard.astro';
+import SearchBar from '~/components/SearchBar.astro';
 import { publicOnly } from '~/lib/visibility';
 
 const allDishes = await getCollection('dishes');
@@ -33,6 +34,10 @@ const heroDish = dishes[0];
         Foodbook follows a dish (or an ingredient) through up to four lifecycle stages —
         the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
         the meal where it landed. Each entry weaves them together.
+      </p>
+      <SearchBar />
+      <p class="hero-cta">
+        <a href="/dishes/">Browse all dishes →</a>
       </p>
     </div>
   </section>
