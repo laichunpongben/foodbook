@@ -1,4 +1,20 @@
 ---
+/**
+ * /recipes/<slug>/cook — kitchen mode.
+ *
+ * Single-step focus. Light parchment theme (ADR-0003). What lives here
+ * that doesn't live on the editorial /recipes/<slug>/ page:
+ *
+ *   - A live, cancellable countdown timer per step that has a duration.
+ *   - Screen Wake Lock — tablets propped on the counter won't sleep
+ *     while the page is open.
+ *   - A peek panel listing all ingredients, grouped, opened on demand
+ *     because cook mode wants single-step focus.
+ *   - A linear progress bar across the top.
+ *   - Keyboard nav: ← / → / space / j / k.
+ *
+ * No client framework — vanilla DOM, scoped to this page.
+ */
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import '~/styles/cook-mode.css';
@@ -12,6 +28,31 @@ export async function getStaticPaths() {
 }
 
 const { recipe } = Astro.props;
+const slug = recipe.id.replace(/^recipes\//, '');
+
+/* ----- presentational helpers ----- */
+
+const totalTime = [recipe.data.timePrep, recipe.data.timeCook].filter(Boolean).join(' + ');
+
+type Ingredient = (typeof recipe.data.ingredients)[number];
+
+/** Group ingredients by their `group` field, preserving authored order
+ *  and keeping ungrouped items in a single nameless bucket at the top. */
+function groupIngredients(items: readonly Ingredient[]): Array<{ heading: string | null; items: Ingredient[] }> {
+  const groups: Array<{ heading: string | null; items: Ingredient[] }> = [];
+  for (const ing of items) {
+    const key = ing.group ?? null;
+    let g = groups.find((x) => x.heading === key);
+    if (!g) {
+      g = { heading: key, items: [] };
+      groups.push(g);
+    }
+    g.items.push(ing);
+  }
+  return groups;
+}
+
+const ingredientGroups = groupIngredients(recipe.data.ingredients);
 ---
 
 <BaseLayout
@@ -19,65 +60,186 @@ const { recipe } = Astro.props;
   cookMode={true}
   unlisted={recipe.data.visibility === 'unlisted'}
 >
-  <section class="container" style="padding: 3rem 0 8rem;">
-    <p class="eyebrow">Cook mode</p>
-    <h1>{recipe.data.title}</h1>
-    <p style="color: var(--ink-soft);">{recipe.data.yield}</p>
+  <section class="cook-band">
+    <div class="container">
+      <a class="cook-back" href={`/recipes/${slug}/`}>← Editorial view</a>
+      <h1 class="cook-recipe-title">{recipe.data.title}</h1>
+      <p class="cook-recipe-meta">
+        <span>{recipe.data.yield}</span>
+        {totalTime && <span class="dot">·</span>}
+        {totalTime && <span>{totalTime}</span>}
+      </p>
+      <div class="cook-progress" aria-label="Recipe progress">
+        <div class="cook-progress__bar" id="cook-progress-bar" style="width: 0%" />
+      </div>
+    </div>
+  </section>
 
-    <div id="cook-step-container" data-active="0">
+  <section class="container cook-stage">
+    <div id="cook-step-container" data-active="0" data-total={recipe.data.steps.length}>
       {recipe.data.steps.map((step, i) => (
-        <div class="cook-step" data-step={i} style={i === 0 ? '' : 'display: none;'}>
+        <div class="cook-step" data-step={i} hidden={i !== 0}>
           <div class="ord">Step {i + 1} of {recipe.data.steps.length}</div>
           <p>{step.text}</p>
           {step.durationSeconds && (
-            <button class="timer-btn" data-duration={step.durationSeconds} style="margin-top: 1rem;">
-              ⏱ Start {Math.round(step.durationSeconds / 60)} min timer
-            </button>
+            <div class="cook-timer" data-duration={step.durationSeconds}>
+              <button class="timer-btn" type="button">
+                ⏱ Start {Math.round(step.durationSeconds / 60)} min timer
+              </button>
+              <div class="timer-running" hidden>
+                <span class="timer-display" aria-live="polite">--:--</span>
+                <button class="timer-cancel" type="button">Cancel</button>
+              </div>
+              <div class="timer-done" hidden>⏱ Done</div>
+            </div>
           )}
         </div>
       ))}
     </div>
 
     <div class="cook-controls">
-      <button id="cook-prev">← Prev</button>
-      <button id="cook-next" class="primary">Next →</button>
+      <button id="cook-prev" type="button">← Prev</button>
+      <button id="cook-next" type="button" class="primary">Next →</button>
     </div>
 
-    <button id="cook-mic" class="cook-mic" aria-label="Voice coach (rate-limited)" title="Voice coach">🎙</button>
+    <details class="cook-ingredients">
+      <summary>
+        <span>Ingredients</span>
+        <span class="cook-ingredients__count">{recipe.data.ingredients.length}</span>
+      </summary>
+      <div class="cook-ingredients__body">
+        {ingredientGroups.map((g) => (
+          <div class="cook-ingredients__group">
+            {g.heading && <p class="cook-ingredients__heading">{g.heading}</p>}
+            <ul>
+              {g.items.map((ing) => <li>{ing.text}</li>)}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
   </section>
 </BaseLayout>
 
 <script>
-  // Step navigation. Real coach hooks up via /api/coach (see ADR-0004).
+  /* ----- step navigation + progress ----- */
+
   const container = document.getElementById('cook-step-container');
-  const steps = container?.querySelectorAll<HTMLElement>('.cook-step') ?? [];
+  const steps = Array.from(container?.querySelectorAll<HTMLElement>('.cook-step') ?? []);
+  const total = Number(container?.dataset.total ?? steps.length);
+  const progressBar = document.getElementById('cook-progress-bar');
   let active = 0;
 
-  function go(to: number) {
-    if (to < 0 || to >= steps.length) return;
-    steps[active].style.display = 'none';
-    active = to;
-    steps[active].style.display = '';
-    container!.dataset.active = String(active);
+  function paintProgress(): void {
+    if (!progressBar) return;
+    const pct = total > 1 ? (active / (total - 1)) * 100 : 100;
+    progressBar.style.width = `${pct}%`;
   }
+
+  function go(to: number): void {
+    if (to < 0 || to >= steps.length) return;
+    steps[active].hidden = true;
+    active = to;
+    steps[active].hidden = false;
+    if (container) container.dataset.active = String(active);
+    paintProgress();
+    // Drop focus on a nav button so screen-readers re-announce the new step.
+    steps[active].focus?.();
+  }
+
+  paintProgress();
 
   document.getElementById('cook-next')?.addEventListener('click', () => go(active + 1));
   document.getElementById('cook-prev')?.addEventListener('click', () => go(active - 1));
 
   document.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
     if (e.key === 'ArrowRight' || e.key === 'j' || e.key === ' ') { e.preventDefault(); go(active + 1); }
     if (e.key === 'ArrowLeft'  || e.key === 'k')                  { e.preventDefault(); go(active - 1); }
   });
 
-  document.querySelectorAll<HTMLButtonElement>('.timer-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const ms = Number(btn.dataset.duration) * 1000;
-      btn.disabled = true;
-      btn.textContent = '⏱ Running…';
-      setTimeout(() => {
-        btn.textContent = '⏱ Done';
-        try { new Audio('/timer-ping.mp3').play().catch(() => {}); } catch {}
-      }, ms);
+  /* ----- per-step countdown timers ----- */
+
+  function formatMMSS(secs: number): string {
+    const s = Math.max(0, Math.round(secs));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+  }
+
+  document.querySelectorAll<HTMLElement>('.cook-timer').forEach((wrap) => {
+    const duration = Number(wrap.dataset.duration);
+    const startBtn = wrap.querySelector<HTMLButtonElement>('.timer-btn');
+    const running = wrap.querySelector<HTMLElement>('.timer-running');
+    const display = wrap.querySelector<HTMLElement>('.timer-display');
+    const cancelBtn = wrap.querySelector<HTMLButtonElement>('.timer-cancel');
+    const done = wrap.querySelector<HTMLElement>('.timer-done');
+    if (!startBtn || !running || !display || !cancelBtn || !done) return;
+
+    let intervalId: number | null = null;
+    let endTs = 0;
+
+    function tick(): void {
+      const remaining = (endTs - Date.now()) / 1000;
+      if (remaining <= 0) {
+        stopInterval();
+        running!.hidden = true;
+        done!.hidden = false;
+        try { new Audio('/timer-ping.mp3').play().catch(() => {}); } catch { /* no-op */ }
+        return;
+      }
+      display!.textContent = formatMMSS(remaining);
+    }
+
+    function stopInterval(): void {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      endTs = Date.now() + duration * 1000;
+      startBtn.hidden = true;
+      done.hidden = true;
+      running.hidden = false;
+      tick();
+      intervalId = window.setInterval(tick, 250);
     });
+
+    cancelBtn.addEventListener('click', () => {
+      stopInterval();
+      running.hidden = true;
+      done.hidden = true;
+      startBtn.hidden = false;
+    });
+  });
+
+  /* ----- screen wake lock -----
+   * Keeps the tablet awake while cook mode is on screen. The Wake Lock
+   * API releases automatically when the tab is hidden, so we re-acquire
+   * on visibilitychange. Silent no-op where unsupported (older iOS).
+   */
+
+  type WakeLockLike = { release(): Promise<void>; addEventListener(t: string, cb: () => void): void };
+  let wakeLock: WakeLockLike | null = null;
+
+  async function requestWakeLock(): Promise<void> {
+    const nav = navigator as unknown as { wakeLock?: { request(type: 'screen'): Promise<WakeLockLike> } };
+    if (!nav.wakeLock) return;
+    try {
+      wakeLock = await nav.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch {
+      // Permission denied or page not visible — silent no-op.
+    }
+  }
+
+  requestWakeLock();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && wakeLock === null) {
+      void requestWakeLock();
+    }
   });
 </script>
