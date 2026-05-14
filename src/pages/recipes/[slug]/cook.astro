@@ -59,6 +59,9 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
   title={`Cook · ${recipe.data.title}`}
   cookMode={true}
   unlisted={recipe.data.visibility === 'unlisted'}
+  hero={recipe.data.hero}
+  heroUrl={recipe.data.heroUrl}
+  ogType="article"
 >
   <section class="cook-band">
     <div class="container">

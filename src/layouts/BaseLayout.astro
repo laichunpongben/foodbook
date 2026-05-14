@@ -8,10 +8,36 @@ interface Props {
   unlisted?: boolean;
   /** Toggle the cook-mode kitchen theme. Only set on /recipes/<slug>/cook. */
   cookMode?: boolean;
+  /** Local image stem (no size suffix). Resolves to `${hero}-1280.jpg` for og:image. */
+  hero?: string;
+  /** External hero URL (e.g. Wikimedia). Takes precedence over `hero`. */
+  heroUrl?: string;
+  /** OpenGraph type. 'website' for /, listings, error pages; 'article'
+   *  for editorial entries (dishes/recipes/farms/restaurants/meals/garden). */
+  ogType?: 'website' | 'article';
 }
 
-const { title, description, unlisted = false, cookMode = false } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://foodbook.example').toString();
+const SITE_NAME = 'Foodbook';
+const SITE_TAGLINE = 'An archive of the food lifecycle';
+const {
+  title,
+  description,
+  unlisted = false,
+  cookMode = false,
+  hero,
+  heroUrl,
+  ogType = 'website',
+} = Astro.props;
+const siteOrigin = Astro.site ?? 'https://foodbook.example';
+const canonical = new URL(Astro.url.pathname, siteOrigin).toString();
+const ogImage =
+  heroUrl ??
+  (hero ? new URL(`${hero}-1280.jpg`, siteOrigin).toString() : null) ??
+  new URL('/og-default.svg', siteOrigin).toString();
+// Doubled-brand title bug: when title equals the site name (or is empty),
+// render a descriptive title instead of "Foodbook · Foodbook".
+const isBrandTitle = !title || title === SITE_NAME;
+const fullTitle = isBrandTitle ? `${SITE_NAME} — ${SITE_TAGLINE}` : `${title} · ${SITE_NAME}`;
 ---
 
 <!doctype html>
@@ -19,8 +45,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://foodbook.ex
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0d11" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>{title} · Foodbook</title>
+    <title>{fullTitle}</title>
     {description && <meta name="description" content={description} />}
     <link rel="canonical" href={canonical} />
     {unlisted && <meta name="robots" content="noindex,nofollow" />}
@@ -33,10 +60,18 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://foodbook.ex
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
     />
 
-    <meta property="og:title" content={title} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
-    <meta property="og:type" content="article" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    {description && <meta name="twitter:description" content={description} />}
+    <meta name="twitter:image" content={ogImage} />
 
     <ClientRouter />
   </head>

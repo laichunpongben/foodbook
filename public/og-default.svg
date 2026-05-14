@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Foodbook — an archive of the food lifecycle">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0d11"/>
+      <stop offset="100%" stop-color="#1a1f26"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="80" y="160" font-family="Fraunces, Georgia, serif" font-size="56" font-weight="500" fill="#d18054" letter-spacing="0.04em">FOODBOOK</text>
+  <text x="80" y="340" font-family="Fraunces, Georgia, serif" font-size="92" font-weight="600" fill="#f4f0ea">An archive of the</text>
+  <text x="80" y="440" font-family="Fraunces, Georgia, serif" font-size="92" font-weight="600" fill="#f4f0ea">food lifecycle.</text>
+  <text x="80" y="555" font-family="Inter, system-ui, sans-serif" font-size="32" fill="#9aa3ad" letter-spacing="0.05em">Farms · Gardens · Kitchens · Restaurants</text>
+</svg>
