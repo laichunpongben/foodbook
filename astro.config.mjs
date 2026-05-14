@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import pagefind from 'astro-pagefind';
 
 // https://astro.build/config
 //
@@ -16,6 +17,7 @@ export default defineConfig({
     sitemap({
       filter: (page) => !page.includes('/_drafts/'),
     }),
+    pagefind(),
   ],
   prefetch: {
     prefetchAll: false,
