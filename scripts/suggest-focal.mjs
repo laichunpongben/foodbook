@@ -12,12 +12,13 @@
  * Usage: node scripts/suggest-focal.mjs
  */
 
-import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
+
+import { readFrontmatter } from './lib/frontmatter.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DISHES_DIR = join(ROOT, 'src', 'content', 'dishes');
@@ -33,32 +34,27 @@ const TARGET_H = 500;
 // left to the centered default. Avoids noise from saliency wobble.
 const CENTER_TOLERANCE = 8;
 
-function parseFrontmatter(text) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return {};
-  const out = {};
-  for (const line of m[1].split('\n')) {
-    const km = line.match(/^([a-zA-Z_]+):\s*"?([^"]*?)"?\s*$/);
-    if (km) out[km[1]] = km[2];
-  }
-  return out;
-}
-
 // Wikimedia 404/403s requests without a descriptive User-Agent. Spread
 // requests with a small delay so we don't trip rate-limiting.
 const UA = 'foodbook-focal/1.0 (https://github.com/laichunpongben/foodbook)';
 const REQUEST_GAP_MS = 1200;
+const MAX_RETRIES = 3;
+const BACKOFF_BASE_MS = 5000;
 let lastFetchAt = 0;
+
+function getString(fm, key) {
+  return fm.match(new RegExp(`^${key}:\\s*"([^"]*)"\\s*$`, 'm'))?.[1];
+}
 
 async function fetchBuffer(url) {
   const wait = Math.max(0, lastFetchAt + REQUEST_GAP_MS - Date.now());
   if (wait) await new Promise((r) => setTimeout(r, wait));
   lastFetchAt = Date.now();
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const res = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': UA } });
     if (res.ok) return Buffer.from(await res.arrayBuffer());
-    if (res.status === 429 && attempt < 2) {
-      await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
+    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
+      await new Promise((r) => setTimeout(r, BACKOFF_BASE_MS * (attempt + 1)));
       continue;
     }
     throw new Error(`HTTP ${res.status}`);
@@ -68,17 +64,17 @@ async function fetchBuffer(url) {
 
 async function loadPhoto({ heroUrl, hero }) {
   if (heroUrl) return fetchBuffer(heroUrl);
-  if (hero) {
-    const local = join(PUBLIC_DIR, `${hero}-1280.jpg`);
-    if (existsSync(local)) return readFile(local);
-  }
+  if (hero) return readFile(join(PUBLIC_DIR, `${hero}-1280.jpg`));
   throw new Error('no photo source');
 }
 
 async function suggest(buf) {
-  const { width: W, height: H } = await sharp(buf).metadata();
+  // Reuse one sharp instance so the JPEG is only decoded once across
+  // the metadata call and the resize.
+  const img = sharp(buf);
+  const { width: W, height: H } = await img.metadata();
   if (!W || !H) throw new Error('cannot read dimensions');
-  const { info } = await sharp(buf)
+  const { info } = await img
     .resize(TARGET_W, TARGET_H, { fit: 'cover', position: sharp.strategy.attention })
     .toBuffer({ resolveWithObject: true });
   // Map sharp's attention crop to a CSS `object-position` value:
@@ -116,28 +112,30 @@ let errored = 0;
 
 for (const slug of slugs) {
   const mdx = join(DISHES_DIR, slug, 'index.mdx');
-  let text;
+  let fm;
   try {
-    text = await readFile(mdx, 'utf8');
+    fm = await readFrontmatter(mdx);
   } catch {
     continue;
   }
-  const fm = parseFrontmatter(text);
+  const heroFocal = getString(fm, 'heroFocal');
+  const heroUrl = getString(fm, 'heroUrl');
+  const hero = getString(fm, 'hero');
   const label = slug.padEnd(28);
 
-  if (fm.heroFocal) {
-    console.log(`${label}already set: "${fm.heroFocal}"`);
+  if (heroFocal) {
+    console.log(`${label}already set: "${heroFocal}"`);
     skipped++;
     continue;
   }
-  if (!fm.heroUrl && !fm.hero) {
+  if (!heroUrl && !hero) {
     console.log(`${label}(no photo)`);
     skipped++;
     continue;
   }
 
   try {
-    const buf = await loadPhoto(fm);
+    const buf = await loadPhoto({ heroUrl, hero });
     const { fx, fy, srcW, srcH } = await suggest(buf);
     const note = aspectNote(srcW, srcH);
     const dx = Math.abs(fx - 50);
