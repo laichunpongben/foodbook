@@ -21,13 +21,12 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
-import { getString, listSlugs, readFrontmatter } from './lib/frontmatter.mjs';
+import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
+import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DISHES_DIR = join(ROOT, 'src', 'content', 'dishes');
+const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const LABEL_WIDTH = 28;
 
 const WRITE = process.argv.includes('--write');
@@ -73,13 +72,12 @@ async function throttledFetch(url, init) {
   throw new Error('exhausted retries');
 }
 
+// Throws on network/transient errors so the caller can surface them
+// rather than mistaking a DNS blip for a 404 (which would --write a
+// "repair" over a good URL).
 async function isLive(url) {
-  try {
-    const res = await throttledFetch(url, { method: 'HEAD' });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  const res = await throttledFetch(url, { method: 'HEAD' });
+  return res.ok;
 }
 
 function slugToTitle(slug) {
@@ -130,7 +128,15 @@ for (const slug of slugs) {
     continue;
   }
 
-  if (await isLive(heroUrl)) {
+  let alive;
+  try {
+    alive = await isLive(heroUrl);
+  } catch (err) {
+    console.log(`${label}ERROR  liveness check: ${err.message}`);
+    errored++;
+    continue;
+  }
+  if (alive) {
     live++;
     continue;
   }

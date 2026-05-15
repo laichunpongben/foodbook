@@ -11,9 +11,8 @@
 
 import { join } from 'node:path';
 
-import { listSlugs, readFrontmatter } from './lib/frontmatter.mjs';
-
-const ROOT = new URL('../src/content/', import.meta.url).pathname;
+import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
+import { readFrontmatter } from './lib/frontmatter.mjs';
 
 function extractRefs(fm) {
   // Naive: matches `farms: ['a', 'b']` style arrays.
@@ -54,7 +53,7 @@ const producerSlugs = new Set([...slugs.farms, ...slugs.garden]);
 for (const c of collections) {
   for (const slug of slugs[c]) {
     const path =
-      c === 'dishes' ? join(ROOT, c, slug, 'index.mdx') : join(ROOT, c, `${slug}.mdx`);
+      c === 'dishes' ? join(CONTENT_ROOT, c, slug, 'index.mdx') : join(CONTENT_ROOT, c, `${slug}.mdx`);
     let fm;
     try {
       fm = await readFrontmatter(path);

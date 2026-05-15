@@ -18,11 +18,11 @@ import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
-import { getString, listSlugs, readFrontmatter } from './lib/frontmatter.mjs';
+import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
+import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DISHES_DIR = join(ROOT, 'src', 'content', 'dishes');
-const PUBLIC_DIR = join(ROOT, 'public');
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 
 // Landing card is 4:5 portrait; this is the surface where off-center
 // crops show up most. Detail-page hero shares the same focal but its
