@@ -7,15 +7,23 @@
  * concise table-of-contents AI clients can pull instead of crawling
  * every listing page.
  */
+import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
 import { publicOnly } from '~/lib/visibility';
 import { entryUrl } from '~/lib/jsonld';
 import type { APIRoute } from 'astro';
 
 const bare = (id: string) => id.replace(/^[^/]+\//, '');
+const stripEm = (s: string) => s.replace(/<\/?em>/g, '');
 
-function strip(s: string): string {
-  return s.replace(/<\/?em>/g, '');
+function section<E extends { id: string }>(
+  heading: string,
+  entries: E[],
+  key: (e: E) => string,
+  render: (e: E) => string,
+): string[] {
+  const sorted = entries.sort((a, b) => key(a).localeCompare(key(b)));
+  return [`## ${heading}`, '', ...sorted.map(render), ''];
 }
 
 export const GET: APIRoute = async ({ site }) => {
@@ -35,49 +43,39 @@ export const GET: APIRoute = async ({ site }) => {
     '',
     '> An archive of the food lifecycle — farms, gardens, kitchens, restaurants. Authored prose, AI-assisted authoring (see /about#ai).',
     '',
-    '## Dishes',
-    '',
-    ...dishes
-      .slice()
-      .sort((a, b) => strip(a.data.shortTitle).localeCompare(strip(b.data.shortTitle)))
-      .map((d) => {
-        const url = entryUrl(site, 'dishes', bare(d.id));
-        const hook = strip(d.data.tagline ?? d.data.shortTitle);
-        return `- [${strip(d.data.shortTitle)}](${url}): ${hook}`;
-      }),
-    '',
-    '## Recipes',
-    '',
-    ...recipes
-      .slice()
-      .sort((a, b) => strip(a.data.title).localeCompare(strip(b.data.title)))
-      .map((r) => {
-        const url = entryUrl(site, 'recipes', bare(r.id));
+    ...section<CollectionEntry<'dishes'>>(
+      'Dishes',
+      dishes,
+      (d) => stripEm(d.data.shortTitle),
+      (d) => {
+        const hook = stripEm(d.data.tagline ?? d.data.shortTitle);
+        return `- [${stripEm(d.data.shortTitle)}](${entryUrl(site, 'dishes', bare(d.id))}): ${hook}`;
+      },
+    ),
+    ...section<CollectionEntry<'recipes'>>(
+      'Recipes',
+      recipes,
+      (r) => stripEm(r.data.title),
+      (r) => {
         const meta = [r.data.yield, r.data.timeCook && `cook ${r.data.timeCook}`].filter(Boolean).join(' · ');
-        return `- [${strip(r.data.title)}](${url}): ${meta}`;
-      }),
-    '',
-    '## Restaurants',
-    '',
-    ...restaurants
-      .slice()
-      .sort((a, b) => a.data.name.localeCompare(b.data.name))
-      .map((r) => {
-        const url = entryUrl(site, 'restaurants', bare(r.id));
+        return `- [${stripEm(r.data.title)}](${entryUrl(site, 'recipes', bare(r.id))}): ${meta}`;
+      },
+    ),
+    ...section<CollectionEntry<'restaurants'>>(
+      'Restaurants',
+      restaurants,
+      (r) => r.data.name,
+      (r) => {
         const where = [r.data.city, r.data.country].filter(Boolean).join(', ');
-        return `- [${r.data.name}](${url}): ${r.data.cuisine ?? 'Restaurant'} — ${where}`;
-      }),
-    '',
-    '## Farms & Producers',
-    '',
-    ...farms
-      .slice()
-      .sort((a, b) => a.data.name.localeCompare(b.data.name))
-      .map((f) => {
-        const url = entryUrl(site, 'farms', bare(f.id));
-        return `- [${f.data.name}](${url}): ${f.data.kind} — ${f.data.location}`;
-      }),
-    '',
+        return `- [${r.data.name}](${entryUrl(site, 'restaurants', bare(r.id))}): ${r.data.cuisine ?? 'Restaurant'} — ${where}`;
+      },
+    ),
+    ...section<CollectionEntry<'farms'>>(
+      'Farms & Producers',
+      farms,
+      (f) => f.data.name,
+      (f) => `- [${f.data.name}](${entryUrl(site, 'farms', bare(f.id))}): ${f.data.kind} — ${f.data.location}`,
+    ),
   ];
 
   return new Response(lines.join('\n'), {
