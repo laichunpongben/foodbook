@@ -14,7 +14,7 @@ import { join } from 'node:path';
 
 const ROOT = new URL('../src/content/', import.meta.url).pathname;
 
-async function listSlugs(collection, opts = {}) {
+async function listSlugs(collection) {
   const dir = join(ROOT, collection);
   let entries;
   try {
