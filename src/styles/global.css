@@ -12,8 +12,8 @@
   --olive: #5d6e44;       /* secondary accent (also kitchen-mode primary) */
   --rule: rgba(250, 248, 244, 0.08);
 
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --font-body: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 
   --measure: 68ch;
   --gutter: clamp(1rem, 4vw, 2.5rem);
