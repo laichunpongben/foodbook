@@ -20,14 +20,15 @@
  *   not the Filipino dish), use TITLE_OVERRIDES below.
  */
 
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readFrontmatter } from './lib/frontmatter.mjs';
+import { getString, listSlugs, readFrontmatter } from './lib/frontmatter.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DISHES_DIR = join(ROOT, 'src', 'content', 'dishes');
+const LABEL_WIDTH = 28;
 
 const WRITE = process.argv.includes('--write');
 
@@ -49,6 +50,8 @@ const TITLE_OVERRIDES = {
 };
 
 const UA = 'foodbook-repair/1.0 (https://github.com/laichunpongben/foodbook)';
+// Gap is enforced on request *start*, not completion — slow requests
+// don't earn extra credit. Wikimedia rate-limits on starts too.
 const REQUEST_GAP_MS = 800;
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 4000;
@@ -72,7 +75,7 @@ async function throttledFetch(url, init) {
 
 async function isLive(url) {
   try {
-    const res = await throttledFetch(url, { method: 'GET' });
+    const res = await throttledFetch(url, { method: 'HEAD' });
     return res.ok;
   } catch {
     return false;
@@ -90,13 +93,7 @@ async function lookupArticle(title) {
   const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
   const res = await throttledFetch(url);
   if (!res.ok) return null;
-  const data = await res.json();
-  if (data.type === 'disambiguation') return { ...data, _disambig: true };
-  return data;
-}
-
-function getString(fm, key) {
-  return fm.match(new RegExp(`^${key}:\\s*"([^"]*)"\\s*$`, 'm'))?.[1];
+  return res.json();
 }
 
 async function rewriteHeroUrl(mdxPath, newUrl) {
@@ -106,10 +103,7 @@ async function rewriteHeroUrl(mdxPath, newUrl) {
   await writeFile(mdxPath, updated);
 }
 
-const slugs = (await readdir(DISHES_DIR, { withFileTypes: true }))
-  .filter((d) => d.isDirectory())
-  .map((d) => d.name)
-  .sort();
+const slugs = await listSlugs('dishes');
 
 console.log(`# repair-hero-urls ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
 
@@ -128,7 +122,7 @@ for (const slug of slugs) {
     continue;
   }
   const heroUrl = getString(fm, 'heroUrl');
-  const label = slug.padEnd(28);
+  const label = slug.padEnd(LABEL_WIDTH);
 
   if (!heroUrl) {
     console.log(`${label}(no heroUrl)`);
@@ -156,8 +150,11 @@ for (const slug of slugs) {
     needsOverride++;
     continue;
   }
-  if (article._disambig) {
-    console.log(`${label}AMBIG  "${article.title}" — pick a specific page in TITLE_OVERRIDES`);
+  // Wikipedia returns `disambiguation`, `no-extract`, etc. for pages
+  // that don't carry usable content. Only `standard` articles have a
+  // reliable lead image worth pasting.
+  if (article.type !== 'standard') {
+    console.log(`${label}${article.type.toUpperCase().padEnd(6)} "${article.title}" — non-standard page, set TITLE_OVERRIDES`);
     needsOverride++;
     continue;
   }
@@ -169,13 +166,13 @@ for (const slug of slugs) {
   }
 
   console.log(`${label}REPAIR "${article.title}" — ${article.description ?? '(no description)'}`);
-  console.log(`${' '.repeat(28)}       → ${newUrl}`);
+  console.log(`${' '.repeat(LABEL_WIDTH)}       → ${newUrl}`);
 
   if (WRITE) {
     try {
       await rewriteHeroUrl(mdx, newUrl);
     } catch (err) {
-      console.log(`${' '.repeat(28)}       write failed: ${err.message}`);
+      console.log(`${' '.repeat(LABEL_WIDTH)}       write failed: ${err.message}`);
       errored++;
       continue;
     }
