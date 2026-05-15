@@ -26,6 +26,13 @@ const dishLabel = new Map(
     entry.data.shortTitle ?? entry.data.title,
   ]),
 );
+
+const restaurant = d.location === 'home'
+  ? null
+  : (await getCollection('restaurants')).find(
+      (r) => r.id.replace(/^restaurants\//, '') === d.location,
+    );
+const locationLabel = restaurant?.data.name ?? d.location;
 ---
 
 <BaseLayout
@@ -42,7 +49,7 @@ const dishLabel = new Map(
     <p class="eyebrow">Meal · {d.date}{d.occasion && ` · ${d.occasion}`}</p>
     <h1>{d.title}</h1>
     <p class="lead">
-      At {d.location === 'home' ? 'home' : <a href={`/restaurants/${d.location}/`}>{d.location}</a>}
+      At {d.location === 'home' ? 'home' : <a href={`/restaurants/${d.location}/`}>{locationLabel}</a>}
       {d.companionCount !== undefined && d.companionCount > 0 && <>{' · '}{d.companionCount} at the table</>}
     </p>
 
