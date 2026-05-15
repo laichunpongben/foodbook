@@ -35,11 +35,15 @@ check() {
 }
 
 # Patterns are deliberately conservative — small false-positive rate is OK.
-check "phone-number (10–14 digits)"        '\b[+(]?[0-9][0-9 ()\-]{8,16}[0-9]\b'
+# Phone-number regex requires a phone-context word nearby; the raw digit shape
+# alone over-matches lat/lng pairs, ISO dates, and ISBNs found in editorial text.
+check "phone-number (with context)"        '(tel:|phone|whatsapp|wechat|mobile|cell)[^A-Za-z0-9]{0,12}[+(]?[0-9][0-9 ()\-]{8,16}[0-9]\b'
 check "confirmation-code-style (8+ alnum)" '\b[A-Z0-9]{8,}\b.*confirm'
 check "home_lat / home_lng marker"         'home_lat|home_lng|"home":\s*\{'
 check "Anthropic API key"                  'sk-ant-[A-Za-z0-9_-]{20,}'
-check "AWS key marker"                     'AKIA[0-9A-Z]{16}'
+check "AWS access-key id (permanent)"      'AKIA[0-9A-Z]{16}'
+check "AWS access-key id (temporary)"      'ASIA[0-9A-Z]{16}'
+check "AWS secret-access-key assignment"   'aws_secret_access_key\s*[=:]\s*['\''"][A-Za-z0-9/+=]{40}'
 check "Google API key"                     'AIza[0-9A-Za-z_-]{30,}'
 
 if [[ $fail -eq 1 ]]; then
