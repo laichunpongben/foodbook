@@ -9,16 +9,21 @@
  * insert `heroUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/..."`
  * directly under the `text:` line.
  *
- * Names mapped to `null` are intentionally skipped (vague, generic, or
- * non-photographable — e.g. "Stock", "Cold water", "Pinch of salt").
- *
- * Run from repo root: `node scripts/seed-ingredient-photos.mjs`.
+ * Unmapped names fall back to a title-cased version of the name and fail
+ * gracefully if Wikipedia has no matching article. Re-running is safe —
+ * ingredients that already carry a `heroUrl` are left untouched.
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
-const RECIPES_DIR = 'src/content/recipes';
+const RECIPES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'content', 'recipes');
+const SECTION_TERMINATORS = ['steps:', 'notes:', 'revisions:'];
+const ING_INDENT = '    ';
+const NAME_RE = /^  - name: "(.+)"$/;
+const HERO_RE = /^    heroUrl:/;
+const TEXT_RE = /^    text:/;
 
 const INGREDIENT_TO_WIKI_TITLE = {
   // alliums
@@ -307,7 +312,6 @@ const INGREDIENT_TO_WIKI_TITLE = {
   'coconut cream': 'Coconut_milk',
   'crispy fried onions': 'Fried_onion',
   'dashi': 'Dashi',
-  'red chili powder': 'Chili_powder',
 
   'cold water': 'Water',
   'boiling water': 'Water',
@@ -318,15 +322,45 @@ const INGREDIENT_TO_WIKI_TITLE = {
   'garnish vegetables': 'Vegetable',
 };
 
-function slugifyName(name) {
-  return name.toLowerCase().trim();
+function pageTitleFor(name) {
+  const key = name.toLowerCase().trim();
+  if (key in INGREDIENT_TO_WIKI_TITLE) return INGREDIENT_TO_WIKI_TITLE[key];
+  return name.replace(/\s+/g, '_').replace(/^./, (c) => c.toUpperCase());
 }
 
-function pageTitleFor(name) {
-  const key = slugifyName(name);
-  if (key in INGREDIENT_TO_WIKI_TITLE) return INGREDIENT_TO_WIKI_TITLE[key];
-  // fallback: replace spaces with underscores, capitalize first letter
-  return name.replace(/\s+/g, '_').replace(/^./, (c) => c.toUpperCase());
+/**
+ * Walks the `ingredients:` block of an MDX file. Yields one entry per
+ * ingredient: `{ name, textIdx, hasHero }`. Centralizing this here keeps
+ * the collector (main) and the patcher (patchRecipe) from drifting apart.
+ */
+function* walkIngredients(lines) {
+  let inIng = false;
+  let name = null;
+  let textIdx = -1;
+  let hasHero = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line === 'ingredients:') { inIng = true; continue; }
+    const atEnd = inIng && (line === '---' || SECTION_TERMINATORS.some((p) => line.startsWith(p)));
+    const m = inIng && !atEnd ? line.match(NAME_RE) : null;
+    if (atEnd || m) {
+      if (name !== null) yield { name, textIdx, hasHero };
+      name = null; textIdx = -1; hasHero = false;
+      if (atEnd) { inIng = false; continue; }
+    }
+    if (!inIng) continue;
+    if (m) {
+      name = m[1];
+      textIdx = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (TEXT_RE.test(lines[j])) { textIdx = j; break; }
+        if (NAME_RE.test(lines[j]) || /^[a-z]/.test(lines[j])) break;
+      }
+    } else if (HERO_RE.test(line)) {
+      hasHero = true;
+    }
+  }
+  if (name !== null) yield { name, textIdx, hasHero };
 }
 
 async function fetchLeadImageFilename(title, attempt = 1) {
@@ -373,11 +407,9 @@ function toFilePathUrl(filename) {
 async function buildCatalog(names) {
   const catalog = new Map();
   const failures = [];
-  const skipped = [];
-  const titles = new Map(); // dedupe by wiki title
+  const titles = new Map();
   for (const name of names) {
     const title = pageTitleFor(name);
-    if (title === null) { skipped.push(name); continue; }
     if (!titles.has(title)) titles.set(title, []);
     titles.get(title).push(name);
   }
@@ -395,91 +427,46 @@ async function buildCatalog(names) {
     }
     await new Promise((r) => setTimeout(r, 150));
   }
-  return { catalog, failures, skipped };
+  return { catalog, failures };
 }
 
 function patchRecipe(path, catalog) {
-  const txt = readFileSync(path, 'utf8');
-  const lines = txt.split('\n');
-  let inIng = false;
-  let lastNameIdx = -1;
-  let lastName = null;
-  let hasHero = false;
-  const insertions = []; // [afterIdx, indent, url]
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line === 'ingredients:') { inIng = true; continue; }
-    if (inIng && (line.startsWith('steps:') || line.startsWith('notes:') || line.startsWith('revisions:') || line === '---')) {
-      if (lastName !== null && !hasHero) {
-        const url = catalog.get(lastName);
-        if (url) insertions.push([lastNameIdx + 1, '    ', url]);
-      }
-      inIng = false; lastName = null; lastNameIdx = -1; hasHero = false;
-      continue;
-    }
-    if (!inIng) continue;
-    const m = line.match(/^  - name: "(.+)"$/);
-    if (m) {
-      if (lastName !== null && !hasHero) {
-        const url = catalog.get(lastName);
-        if (url) insertions.push([lastNameIdx + 1, '    ', url]);
-      }
-      lastName = m[1];
-      lastNameIdx = i;
-      hasHero = false;
-      // find the text: line right after
-      for (let j = i + 1; j < lines.length; j++) {
-        if (/^    text:/.test(lines[j])) { lastNameIdx = j; break; }
-        if (/^  - name:/.test(lines[j]) || /^[a-z]/.test(lines[j])) break;
-      }
-    } else if (/^    heroUrl:/.test(line)) {
-      hasHero = true;
-    }
+  const lines = readFileSync(path, 'utf8').split('\n');
+  const insertions = [];
+  for (const { name, textIdx, hasHero } of walkIngredients(lines)) {
+    if (hasHero) continue;
+    const url = catalog.get(name);
+    if (url) insertions.push([textIdx + 1, url]);
   }
   if (insertions.length === 0) return 0;
-  // Apply insertions back-to-front to keep indices valid
   insertions.sort((a, b) => b[0] - a[0]);
-  for (const [idx, indent, url] of insertions) {
-    lines.splice(idx, 0, `${indent}heroUrl: "${url}"`);
+  for (const [idx, url] of insertions) {
+    lines.splice(idx, 0, `${ING_INDENT}heroUrl: "${url}"`);
   }
   writeFileSync(path, lines.join('\n'));
   return insertions.length;
 }
 
 async function main() {
-  // 1) collect unique names lacking heroUrl
   const files = readdirSync(RECIPES_DIR).filter((f) => f.endsWith('.mdx'));
   const names = new Set();
   for (const f of files) {
-    const txt = readFileSync(join(RECIPES_DIR, f), 'utf8');
-    let inIng = false, currentName = null, hasHero = false;
-    for (const line of txt.split('\n')) {
-      if (line === 'ingredients:') { inIng = true; continue; }
-      if (inIng && (line.startsWith('steps:') || line.startsWith('notes:') || line.startsWith('revisions:') || line === '---')) {
-        if (currentName && !hasHero) names.add(currentName);
-        inIng = false; currentName = null; hasHero = false; continue;
-      }
-      if (!inIng) continue;
-      const m = line.match(/^  - name: "(.+)"$/);
-      if (m) {
-        if (currentName && !hasHero) names.add(currentName);
-        currentName = m[1]; hasHero = false;
-      } else if (/^    heroUrl:/.test(line)) hasHero = true;
+    const lines = readFileSync(join(RECIPES_DIR, f), 'utf8').split('\n');
+    for (const { name, hasHero } of walkIngredients(lines)) {
+      if (!hasHero) names.add(name);
     }
   }
   console.log(`Found ${names.size} unique ingredient names lacking heroUrl`);
   process.stdout.write('Fetching');
 
-  // 2) build URL catalog
-  const { catalog, failures, skipped } = await buildCatalog([...names]);
+  const { catalog, failures } = await buildCatalog([...names]);
   process.stdout.write('\n');
-  console.log(`Resolved ${catalog.size} → URL · ${skipped.length} skipped · ${failures.length} failed`);
+  console.log(`Resolved ${catalog.size} → URL · ${failures.length} failed`);
   if (failures.length) {
     console.log('Failures:');
     for (const f of failures) console.log('  ' + f);
   }
 
-  // 3) patch each recipe
   let totalAdds = 0;
   let touchedFiles = 0;
   for (const f of files) {
