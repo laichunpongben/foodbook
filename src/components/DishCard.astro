@@ -1,6 +1,10 @@
 ---
 /**
  * Landing-page dish card. Hero photo, title, optional tagline.
+ *
+ * Uses a real `<img>` (not a CSS background-image) so the browser can
+ * lazy-load it, surface alt text to assistive tech, and apply native
+ * fetch priority — none of which work on background images.
  */
 
 interface Props {
@@ -13,13 +17,20 @@ interface Props {
 
 const { slug, title, tagline, hero, heroUrl } = Astro.props;
 const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
+// alt left empty: the surrounding `aria-label` on the <a> already
+// names the link, so the image is decorative for AT.
 ---
 
 <a class="dish-card" href={`/dishes/${slug}/`} aria-label={title}>
-  <div
-    class="photo"
-    style={`background-image: url(${photoUrl})`}
-  />
+  {photoUrl && (
+    <img
+      class="photo"
+      src={photoUrl}
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+  )}
   <div class="overlay" />
   <div class="meta">
     <div class="title" set:html={title} />
