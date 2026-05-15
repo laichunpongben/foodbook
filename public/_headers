@@ -12,6 +12,11 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
   Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://*.tile.openstreetmap.org; connect-src 'self' https://static.cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   Vary: Accept-Encoding
+  # HTML edge caching. Browser revalidates every 5 min; CDN serves cached
+  # for 1 day, then 1 more day of stale-while-revalidate to keep p95 flat
+  # while a fresh fetch happens in the background. More specific path
+  # rules below (e.g. /_astro/*) override this for hashed assets.
+  Cache-Control: public, max-age=300, s-maxage=86400, stale-while-revalidate=86400
 
 # Content-hashed assets — name changes when contents change.
 /_astro/*
