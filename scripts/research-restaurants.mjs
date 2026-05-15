@@ -16,9 +16,11 @@
  * Requires Node 22+ for global fetch.
  */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { readFrontmatter } from './lib/frontmatter.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const slug = process.argv[2];
@@ -38,8 +40,7 @@ if (!existsSync(dishPath)) {
   console.error(`dish not found: ${dishPath}`);
   process.exit(1);
 }
-const dishMdx = await readFile(dishPath, 'utf8');
-const frontmatter = (dishMdx.match(/^---\r?\n([\s\S]*?)\r?\n---/) ?? ['', ''])[1];
+const frontmatter = await readFrontmatter(dishPath);
 const title = (frontmatter.match(/^title:\s*"?([^"\n]+)"?/m) ?? ['', slug])[1].replace(/<[^>]*>/g, '');
 const origin = (frontmatter.match(/^origin:\s*"?([^"\n]+)"?/m) ?? ['', ''])[1];
 
