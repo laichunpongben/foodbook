@@ -12,17 +12,17 @@
  * Usage: node scripts/suggest-focal.mjs
  */
 
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
-import { readFrontmatter } from './lib/frontmatter.mjs';
+import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
+import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DISHES_DIR = join(ROOT, 'src', 'content', 'dishes');
-const PUBLIC_DIR = join(ROOT, 'public');
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 
 // Landing card is 4:5 portrait; this is the surface where off-center
 // crops show up most. Detail-page hero shares the same focal but its
@@ -41,10 +41,6 @@ const REQUEST_GAP_MS = 1200;
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 5000;
 let lastFetchAt = 0;
-
-function getString(fm, key) {
-  return fm.match(new RegExp(`^${key}:\\s*"([^"]*)"\\s*$`, 'm'))?.[1];
-}
 
 async function fetchBuffer(url) {
   const wait = Math.max(0, lastFetchAt + REQUEST_GAP_MS - Date.now());
@@ -97,10 +93,7 @@ function aspectNote(W, H) {
   return `${W}×${H} ~4:5`;
 }
 
-const slugs = (await readdir(DISHES_DIR, { withFileTypes: true }))
-  .filter((d) => d.isDirectory())
-  .map((d) => d.name)
-  .sort();
+const slugs = await listSlugs('dishes');
 
 console.log('# heroFocal suggestions — paste keepers into dish frontmatter');
 console.log('# (saliency is a hint; eyeball before applying)\n');

@@ -9,30 +9,10 @@
  * in CI.
  */
 
-import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { readFrontmatter } from './lib/frontmatter.mjs';
-
-const ROOT = new URL('../src/content/', import.meta.url).pathname;
-
-async function listSlugs(collection) {
-  const dir = join(ROOT, collection);
-  let entries;
-  try {
-    entries = await readdir(dir);
-  } catch {
-    return new Set();
-  }
-  const out = new Set();
-  for (const name of entries) {
-    const full = join(dir, name);
-    const st = await stat(full);
-    if (st.isDirectory()) out.add(name);
-    else if (name.endsWith('.mdx')) out.add(name.replace(/\.mdx$/, ''));
-  }
-  return out;
-}
 
 function extractRefs(fm) {
   // Naive: matches `farms: ['a', 'b']` style arrays.
@@ -65,7 +45,7 @@ function extractIngredientFroms(fm) {
 
 const collections = ['dishes', 'recipes', 'restaurants', 'farms', 'meals', 'garden'];
 const slugs = Object.fromEntries(
-  await Promise.all(collections.map(async (c) => [c, await listSlugs(c)])),
+  await Promise.all(collections.map(async (c) => [c, new Set(await listSlugs(c))])),
 );
 
 let broken = 0;
@@ -73,7 +53,7 @@ const producerSlugs = new Set([...slugs.farms, ...slugs.garden]);
 for (const c of collections) {
   for (const slug of slugs[c]) {
     const path =
-      c === 'dishes' ? join(ROOT, c, slug, 'index.mdx') : join(ROOT, c, `${slug}.mdx`);
+      c === 'dishes' ? join(CONTENT_ROOT, c, slug, 'index.mdx') : join(CONTENT_ROOT, c, `${slug}.mdx`);
     let fm;
     try {
       fm = await readFrontmatter(path);
