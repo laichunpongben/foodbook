@@ -251,11 +251,10 @@ const ingredientGroups = groupIngredients(recipe.data.ingredients);
    * on visibilitychange. Silent no-op where unsupported (older iOS).
    */
 
-  type WakeLockLike = { release(): Promise<void>; addEventListener(t: string, cb: () => void): void };
-  let wakeLock: WakeLockLike | null = null;
+  let wakeLock: import('~/lib/dom').WakeLockSentinel | null = null;
 
   async function requestWakeLock(): Promise<void> {
-    const nav = navigator as unknown as { wakeLock?: { request(type: 'screen'): Promise<WakeLockLike> } };
+    const nav = navigator as import('~/lib/dom').NavigatorWithWakeLock;
     if (!nav.wakeLock) return;
     try {
       wakeLock = await nav.wakeLock.request('screen');
