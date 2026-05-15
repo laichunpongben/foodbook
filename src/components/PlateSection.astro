@@ -18,7 +18,7 @@ const photoUrl = dish.heroUrl ?? (dish.hero ? `${dish.hero}-3840.jpg` : '');
 ---
 
 <section id="plate" class="journey-section section-plate" style={photoUrl ? `--plate-hero: url('${photoUrl}')` : undefined}>
-  <div class="plate-backdrop" transition:name={`dish-${dish.slug}-hero`}></div>
+  <div class="plate-backdrop"></div>
   <div class="plate-scrim"></div>
   <div class="container plate-content">
     <p class="stage-eyebrow">4 · Plate</p>
