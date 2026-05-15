@@ -26,7 +26,8 @@ const journey = await getJourney(dish);
 const hasIngredients = journey.ingredients.length > 0;
 const hasRecipes = journey.cook.length > 0;
 const hasEats = journey.eat.length > 0;
-const heroScrollTo = hasIngredients ? '#plant' : hasRecipes ? '#cook' : '#plate';
+const heroScrollTo: '#plant' | '#cook' | '#plate' =
+  hasIngredients ? '#plant' : hasRecipes ? '#cook' : '#plate';
 
 const site = Astro.site!;
 const dishUrl = entryUrl(site, 'dishes', slug);
@@ -59,24 +60,13 @@ const breadcrumbLd = breadcrumb(
   <JsonLd data={articleLd} />
   <JsonLd data={breadcrumbLd} />
   <article class="dish-journey">
-    <!-- Hero — per-dish opener driven by frontmatter (title, tagline,
-         origin, hero image, prologue) -->
     <DishHero dish={dish} scrollTo={heroScrollTo} />
 
-    <!-- Plant — ingredients with their origins -->
     {hasIngredients && <PlantSection ingredients={journey.ingredients} />}
-
-    <!-- 3 · Cook — the recipe(s) -->
     {hasRecipes && <CookSection recipes={journey.cook} />}
-
-    <!-- 4 · Plate — the reveal: the assembled dish -->
     <PlateSection dish={journey.dish} />
-
-    <!-- 5 · Eat — meals + restaurants -->
     {hasEats && <EatSection eats={journey.eat} />}
 
-    <!-- Prose body (MDX content + finale). Prologue is now rendered
-         inside DishHero above. -->
     <section class="dish-prose">
       <div class="container">
         <Content />

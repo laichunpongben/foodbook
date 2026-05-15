@@ -1,20 +1,20 @@
 ---
 /**
- * DishHero — opening section for a dish page.
+ * DishHero — opening section of a dish page.
  *
- * Replaces the generic SunSection with content driven entirely by
- * the dish's own data: origin, title, tagline, hero image, and the
- * authored prologue. Skeleton is constant across the catalog; the
+ * Composes a per-dish opener from frontmatter: origin eyebrow, title,
+ * tagline, an "in repertoire since" pill, the hero photograph, and
+ * the authored prologue. Skeleton is constant across the catalog; the
  * words and image vary per dish.
  */
 
 import type { CollectionEntry } from 'astro:content';
+import WikiImage from './WikiImage.astro';
 
 interface Props {
   dish: CollectionEntry<'dishes'>;
-  /** Slug of the first downstream section to scroll into — usually
-   *  `#plant` if the dish has ingredients, else `#cook` or `#plate`. */
-  scrollTo: string;
+  /** First downstream section to scroll into. */
+  scrollTo: '#plant' | '#cook' | '#plate';
 }
 
 const { dish, scrollTo } = Astro.props;
@@ -24,33 +24,38 @@ const repertoireSince = firstMade
   ? new Date(firstMade).toLocaleDateString('en', { month: 'short', year: 'numeric' })
   : null;
 
-const heroStyle = [
-  heroUrl ? `--dish-hero-img: url('${heroUrl}')` : '',
-  heroFocal ? `--dish-hero-pos: ${heroFocal}` : '',
-].filter(Boolean).join('; ') || undefined;
+const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
 ---
 
 <section class="journey-section dish-hero">
   <div class="container">
     <div class="dish-hero-grid">
       <div class="dish-hero-text">
-        {origin && <p class="dish-hero-eyebrow">{origin}</p>}
-        <h1 class="dish-hero-title" set:html={title ?? shortTitle} />
+        {origin && <p class="stage-eyebrow">{origin}</p>}
+        <h1 class="dish-hero-title" set:html={title} />
         {tagline && <p class="dish-hero-tagline" set:html={tagline} />}
         {repertoireSince && (
-          <p class="dish-hero-since">In repertoire since {repertoireSince}</p>
+          <p class="stage-eyebrow dish-hero-since">In repertoire since {repertoireSince}</p>
         )}
       </div>
       {heroUrl && (
-        <div class="dish-hero-figure" style={heroStyle} role="img" aria-label={`Photograph of ${shortTitle}`}></div>
+        <WikiImage
+          url={heroUrl}
+          alt={`Photograph of ${shortTitle}`}
+          loading="eager"
+          fetchpriority="high"
+          sizes="(max-width: 880px) 100vw, 45vw"
+          class="dish-hero-figure"
+          style={figureStyle}
+        />
       )}
     </div>
 
     {prologue && (
-      <aside class="dish-hero-prologue">
+      <div class="dish-hero-prologue">
         <h2 class="dish-hero-prologue-heading" set:html={prologue.heading} />
         <p class="dish-hero-prologue-prose" set:html={prologue.prose} />
-      </aside>
+      </div>
     )}
 
     <a class="dish-hero-scroll" href={scrollTo} aria-label="Continue to the journey">↓</a>
@@ -75,12 +80,7 @@ const heroStyle = [
     min-width: 0;
   }
 
-  .dish-hero-eyebrow {
-    font-family: var(--font-body);
-    font-size: 0.74rem;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
+  .dish-hero-text .stage-eyebrow {
     margin: 0 0 1.2rem;
   }
 
@@ -108,23 +108,15 @@ const heroStyle = [
   }
 
   .dish-hero-since {
-    margin: 1.6rem 0 0;
-    display: inline-block;
-    font-family: var(--font-body);
-    font-size: 0.72rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-    padding: 0.32rem 0.7rem;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
+    margin-top: 1.6rem;
   }
 
   .dish-hero-figure {
     aspect-ratio: 4 / 5;
-    background-image: var(--dish-hero-img);
-    background-size: cover;
-    background-position: var(--dish-hero-pos, center);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     background-color: #0a0d11;
     border-radius: 4px;
     box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
@@ -160,10 +152,9 @@ const heroStyle = [
 
   .dish-hero-scroll {
     display: block;
-    width: fit-content;
-    margin: 3.5rem auto 0;
     width: 2.5rem;
     height: 2.5rem;
+    margin: 3.5rem auto 0;
     line-height: 2.3rem;
     text-align: center;
     border: 1px solid var(--rule);
