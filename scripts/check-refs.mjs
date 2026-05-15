@@ -9,8 +9,10 @@
  * in CI.
  */
 
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+
+import { readFrontmatter } from './lib/frontmatter.mjs';
 
 const ROOT = new URL('../src/content/', import.meta.url).pathname;
 
@@ -30,12 +32,6 @@ async function listSlugs(collection, opts = {}) {
     else if (name.endsWith('.mdx')) out.add(name.replace(/\.mdx$/, ''));
   }
   return out;
-}
-
-async function readFrontmatter(path) {
-  const text = await readFile(path, 'utf8');
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return m?.[1] ?? '';
 }
 
 function extractRefs(fm) {
