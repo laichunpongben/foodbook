@@ -13,9 +13,10 @@ interface Props {
   tagline?: string;
   hero?: string;
   heroUrl?: string;
+  heroFocal?: string;
 }
 
-const { slug, title, tagline, hero, heroUrl } = Astro.props;
+const { slug, title, tagline, hero, heroUrl, heroFocal } = Astro.props;
 const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
 // alt left empty: the surrounding `aria-label` on the <a> already
 // names the link, so the image is decorative for AT.
@@ -29,6 +30,7 @@ const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
       alt=""
       loading="lazy"
       decoding="async"
+      style={heroFocal ? `object-position: ${heroFocal}` : undefined}
     />
   )}
   <div class="overlay" />

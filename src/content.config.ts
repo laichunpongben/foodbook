@@ -97,6 +97,14 @@ const dishes = defineCollection({
      *  over `hero` when set — used for entries that don't have local R2
      *  photos yet. Renderer should not append size suffixes to this. */
     heroUrl: z.string().url().optional(),
+    /** CSS `object-position` / `background-position` value applied to the
+     *  hero photo wherever it's cropped (landing-page card's 4:5 crop and
+     *  the dish detail page's full-bleed plate hero). Omit for the
+     *  centered default. Use percentages (e.g. "50% 30%" pulls the focal
+     *  point higher) or keywords (e.g. "center top"). Photos sourced
+     *  from Wikimedia often need a vertical nudge because the plate
+     *  isn't always centered in the source frame. */
+    heroFocal: z.string().optional(),
     /** One-line editorial tagline under the title. */
     tagline: z.string().optional(),
     /** Geographic / cultural origin label, e.g. "Naples, Italy". Free text. */

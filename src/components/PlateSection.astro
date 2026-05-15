@@ -15,9 +15,13 @@ interface Props {
 
 const { dish } = Astro.props;
 const photoUrl = dish.heroUrl ?? (dish.hero ? `${dish.hero}-3840.jpg` : '');
+const heroStyle = [
+  photoUrl ? `--plate-hero: url('${photoUrl}')` : '',
+  dish.heroFocal ? `--plate-hero-pos: ${dish.heroFocal}` : '',
+].filter(Boolean).join('; ') || undefined;
 ---
 
-<section id="plate" class="journey-section section-plate" style={photoUrl ? `--plate-hero: url('${photoUrl}')` : undefined}>
+<section id="plate" class="journey-section section-plate" style={heroStyle}>
   <div class="plate-backdrop"></div>
   <div class="plate-scrim"></div>
   <div class="container plate-content">
@@ -43,7 +47,7 @@ const photoUrl = dish.heroUrl ?? (dish.hero ? `${dish.hero}-3840.jpg` : '');
     inset: 0;
     background-image: var(--plate-hero);
     background-size: cover;
-    background-position: center;
+    background-position: var(--plate-hero-pos, center);
     background-color: #0a0d11;
     z-index: 0;
   }
