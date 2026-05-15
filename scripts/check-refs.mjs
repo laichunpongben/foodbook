@@ -3,8 +3,10 @@
  * check-refs.mjs — verify cross-collection slug references resolve.
  *
  * Dishes reference recipes/, farms/, restaurants/, meals/ by slug
- * (see ADR-0002). Zod can't validate that those slugs *exist*; this
- * script does. Runs as `npm run check:refs` and in CI.
+ * (see ADR-0002). Recipe ingredients also carry a scalar `from:` slug
+ * pointing at a farm or a garden bed — also validated here. Zod can't
+ * check existence; this script can. Runs as `npm run check:refs` and
+ * in CI.
  */
 
 import { readFile, readdir, stat } from 'node:fs/promises';
@@ -52,12 +54,26 @@ function extractRefs(fm) {
   return out;
 }
 
+/**
+ * Recipe ingredients carry a scalar `from:` slug pointing at a farm or
+ * a garden bed. The recipe page renders these as `/farms/...` or
+ * `/garden/...` cross-links — bad slugs soft-404, so validate at build.
+ */
+function extractIngredientFroms(fm) {
+  const out = [];
+  const re = /^ {4}from:\s*['"]?([^'"\n]+)['"]?\s*$/gm;
+  let m;
+  while ((m = re.exec(fm))) out.push(m[1].trim());
+  return out;
+}
+
 const collections = ['dishes', 'recipes', 'restaurants', 'farms', 'meals', 'garden'];
 const slugs = Object.fromEntries(
   await Promise.all(collections.map(async (c) => [c, await listSlugs(c)])),
 );
 
 let broken = 0;
+const producerSlugs = new Set([...slugs.farms, ...slugs.garden]);
 for (const c of collections) {
   for (const slug of slugs[c]) {
     const path =
@@ -73,6 +89,14 @@ for (const c of collections) {
       for (const target of refList) {
         if (!slugs[refKey]?.has(target)) {
           console.error(`✗ ${c}/${slug} → ${refKey}/${target} — missing`);
+          broken++;
+        }
+      }
+    }
+    if (c === 'recipes') {
+      for (const target of extractIngredientFroms(fm)) {
+        if (!producerSlugs.has(target)) {
+          console.error(`✗ recipes/${slug} → ingredient from:${target} — missing in farms or garden`);
           broken++;
         }
       }
