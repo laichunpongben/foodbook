@@ -5,10 +5,10 @@ import pagefind from 'astro-pagefind';
 
 // https://astro.build/config
 //
-// Initial deploy is fully static (no SSR routes wired yet) — the Cloudflare
-// adapter comes back when we add /api/extract, /api/chat, /api/coach, and
-// the /photos/[...path] R2 proxy. Until then, plain static build is enough
-// and avoids needing R2/KV bindings to deploy.
+// `output: 'static'` — the site is a static archive. AI / SSR surfaces
+// (extract, chat, voice coach, R2 photo proxy) are not built and live
+// as deferred items in `docs/feature-wishlist.md`. When one lands, add
+// the Cloudflare adapter and the matching binding in `wrangler.toml`.
 export default defineConfig({
   site: 'https://food.databookman.com',
   output: 'static',

@@ -2,13 +2,7 @@ name = "foodbook"
 compatibility_date = "2026-05-13"
 pages_build_output_dir = "./dist"
 
-# Bindings come back when we wire the SSR routes that need them:
-#   PHOTOS  — R2 bucket for the photo proxy (src/pages/photos/[...path].ts)
-#   AI_LIMITS — KV namespace for /api/* rate limiting + monthly budget
-# Until then, the site is fully static and deploys with no bindings.
-#
-# Anthropic + Voyage keys (when the AI routes ship) must be set as Pages
-# secrets, not committed:
-#   wrangler pages secret put ANTHROPIC_API_KEY --project-name=foodbook
-#   wrangler pages secret put VOYAGE_API_KEY    --project-name=foodbook
-#   wrangler pages secret put EXTRACT_TOKEN     --project-name=foodbook
+# Static-only deploy — no bindings required today. If/when an SSR
+# surface from `docs/feature-wishlist.md` lands, wire its binding
+# here and add the matching Pages secret:
+#   wrangler pages secret put <KEY> --project-name=foodbook
