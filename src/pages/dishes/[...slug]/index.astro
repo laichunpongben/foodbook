@@ -3,7 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
-import SunSection from '~/components/SunSection.astro';
+import DishHero from '~/components/DishHero.astro';
 import PlantSection from '~/components/PlantSection.astro';
 import CookSection from '~/components/CookSection.astro';
 import PlateSection from '~/components/PlateSection.astro';
@@ -26,6 +26,8 @@ const journey = await getJourney(dish);
 const hasIngredients = journey.ingredients.length > 0;
 const hasRecipes = journey.cook.length > 0;
 const hasEats = journey.eat.length > 0;
+const heroScrollTo: '#plant' | '#cook' | '#plate' =
+  hasIngredients ? '#plant' : hasRecipes ? '#cook' : '#plate';
 
 const site = Astro.site!;
 const dishUrl = entryUrl(site, 'dishes', slug);
@@ -58,43 +60,25 @@ const breadcrumbLd = breadcrumb(
   <JsonLd data={articleLd} />
   <JsonLd data={breadcrumbLd} />
   <article class="dish-journey">
-    <!-- 1 · Sun — frames the energy story -->
-    <SunSection />
+    <DishHero dish={dish} scrollTo={heroScrollTo} />
 
-    <!-- 2 · Plant — ingredients with their origins -->
     {hasIngredients && <PlantSection ingredients={journey.ingredients} />}
-
-    <!-- 3 · Cook — the recipe(s) -->
     {hasRecipes && <CookSection recipes={journey.cook} />}
-
-    <!-- 4 · Plate — the reveal: the assembled dish -->
     <PlateSection dish={journey.dish} />
-
-    <!-- 5 · Eat — meals + restaurants -->
     {hasEats && <EatSection eats={journey.eat} />}
 
-    <!-- Prose body (prologue / MDX content / finale) -->
-    {(dish.data.prologue || dish.data.finale) && (
-      <section class="dish-prose">
-        <div class="container">
-          {dish.data.prologue && (
-            <section class="prologue">
-              <h2 set:html={dish.data.prologue.heading} />
-              <p set:html={dish.data.prologue.prose} />
-            </section>
-          )}
+    <section class="dish-prose">
+      <div class="container">
+        <Content />
 
-          <Content />
-
-          {dish.data.finale && (
-            <section class="finale">
-              <h2 set:html={dish.data.finale.heading} />
-              <p set:html={dish.data.finale.prose} />
-            </section>
-          )}
-        </div>
-      </section>
-    )}
+        {dish.data.finale && (
+          <section class="finale">
+            <h2 set:html={dish.data.finale.heading} />
+            <p set:html={dish.data.finale.prose} />
+          </section>
+        )}
+      </div>
+    </section>
   </article>
 </BaseLayout>
 
@@ -125,13 +109,11 @@ const breadcrumbLd = breadcrumb(
     padding: 5rem 0 7rem;
   }
 
-  .dish-prose .prologue,
   .dish-prose .finale {
     margin: 2.5rem 0;
     max-width: var(--measure);
   }
 
-  .dish-prose .prologue h2,
   .dish-prose .finale h2 {
     margin-bottom: 0.6rem;
   }

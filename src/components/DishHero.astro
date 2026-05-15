@@ -1,0 +1,199 @@
+---
+/**
+ * DishHero — opening section of a dish page.
+ *
+ * Composes a per-dish opener from frontmatter: origin eyebrow, title,
+ * tagline, an "in repertoire since" pill, the hero photograph, and
+ * the authored prologue. Skeleton is constant across the catalog; the
+ * words and image vary per dish.
+ */
+
+import type { CollectionEntry } from 'astro:content';
+import WikiImage from './WikiImage.astro';
+
+interface Props {
+  dish: CollectionEntry<'dishes'>;
+  /** First downstream section to scroll into. */
+  scrollTo: '#plant' | '#cook' | '#plate';
+}
+
+const { dish, scrollTo } = Astro.props;
+const { shortTitle, title, tagline, origin, heroUrl, heroFocal, prologue, firstMade } = dish.data;
+
+const repertoireSince = firstMade
+  ? new Date(firstMade).toLocaleDateString('en', { month: 'short', year: 'numeric' })
+  : null;
+
+const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
+---
+
+<section class="journey-section dish-hero">
+  <div class="container">
+    <div class="dish-hero-grid">
+      <div class="dish-hero-text">
+        {origin && <p class="stage-eyebrow">{origin}</p>}
+        <h1 class="dish-hero-title" set:html={title} />
+        {tagline && <p class="dish-hero-tagline" set:html={tagline} />}
+        {repertoireSince && (
+          <p class="stage-eyebrow dish-hero-since">In repertoire since {repertoireSince}</p>
+        )}
+      </div>
+      {heroUrl && (
+        <WikiImage
+          url={heroUrl}
+          alt={`Photograph of ${shortTitle}`}
+          loading="eager"
+          fetchpriority="high"
+          sizes="(max-width: 880px) 100vw, 45vw"
+          class="dish-hero-figure"
+          style={figureStyle}
+        />
+      )}
+    </div>
+
+    {prologue && (
+      <div class="dish-hero-prologue">
+        <h2 class="dish-hero-prologue-heading" set:html={prologue.heading} />
+        <p class="dish-hero-prologue-prose" set:html={prologue.prose} />
+      </div>
+    )}
+
+    <a class="dish-hero-scroll" href={scrollTo} aria-label="Continue to the journey">↓</a>
+  </div>
+</section>
+
+<style>
+  .dish-hero {
+    position: relative;
+    padding: 5rem 0 4rem;
+    background: rgba(10, 13, 17, 1);
+  }
+
+  .dish-hero-grid {
+    display: grid;
+    grid-template-columns: 6fr 5fr;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  .dish-hero-text {
+    min-width: 0;
+  }
+
+  .dish-hero-text .stage-eyebrow {
+    margin: 0 0 1.2rem;
+  }
+
+  .dish-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+    line-height: 1.02;
+    margin: 0;
+    color: var(--ink);
+    font-weight: 500;
+    max-width: 14ch;
+  }
+
+  .dish-hero-title :global(em) {
+    font-style: italic;
+    color: var(--ink);
+  }
+
+  .dish-hero-tagline {
+    margin: 1.4rem 0 0;
+    max-width: 46ch;
+    font-size: 1.08rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+
+  .dish-hero-since {
+    margin-top: 1.6rem;
+  }
+
+  .dish-hero-figure {
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    background-color: #0a0d11;
+    border-radius: 4px;
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .dish-hero-prologue {
+    margin: 4.5rem auto 0;
+    max-width: 64ch;
+    padding: 2.2rem 0 0;
+    border-top: 1px solid var(--rule);
+    text-align: left;
+  }
+
+  .dish-hero-prologue-heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+    line-height: 1.2;
+    margin: 0 0 0.8rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .dish-hero-prologue-heading :global(em) {
+    font-style: italic;
+  }
+
+  .dish-hero-prologue-prose {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+
+  .dish-hero-scroll {
+    display: block;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 3.5rem auto 0;
+    line-height: 2.3rem;
+    text-align: center;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 1.05rem;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    animation: dish-hero-bob 2.4s ease-in-out infinite;
+  }
+
+  .dish-hero-scroll:hover {
+    transform: scale(1.08);
+    border-color: var(--ink-soft);
+  }
+
+  @keyframes dish-hero-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(6px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dish-hero-scroll { animation: none; }
+  }
+
+  @media (max-width: 880px) {
+    .dish-hero {
+      padding: 2.5rem 0 3rem;
+    }
+    .dish-hero-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .dish-hero-figure {
+      order: -1;
+      aspect-ratio: 16 / 10;
+    }
+    .dish-hero-prologue {
+      margin-top: 3rem;
+    }
+  }
+</style>
