@@ -71,6 +71,7 @@ export interface JourneyDish {
   origin?: string;
   hero?: string;
   heroUrl?: string;
+  heroFocal?: string;
 }
 
 export interface Journey {
@@ -220,6 +221,7 @@ export async function getJourney(dish: CollectionEntry<'dishes'>): Promise<Journ
       origin: dish.data.origin,
       hero: dish.data.hero,
       heroUrl: dish.data.heroUrl,
+      heroFocal: dish.data.heroFocal,
     },
     ingredients,
     cook,
