@@ -30,7 +30,7 @@ import sharp from 'sharp';
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
-import { RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
+import { megapixels, RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
 import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
 import { lookupArticle, slugToTitle } from './lib/wiki-titles.mjs';
 
@@ -111,7 +111,7 @@ for (const slug of slugs) {
     continue;
   }
 
-  const currentMP = (current.width * current.height) / 1_000_000;
+  const currentMP = megapixels(current);
   // Skip dishes already meeting the resolution gates — nothing to upgrade.
   if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels) continue;
   flagged++;
@@ -146,7 +146,7 @@ for (const slug of slugs) {
     noBetter++;
     continue;
   }
-  const newMP = (img.width * img.height) / 1_000_000;
+  const newMP = megapixels(img);
   if (newMP < currentMP * UPGRADE_RATIO) {
     console.log(
       `${label}WEAK   current ${current.width}×${current.height} (${currentMP.toFixed(1)}MP) vs article ${img.width}×${img.height} (${newMP.toFixed(1)}MP)`,
