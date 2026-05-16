@@ -11,9 +11,9 @@
  *
  * Saliency picks high-contrast regions which for food photos *usually*
  * matches "the dish" — but can lock onto text labels or off-frame
- * garnish at the very edge. Values landing outside the [SALIENCY_TRUST_LO,
- * SALIENCY_TRUST_HI] band are treated as untrustworthy and skipped
- * (default center is at least no worse).
+ * garnish at the very edge. Values are clamped into [SALIENCY_CLAMP_LO,
+ * SALIENCY_CLAMP_HI] so the direction of the hint is preserved while a
+ * misfire still keeps most of the dish in frame.
  *
  * Usage:
  *   node scripts/suggest-focal.mjs            # dry run
@@ -114,26 +114,21 @@ function clamp(v) {
   return Math.min(SALIENCY_CLAMP_HI, Math.max(SALIENCY_CLAMP_LO, v));
 }
 
-// Inserts `heroFocal: "X% Y%"` directly under whichever hero/heroUrl
-// line exists. Idempotent guard: if heroFocal already present, no-op.
+// Inserted under `heroUrl:` so the focal sits next to the source it
+// targets; falls back to `hero:` when only a local thumbnail is set.
 async function writeHeroFocal(mdxPath, focal) {
   const text = await readFile(mdxPath, 'utf8');
-  if (/^heroFocal:/m.test(text)) return false;
-  const anchored = text.replace(
-    /^(heroUrl:\s*"[^"]*")$/m,
-    `$1\nheroFocal: "${focal}"`,
-  );
-  if (anchored !== text) {
-    await writeFile(mdxPath, anchored);
-    return true;
+  for (const key of ['heroUrl', 'hero']) {
+    const next = text.replace(
+      new RegExp(`^(${key}:\\s*"[^"]*")$`, 'm'),
+      `$1\nheroFocal: "${focal}"`,
+    );
+    if (next !== text) {
+      await writeFile(mdxPath, next);
+      return;
+    }
   }
-  const fallback = text.replace(
-    /^(hero:\s*"[^"]*")$/m,
-    `$1\nheroFocal: "${focal}"`,
-  );
-  if (fallback === text) throw new Error('no hero/heroUrl anchor line found');
-  await writeFile(mdxPath, fallback);
-  return true;
+  throw new Error('no hero/heroUrl anchor line found');
 }
 
 const slugs = await listSlugs('dishes');
