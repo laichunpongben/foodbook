@@ -29,7 +29,7 @@ import { join } from 'node:path';
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
-import { RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
+import { megapixels, RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
 import { createThrottledFetcher } from './lib/throttled-fetch.mjs';
 import { slugToTitle } from './lib/wiki-titles.mjs';
 
@@ -107,35 +107,31 @@ function slugToCategory(slug) {
   return CATEGORY_OVERRIDES[slug] ?? slugToTitle(slug);
 }
 
+async function commonsApi(params) {
+  const qs = new URLSearchParams({ action: 'query', format: 'json', ...params });
+  const res = await throttledFetch(`https://commons.wikimedia.org/w/api.php?${qs}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 async function listCategoryFiles(category) {
-  const params = new URLSearchParams({
-    action: 'query',
-    format: 'json',
+  const data = await commonsApi({
     list: 'categorymembers',
     cmtitle: `Category:${category}`,
     cmtype: 'file',
     cmlimit: String(CATEGORY_LIMIT),
   });
-  const res = await throttledFetch(`https://commons.wikimedia.org/w/api.php?${params}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
   return data.query?.categorymembers?.map((m) => m.title) ?? [];
 }
 
 async function getImageInfo(titles) {
   if (!titles.length) return [];
-  const params = new URLSearchParams({
-    action: 'query',
-    format: 'json',
+  const data = await commonsApi({
     prop: 'imageinfo',
     titles: titles.join('|'),
     iiprop: 'size|url|mime',
   });
-  const res = await throttledFetch(`https://commons.wikimedia.org/w/api.php?${params}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  const pages = data.query?.pages ?? {};
-  return Object.values(pages)
+  return Object.values(data.query?.pages ?? {})
     .map((p) => {
       const info = p.imageinfo?.[0];
       if (!info) return null;
@@ -150,14 +146,13 @@ function passesDenylist(title) {
 }
 
 function rankCandidates(candidates, current, currentUrl) {
-  const currentMP = (current.width * current.height) / 1_000_000;
-  const minBetterMP = currentMP * UPGRADE_RATIO;
+  const minBetterMP = megapixels(current) * UPGRADE_RATIO;
   return candidates
     .filter((c) => {
       if (c.url === currentUrl) return false;
       if (c.mime !== 'image/jpeg' && c.mime !== 'image/png') return false;
       if (c.width < RESOLUTION_GATE.minWidth) return false;
-      const mp = (c.width * c.height) / 1_000_000;
+      const mp = megapixels(c);
       if (mp < RESOLUTION_GATE.minMegapixels) return false;
       if (mp < minBetterMP) return false;
       const aspect = c.width / c.height;
@@ -168,7 +163,13 @@ function rankCandidates(candidates, current, currentUrl) {
     .sort((a, b) => b.width * b.height - a.width * a.height);
 }
 
-const dimsCache = JSON.parse(await readFile(DIMS_CACHE_PATH, 'utf8'));
+let dimsCache;
+try {
+  dimsCache = JSON.parse(await readFile(DIMS_CACHE_PATH, 'utf8'));
+} catch {
+  console.error(`# error: ${DIMS_CACHE_PATH} not found — run \`node scripts/audit-hero-photos.mjs\` first`);
+  process.exit(1);
+}
 const slugs = await listSlugs('dishes');
 
 console.log(`# commons-mine-photos ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
@@ -198,7 +199,7 @@ for (const slug of slugs) {
 
   const current = dimsCache[heroUrl];
   if (!current) continue;  // not in cache — was rate-limited last audit
-  const currentMP = (current.width * current.height) / 1_000_000;
+  const currentMP = megapixels(current);
   if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels) continue;
   flagged++;
 
@@ -233,11 +234,16 @@ for (const slug of slugs) {
     noBetter++;
     continue;
   }
-  // Manual override wins if the named title is in the ranked set.
+  // Manual override wins if the named title survived rankCandidates'
+  // filters. If it didn't (denylist hit, below UPGRADE_RATIO, etc.),
+  // surface that so the curator knows the override silently failed.
   const manual = MANUAL_PICKS[slug];
-  const manualHit = manual && ranked.find((c) => c.title === `File:${manual}` || c.title === manual);
+  const manualHit = manual && ranked.find((c) => c.title === `File:${manual}`);
+  if (manual && !manualHit) {
+    console.log(`${label}MANMISS override "${manual}" not in ranked set — falling back to auto-pick`);
+  }
   const best = manualHit ?? ranked[0];
-  const bestMP = (best.width * best.height) / 1_000_000;
+  const bestMP = megapixels(best);
   const tag = manualHit ? 'MANUAL' : 'PICK  ';
   console.log(
     `${label}${tag} ${current.width}×${current.height} (${currentMP.toFixed(1)}MP) → ${best.width}×${best.height} (${bestMP.toFixed(1)}MP) ${best.title.replace(/^File:/, '')}`,

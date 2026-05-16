@@ -6,3 +6,5 @@ export const RESOLUTION_GATE = {
   minWidth: 1200,        // < 1200px wide can't fill a retina hero
   minMegapixels: 1.5,    // < 1.5 MP usually means thumbnail-tier source
 };
+
+export const megapixels = ({ width, height }) => (width * height) / 1_000_000;
