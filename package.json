@@ -18,6 +18,7 @@
     "embeddings": "node scripts/build-embeddings.mjs",
     "check:refs": "node scripts/check-refs.mjs",
     "check:leaks": "bash scripts/check-no-leaks.sh",
+    "audit:photos": "node scripts/audit-hero-photos.mjs",
     "favicons": "node scripts/gen-favicons.mjs"
   },
   "dependencies": {

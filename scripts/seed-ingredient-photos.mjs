@@ -369,7 +369,7 @@ async function fetchLeadImageFilename(title, attempt = 1) {
   const timer = setTimeout(() => controller.abort(), 10000);
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'foodbook/seed-ingredient-photos (https://github.com/laichunpongben/foodbook)' },
+      headers: { 'User-Agent': 'foodbook/seed-ingredient-photos' },
       signal: controller.signal,
     });
     clearTimeout(timer);

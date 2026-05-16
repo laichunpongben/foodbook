@@ -25,6 +25,7 @@ import { join } from 'node:path';
 
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
+import { createThrottledFetcher } from './lib/throttled-fetch.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const LABEL_WIDTH = 28;
@@ -48,29 +49,15 @@ const TITLE_OVERRIDES = {
   'wonton-noodle-soup': 'Wonton_noodles',
 };
 
-const UA = 'foodbook-repair/1.0 (https://github.com/laichunpongben/foodbook)';
-// Gap is enforced on request *start*, not completion — slow requests
-// don't earn extra credit. Wikimedia rate-limits on starts too.
-const REQUEST_GAP_MS = 800;
-const MAX_RETRIES = 3;
-const BACKOFF_BASE_MS = 4000;
-let lastFetchAt = 0;
-
-async function throttledFetch(url, init) {
-  const wait = Math.max(0, lastFetchAt + REQUEST_GAP_MS - Date.now());
-  if (wait) await new Promise((r) => setTimeout(r, wait));
-  lastFetchAt = Date.now();
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const res = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': UA }, ...init });
-    if (res.ok || res.status === 404) return res;
-    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
-      await new Promise((r) => setTimeout(r, BACKOFF_BASE_MS * (attempt + 1)));
-      continue;
-    }
-    throw new Error(`HTTP ${res.status}`);
-  }
-  throw new Error('exhausted retries');
-}
+// 404 is allowed so the HEAD-probe / page-summary callers can
+// distinguish "URL is dead" from a transient error and decide whether
+// to repair, rather than re-trying past a real miss.
+const throttledFetch = createThrottledFetcher({
+  ua: 'foodbook-repair/1.0',
+  gapMs: 800,
+  backoffBaseMs: 4000,
+  allowStatus: [404],
+});
 
 // Throws on network/transient errors so the caller can surface them
 // rather than mistaking a DNS blip for a 404 (which would --write a

@@ -28,6 +28,7 @@ import sharp from 'sharp';
 
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
+import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
 
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
@@ -53,26 +54,13 @@ const CENTER_TOLERANCE = 8;
 const SALIENCY_CLAMP_LO = 25;
 const SALIENCY_CLAMP_HI = 75;
 
-const UA = 'foodbook-focal/1.0 (https://github.com/laichunpongben/foodbook)';
-const REQUEST_GAP_MS = 1200;
-const MAX_RETRIES = 3;
-const BACKOFF_BASE_MS = 5000;
-let lastFetchAt = 0;
+const throttledFetch = createThrottledFetcher({
+  ua: 'foodbook-focal/1.0',
+  gapMs: 1200,
+});
 
 async function fetchBuffer(url) {
-  const wait = Math.max(0, lastFetchAt + REQUEST_GAP_MS - Date.now());
-  if (wait) await new Promise((r) => setTimeout(r, wait));
-  lastFetchAt = Date.now();
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const res = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': UA } });
-    if (res.ok) return Buffer.from(await res.arrayBuffer());
-    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
-      await new Promise((r) => setTimeout(r, BACKOFF_BASE_MS * (attempt + 1)));
-      continue;
-    }
-    throw new Error(`HTTP ${res.status}`);
-  }
-  throw new Error('exhausted retries');
+  return asBuffer(await throttledFetch(url));
 }
 
 async function loadPhoto({ heroUrl, hero }) {
