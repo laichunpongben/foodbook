@@ -53,7 +53,7 @@ const TITLE_OVERRIDES = {
 // distinguish "URL is dead" from a transient error and decide whether
 // to repair, rather than re-trying past a real miss.
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-repair/1.0 (https://github.com/laichunpongben/foodbook)',
+  ua: 'foodbook-repair/1.0',
   gapMs: 800,
   backoffBaseMs: 4000,
   allowStatus: [404],

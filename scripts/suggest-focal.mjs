@@ -55,7 +55,7 @@ const SALIENCY_CLAMP_LO = 25;
 const SALIENCY_CLAMP_HI = 75;
 
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-focal/1.0 (https://github.com/laichunpongben/foodbook)',
+  ua: 'foodbook-focal/1.0',
   gapMs: 1200,
 });
 

@@ -42,7 +42,7 @@ const LIMIT = (() => {
 })();
 
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-audit/1.0 (https://github.com/laichunpongben/foodbook)',
+  ua: 'foodbook-audit/1.0',
   gapMs: 1200,
 });
 
