@@ -36,8 +36,9 @@
  *   No auth-gated tier; sensitive content does not enter this repo.
  */
 
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
 
 /* ----- shared primitives ----- */
 
@@ -96,7 +97,7 @@ const dishes = defineCollection({
     /** Absolute URL to an external image (e.g. Wikimedia). Takes precedence
      *  over `hero` when set — used for entries that don't have local R2
      *  photos yet. Renderer should not append size suffixes to this. */
-    heroUrl: z.string().url().optional(),
+    heroUrl: z.url().optional(),
     /** CSS `object-position` / `background-position` value applied to the
      *  hero photo wherever it's cropped (landing-page card's 4:5 crop and
      *  the dish detail page's full-bleed plate hero). Omit for the
@@ -138,7 +139,7 @@ const ingredientSchema = z.object({
   name: z.string().optional(),
   /** Absolute URL for the ingredient's hero image. Used by the Plant
    *  section to show each ingredient as a card with its own photo. */
-  heroUrl: z.string().url().optional(),
+  heroUrl: z.url().optional(),
   /** Optional growth note — "ripens 80 days from seed", "pressed in
    *  early autumn", "fermented for 3 years". Shown on the ingredient
    *  card. */
@@ -170,14 +171,14 @@ const recipes = defineCollection({
     timePrep: z.string().optional(),                // "15 min"
     timeCook: z.string().optional(),                // "2 h"
     hero: z.string().optional(),
-    heroUrl: z.string().url().optional(),
+    heroUrl: z.url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     /** Attribution. If AI was used in extraction, say so — never lie about
      *  authorship. See ADR-0004 + docs/ai-first.md. */
     attribution: z.string().optional(),
     /** Source URL if adapted from elsewhere. */
-    sourceUrl: z.string().url().optional(),
+    sourceUrl: z.url().optional(),
     ingredients: z.array(ingredientSchema),
     steps: z.array(stepSchema),
     notes: z.string().optional(),
@@ -205,7 +206,7 @@ const visitSchema = z.object({
  *  discovery note documenting how you first heard of it. */
 const discoveredViaSchema = z.object({
   source: z.string(),                          // "TasteAtlas", "Eating Europe"
-  url: z.string().url().optional(),
+  url: z.url().optional(),
   /** Specific signature that matches the dish — "Tagliatelle al ragù". */
   signature: z.string().optional(),
 });
@@ -222,7 +223,7 @@ const restaurants = defineCollection({
     priceBand,
     /** Path stem for a hero photo, if any. */
     hero: z.string().optional(),
-    heroUrl: z.string().url().optional(),
+    heroUrl: z.url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     visits: z.array(visitSchema).default([]),
@@ -255,11 +256,11 @@ const farms = defineCollection({
     products: z.array(z.string()).default([]),
     seasonalWindow: z.array(seasonalWindowSchema).default([]),
     hero: z.string().optional(),
-    heroUrl: z.string().url().optional(),
+    heroUrl: z.url().optional(),
     visibility,
     /** Free editorial note about the producer. */
     note: z.string().optional(),
-    url: z.string().url().optional(),
+    url: z.url().optional(),
   }),
 });
 
@@ -277,7 +278,7 @@ const meals = defineCollection({
     dishes: z.array(z.string()).default([]),
     /** Path stems for photos. */
     photos: z.array(z.string()).default([]),
-    heroUrl: z.string().url().optional(),
+    heroUrl: z.url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     /** Companion count, no names. Names should not enter the repo. */
@@ -295,7 +296,7 @@ const garden = defineCollection({
     planted: isoDate,
     harvested: isoDate.optional(),
     yieldNote: z.string().optional(),               // "≈ 2 kg over 4 weeks"
-    heroUrl: z.string().url().optional(),
+    heroUrl: z.url().optional(),
     visibility,
     note: z.string().optional(),
   }),
