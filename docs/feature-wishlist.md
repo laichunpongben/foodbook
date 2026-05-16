@@ -21,7 +21,7 @@ When something here ships, move it to `architecture.md` and update the relevant 
 | Garden log | high | S | medium | Personal use; ship once a garden bed exists IRL. |
 | Pantry "what to cook" | medium | M | medium | Needs garden + pantry + recipes — defer until two are populated. |
 | Plate map (hotspot polygons on dish hero) | medium | L | low | Cool but slow to author. Try once. |
-| Ingredient terroir registry (shared) | medium | M | low | Premature; per-dish refs work until ~20 dishes. |
+| Ingredient terroir registry (sidecar API per #60) | high | M | high | 118 dishes is 6× past the original "premature" threshold. Pending #60 decisions; favored shape is a separate repo (`almanac`) exposing `/terroir/:species`, `/seasonality/:species`, consumed by Foodbook via per-ingredient chips. |
 | Wine / sake / pairing entries | low | M | low | Separate spine; revisit if content emerges. |
 | Cookware diary | low | S | low | Not enough content. |
 | Email digest (monthly meal summary, AI-drafted) | low | M | low | Personal use; nice if it lands automatically. |
