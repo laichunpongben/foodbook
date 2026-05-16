@@ -19,3 +19,6 @@ Each ADR captures:
 | [0003](0003-dual-mode-editorial-and-kitchen.md) | Dual visual mode — dark editorial + light "kitchen mode" for cook view | Accepted |
 | [0004](0004-ai-first-integration-points.md) | AI-first integration points (author-time + reader-time) | Accepted |
 | [0005](0005-public-by-default-no-private-tier.md) | Public by default; `unlisted` (noindex) instead of an auth-gated private tier | Accepted |
+| [0006](0006-dish-page-journey-with-dishhero.md) | Dish page = DishHero + Plant/Cook/Plate/Eat journey (replaces Sankey + SunSection) | Accepted |
+| [0007](0007-external-agriculture-data-sidecar.md) | Agriculture data is an external sidecar (`almanac`), not a Foodbook module | Proposed |
+| [0008](0008-wikimedia-image-pipeline.md) | Dish heroes from Wikimedia + `heroFocal`; supersedes the R2-variants clause of ADR-0001 | Accepted |
