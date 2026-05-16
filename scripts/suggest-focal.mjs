@@ -1,18 +1,26 @@
 #!/usr/bin/env node
 /**
- * suggest-focal.mjs — one-off helper that suggests `heroFocal` values
- * for dish entries by running sharp's attention strategy at a 4:5
- * target crop (matches .dish-card's aspect-ratio) and back-computing
- * the chosen focal as a percentage of the source.
+ * suggest-focal.mjs — propose `heroFocal` values for dish entries by
+ * running sharp's attention strategy at a 4:5 target crop (matches the
+ * .dish-card aspect-ratio) and back-computing the chosen focal as a
+ * percentage of the source.
  *
- * Saliency is a hint — it picks high-contrast regions which for food
- * photos usually but not always matches "the dish". Eyeball the
- * output before pasting into frontmatter.
+ * Default run is dry: prints per-dish suggestions and a tally. Pass
+ * `--write` to insert `heroFocal: "X% Y%"` lines into MDX frontmatter
+ * directly under the hero/heroUrl line; the git diff is the safety net.
  *
- * Usage: node scripts/suggest-focal.mjs
+ * Saliency picks high-contrast regions which for food photos *usually*
+ * matches "the dish" — but can lock onto text labels or off-frame
+ * garnish at the very edge. Values are clamped into [SALIENCY_CLAMP_LO,
+ * SALIENCY_CLAMP_HI] so the direction of the hint is preserved while a
+ * misfire still keeps most of the dish in frame.
+ *
+ * Usage:
+ *   node scripts/suggest-focal.mjs            # dry run
+ *   node scripts/suggest-focal.mjs --write    # apply
  */
 
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +31,9 @@ import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
+const LABEL_WIDTH = 28;
+
+const WRITE = process.argv.includes('--write');
 
 // Landing card is 4:5 portrait; this is the surface where off-center
 // crops show up most. Detail-page hero shares the same focal but its
@@ -33,9 +44,15 @@ const TARGET_H = 500;
 // Anything within ±this many percentage points of 50% on both axes is
 // left to the centered default. Avoids noise from saliency wobble.
 const CENTER_TOLERANCE = 8;
+// Saliency outputs at the extremes (≤ LO or ≥ HI) are often edge
+// artefacts — text labels, garnish at the frame edge. Clamp into this
+// band so a misfire still keeps the dish mostly visible: at 75% we see
+// the source's right half, which usually still includes a centered
+// plate; at 100% the dish is cropped out entirely. The direction of
+// the saliency hint is preserved either way.
+const SALIENCY_CLAMP_LO = 25;
+const SALIENCY_CLAMP_HI = 75;
 
-// Wikimedia 404/403s requests without a descriptive User-Agent. Spread
-// requests with a small delay so we don't trip rate-limiting.
 const UA = 'foodbook-focal/1.0 (https://github.com/laichunpongben/foodbook)';
 const REQUEST_GAP_MS = 1200;
 const MAX_RETRIES = 3;
@@ -93,12 +110,32 @@ function aspectNote(W, H) {
   return `${W}×${H} ~4:5`;
 }
 
+function clamp(v) {
+  return Math.min(SALIENCY_CLAMP_HI, Math.max(SALIENCY_CLAMP_LO, v));
+}
+
+// Inserted under `heroUrl:` so the focal sits next to the source it
+// targets; falls back to `hero:` when only a local thumbnail is set.
+async function writeHeroFocal(mdxPath, focal) {
+  const text = await readFile(mdxPath, 'utf8');
+  for (const key of ['heroUrl', 'hero']) {
+    const next = text.replace(
+      new RegExp(`^(${key}:\\s*"[^"]*")$`, 'm'),
+      `$1\nheroFocal: "${focal}"`,
+    );
+    if (next !== text) {
+      await writeFile(mdxPath, next);
+      return;
+    }
+  }
+  throw new Error('no hero/heroUrl anchor line found');
+}
+
 const slugs = await listSlugs('dishes');
 
-console.log('# heroFocal suggestions — paste keepers into dish frontmatter');
-console.log('# (saliency is a hint; eyeball before applying)\n');
+console.log(`# suggest-focal ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
 
-let suggested = 0;
+let applied = 0;
 let kept = 0;
 let skipped = 0;
 let errored = 0;
@@ -114,7 +151,7 @@ for (const slug of slugs) {
   const heroFocal = getString(fm, 'heroFocal');
   const heroUrl = getString(fm, 'heroUrl');
   const hero = getString(fm, 'hero');
-  const label = slug.padEnd(28);
+  const label = slug.padEnd(LABEL_WIDTH);
 
   if (heroFocal) {
     console.log(`${label}already set: "${heroFocal}"`);
@@ -131,19 +168,24 @@ for (const slug of slugs) {
     const buf = await loadPhoto({ heroUrl, hero });
     const { fx, fy, srcW, srcH } = await suggest(buf);
     const note = aspectNote(srcW, srcH);
-    const dx = Math.abs(fx - 50);
-    const dy = Math.abs(fy - 50);
-    if (dx < CENTER_TOLERANCE && dy < CENTER_TOLERANCE) {
-      console.log(`${label}default fine    (saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%, ${note})`);
+    const cx = clamp(fx);
+    const cy = clamp(fy);
+    if (Math.abs(cx - 50) < CENTER_TOLERANCE && Math.abs(cy - 50) < CENTER_TOLERANCE) {
+      console.log(`${label}center           (saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%, ${note})`);
       kept++;
-    } else {
-      console.log(`${label}heroFocal: "${fx.toFixed(0)}% ${fy.toFixed(0)}%"   (${note})`);
-      suggested++;
+      continue;
     }
+    const focal = `${cx.toFixed(0)}% ${cy.toFixed(0)}%`;
+    const clampNote = cx === fx && cy === fy ? '' : ` ← saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%`;
+    console.log(`${label}heroFocal: "${focal}"  (${note})${clampNote}`);
+    if (WRITE) await writeHeroFocal(mdx, focal);
+    applied++;
   } catch (err) {
     console.log(`${label}ERROR: ${err.message}`);
     errored++;
   }
 }
 
-console.log(`\n# ${suggested} suggested · ${kept} default-fine · ${skipped} skipped · ${errored} error`);
+console.log(
+  `\n# ${applied} ${WRITE ? 'written' : 'suggested'} · ${kept} default-center · ${skipped} skipped · ${errored} error`,
+);
