@@ -11,7 +11,7 @@ Snapshot of the **current** state of the system: directory layout, content model
 | Site framework | Astro 5 (`output: 'static'`) — no SSR adapter today | [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md) |
 | Content | Content collections + MDX, Zod schemas in `src/content.config.ts` | [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md) |
 | Hosting | Cloudflare Pages, deploy via `wrangler pages deploy` from CI | [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md) |
-| Dish hero photography | Direct Wikimedia URLs + `heroFocal` CSS crop control | [ADR-0008](adr/0008-wikimedia-image-pipeline.md) (supersedes the R2-variants clause of [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md)) |
+| Dish hero photography | Direct Wikimedia URLs + `heroFocal` focal-point hint | [ADR-0008](adr/0008-wikimedia-image-pipeline.md) (supersedes the R2-variants clause of [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md)) |
 | Visibility | Public + `unlisted` (no private/auth tier) | [ADR-0005](adr/0005-public-by-default-no-private-tier.md) |
 | Map | Leaflet + CARTO Dark Matter tiles | inherited from Travelbook ADR-0004 |
 | Visual language — primary | Dark editorial, Fraunces + Inter (self-hosted), paprika accent | [ADR-0003](adr/0003-dual-mode-editorial-and-kitchen.md) |
@@ -44,11 +44,11 @@ Plus two lightweight collections for personal log state:
 - `garden/<slug>.mdx` — bed × plant × planted/harvested dates × yield × notes.
 - `pantry.mdx` — single MDX file describing current inventory state.
 
-The dish schema's `stages: { source?, grow?, cook?, eat? }` is the data layer. The dish page renders those as four narrative sections — **Plant** (ingredients flattened from `stages.cook[*].recipes[*].ingredients`), **Cook** (the recipes themselves), **Plate** (the dish entity), **Eat** (`stages.eat` meals + restaurants). The schema names and the section names are intentionally different — see [ADR-0006](adr/0006-dish-page-journey-with-dishhero.md) for the mapping.
+The dish schema's `stages: { source?, grow?, cook?, eat? }` is the data layer. The dish page renders those as four narrative sections — **Plant** (ingredients flattened from `stages.cook[*].recipes[*].ingredients`), **Cook** (the recipes themselves), **Plate** (the dish entity), **Eat** (`stages.eat` meals + restaurants). See [ADR-0006](adr/0006-dish-page-journey-with-dishhero.md) for the schema-to-section mapping.
 
-### Why this shape (vs. one big "entry" type)
+### Why this shape
 
-A single polymorphic entry would have ~60 fields most of which are unused per entry. Five focused collections keep each schema small and the entry-author UX clear. Cross-refs by slug do the work of joining at render time. See [ADR-0002](adr/0002-content-model-dishes-recipes-restaurants-farms.md).
+Five focused schemas vs. one ~60-field polymorphic entry; cross-refs by slug. See [ADR-0002](adr/0002-content-model-dishes-recipes-restaurants-farms.md).
 
 ## Directory layout
 
@@ -56,7 +56,7 @@ A single polymorphic entry would have ~60 fields most of which are unused per en
 foodbook/
 ├── README.md
 ├── astro.config.mjs                   ← static output; mdx + sitemap + pagefind
-├── wrangler.toml                      ← deploy target only; no bindings today
+├── wrangler.toml                      ← deploy target; no bindings
 ├── package.json                       ← astro, @astrojs/mdx, @astrojs/sitemap, leaflet, sharp, vitest
 ├── tsconfig.json
 │
@@ -74,7 +74,7 @@ foodbook/
 │   ├── _headers                       ← HSTS + CSP + frame-ancestors + Permissions-Policy + immutable assets
 │   ├── _redirects                     ← /* → /404.html  404  catch-all
 │   ├── robots.txt                     ← Allow: / ; sitemap pointer (Disallow handled per-entry by `unlisted`)
-│   ├── favicon.svg / favicon.ico / icon-32.png / apple-touch-icon.png
+│   ├── favicons (svg / ico / png / apple-touch)
 │   └── og-default.svg                 ← fallback social card
 │
 ├── scripts/
@@ -100,7 +100,7 @@ foodbook/
     │   ├── recipes/<slug>.mdx
     │   ├── restaurants/<slug>.mdx
     │   ├── farms/<slug>.mdx
-    │   ├── meals/<slug>.mdx           ← (empty today — collection defined, no entries yet)
+    │   ├── meals/<slug>.mdx           ← (no entries yet — collection defined)
     │   ├── garden/<slug>.mdx
     │   └── pantry.mdx
     │
@@ -173,21 +173,15 @@ foodbook/
 
 ## Photo pipeline
 
-[ADR-0008](adr/0008-wikimedia-image-pipeline.md) is the full record. Summary:
+Full rationale in [ADR-0008](adr/0008-wikimedia-image-pipeline.md). Snapshot facts a reader needs without clicking through:
 
-- Dish heroes carry direct `heroUrl: "https://upload.wikimedia.org/..."` in frontmatter, pointed at the largest available source (`originalimage` or `3840px` thumb).
-- `heroFocal: "<x>% <y>%"` controls CSS crop on cards and full-bleed plates; `WikiImage.astro` honours it.
-- No build-time download, no R2 mirror today. Wikimedia's CDN handles delivery, resize, and caching.
-- `scripts/suggest-focal.mjs --write` runs the saliency analyser; `scripts/audit-hero-photos.mjs` scores the corpus on cheap visual signals during photo-wave sprints.
-- `scripts/lib/throttled-fetch.mjs` honours Wikimedia's rate limit (5s/10s/15s in-script backoff + a 60-min to 2-hour cold-gap retry for sustained 429s).
-- A Wikimedia file rename breaks the hero silently. `audit-hero-photos.mjs` is the safety net — not run on every CI, run during sprints.
-- The `hero: "/photos/dishes/<slug>/hero"` schema field is retained as the path R2-hosted personal photography (gardens, meals) would take if/when that need arrives; it is not actively read today.
+- `heroFocal: "<x>% <y>%"` on dish frontmatter feeds `WikiImage.astro` for crop on cards and full-bleed plates.
+- Authoring + audit tooling: `scripts/suggest-focal.mjs`, `scripts/audit-hero-photos.mjs`, `scripts/lib/throttled-fetch.mjs` (Wikimedia rate-limit-aware).
+- The `hero: "/photos/dishes/<slug>/hero"` schema field is reserved for future R2-hosted personal photography (gardens, meals); unused today.
 
 ## AI plumbing
 
-**Status: designed, not built.** [ADR-0004](adr/0004-ai-first-integration-points.md) specifies `/api/extract`, `/api/chat`, `/api/coach` as Pages Functions plus `scripts/build-embeddings.mjs` for the related-rail offline build. None of those routes or scripts exist in the repo today. The `npm run extract` script in `package.json` points at `scripts/ai-extract-recipe.mjs`, which is also not yet checked in. See [`ai-first.md`](ai-first.md) for the intended flow and [feature-wishlist.md](feature-wishlist.md) for status.
-
-When the AI surfaces land, they require an SSR adapter on `astro.config.mjs` and matching bindings on `wrangler.toml`.
+AI surfaces (`/api/extract`, `/api/chat`, `/api/coach`, offline embeddings build) are designed in [ADR-0004](adr/0004-ai-first-integration-points.md) but not implemented. Landing them requires an SSR adapter on `astro.config.mjs` and matching bindings on `wrangler.toml`. See [`ai-first.md`](ai-first.md) and [feature-wishlist.md](feature-wishlist.md).
 
 ## Build + deploy
 
@@ -204,6 +198,6 @@ CI is `.github/workflows/ci.yml`, running on `ubicloud-standard-2` with Node 24:
 | Upload `dist` artifact | Only on `push` to `main`. |
 | `deploy` job | Downloads the artifact and runs `npx wrangler pages deploy dist --project-name=foodbook --branch=main`. Credentials via `CLOUDFLARE_API_TOKEN` secret + `CLOUDFLARE_ACCOUNT_ID` var. |
 
-Cloudflare Pages git-integration is off — the wrangler-cli deploy from CI is the single deploy path. There's no preview deploy on PRs today; the build runs but doesn't publish.
+Cloudflare Pages git-integration is off — the wrangler-cli deploy from CI is the single deploy path. The build runs on PRs but doesn't publish.
 
-`wrangler.toml` declares no R2 / KV / Pages-Function bindings — `output: 'static'` doesn't need them, and [ADR-0008](adr/0008-wikimedia-image-pipeline.md) explains why the R2 photo-store binding from [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md) is dormant.
+`wrangler.toml` declares no R2 / KV / Pages-Function bindings — `output: 'static'` doesn't need them. The R2 binding from [ADR-0001](adr/0001-adopt-astro-on-cloudflare.md) is dormant per [ADR-0008](adr/0008-wikimedia-image-pipeline.md).
