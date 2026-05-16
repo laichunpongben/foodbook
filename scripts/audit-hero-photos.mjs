@@ -6,7 +6,6 @@
  *
  * Signals (all from `sharp` on the fetched bytes):
  *   - resolution (width, height, megapixels)
- *   - file size + bytes-per-pixel (compression heuristic)
  *   - sharpness via luma laplacian variance — low = soft/blurry/upscaled
  *   - luma mean — extreme dark/washed-out shots
  *   - luma stdev — flat/foggy/low-contrast shots
@@ -30,6 +29,7 @@ import sharp from 'sharp';
 
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
+import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const REPORT_PATH = '/tmp/photo-audit.md';
@@ -41,26 +41,13 @@ const LIMIT = (() => {
   return i >= 0 ? Number(argv[i + 1]) : Infinity;
 })();
 
-const UA = 'foodbook-audit/1.0 (https://github.com/laichunpongben/foodbook)';
-const REQUEST_GAP_MS = 1200;
-const MAX_RETRIES = 3;
-const BACKOFF_BASE_MS = 5000;
-let lastFetchAt = 0;
+const throttledFetch = createThrottledFetcher({
+  ua: 'foodbook-audit/1.0 (https://github.com/laichunpongben/foodbook)',
+  gapMs: 1200,
+});
 
 async function fetchBuffer(url) {
-  const wait = Math.max(0, lastFetchAt + REQUEST_GAP_MS - Date.now());
-  if (wait) await new Promise((r) => setTimeout(r, wait));
-  lastFetchAt = Date.now();
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const res = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': UA } });
-    if (res.ok) return Buffer.from(await res.arrayBuffer());
-    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
-      await new Promise((r) => setTimeout(r, BACKOFF_BASE_MS * (attempt + 1)));
-      continue;
-    }
-    throw new Error(`HTTP ${res.status}`);
-  }
-  throw new Error('exhausted retries');
+  return asBuffer(await throttledFetch(url));
 }
 
 // Thresholds — tuned for landing-card sized food photos. Anything
@@ -87,35 +74,37 @@ const LAPLACIAN = {
 };
 
 async function scoreImage(buf) {
+  // Single sharp instance — metadata() doesn't consume the pipeline, so
+  // we chain the luma stages onto the same input and save a JPEG decode.
+  // Downsize to a fixed working width before stats — cheaper, and
+  // normalizes sharpness across source resolutions so the threshold
+  // doesn't have to scale.
   const img = sharp(buf, { failOn: 'none' });
   const meta = await img.metadata();
   const width = meta.width ?? 0;
   const height = meta.height ?? 0;
-  const bytes = buf.length;
   const megapixels = (width * height) / 1_000_000;
-  const bytesPerPixel = width && height ? bytes / (width * height) : 0;
 
-  // Downsize to a fixed working width before stats — cheaper, and
-  // normalizes sharpness across source resolutions so the threshold
-  // doesn't have to scale.
-  const workWidth = 800;
-  const luma = sharp(buf, { failOn: 'none' })
-    .resize({ width: workWidth, fit: 'inside', withoutEnlargement: true })
+  const luma = img
+    .resize({ width: 800, fit: 'inside', withoutEnlargement: true })
     .greyscale();
 
   const lumaStats = await luma.clone().stats();
-  const lumaMean = lumaStats.channels[0].mean;
-  const lumaStdev = lumaStats.channels[0].stdev;
+  const edgeStats = await luma.clone().convolve(LAPLACIAN).stats();
 
-  const edgeStats = await luma
-    .clone()
-    .convolve(LAPLACIAN)
-    .stats();
   // sharp's convolve clips negative values; squaring the stdev gives a
   // variance-equivalent that's monotone in edge strength either way.
   const sharpness = edgeStats.channels[0].stdev ** 2;
 
-  return { width, height, bytes, megapixels, bytesPerPixel, sharpness, lumaMean, lumaStdev };
+  return {
+    width,
+    height,
+    bytes: buf.length,
+    megapixels,
+    sharpness,
+    lumaMean: lumaStats.channels[0].mean,
+    lumaStdev: lumaStats.channels[0].stdev,
+  };
 }
 
 function flagsFor(s) {
@@ -129,11 +118,6 @@ function flagsFor(s) {
   return flags;
 }
 
-function pad(s, w) {
-  s = String(s);
-  return s.length >= w ? s : s + ' '.repeat(w - s.length);
-}
-
 async function main() {
   const slugs = (await listSlugs('dishes')).slice(0, LIMIT);
   const rows = [];
@@ -143,11 +127,12 @@ async function main() {
   let i = 0;
   for (const slug of slugs) {
     i += 1;
+    const label = slug.padEnd(LABEL_WIDTH);
     const path = join(DISHES_DIR, slug, 'index.mdx');
     const fm = await readFrontmatter(path);
     const heroUrl = getString(fm, 'heroUrl');
     if (!heroUrl) {
-      process.stderr.write(`${pad(slug, LABEL_WIDTH)}  no heroUrl, skipping\n`);
+      process.stderr.write(`${label}  no heroUrl, skipping\n`);
       continue;
     }
     try {
@@ -156,14 +141,14 @@ async function main() {
       const flags = flagsFor(s);
       rows.push({ slug, heroUrl, ...s, flags });
       process.stderr.write(
-        `[${i}/${slugs.length}] ${pad(slug, LABEL_WIDTH)}  ` +
+        `[${i}/${slugs.length}] ${label}  ` +
           `${s.width}x${s.height} (${s.megapixels.toFixed(1)}MP, ${(s.bytes / 1024).toFixed(0)}KB)  ` +
           `sharp=${s.sharpness.toFixed(0)}  luma=${s.lumaMean.toFixed(0)}/${s.lumaStdev.toFixed(0)}  ` +
           `${flags.length ? '[' + flags.join(',') + ']' : 'OK'}\n`,
       );
     } catch (err) {
       errors.push({ slug, heroUrl, error: err.message });
-      process.stderr.write(`[${i}/${slugs.length}] ${pad(slug, LABEL_WIDTH)}  ERROR ${err.message}\n`);
+      process.stderr.write(`[${i}/${slugs.length}] ${label}  ERROR ${err.message}\n`);
     }
   }
 
