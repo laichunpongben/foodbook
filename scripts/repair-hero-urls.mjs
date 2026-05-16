@@ -26,28 +26,12 @@ import { join } from 'node:path';
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
 import { createThrottledFetcher } from './lib/throttled-fetch.mjs';
+import { slugToTitle } from './lib/wiki-titles.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const LABEL_WIDTH = 28;
 
 const WRITE = process.argv.includes('--write');
-
-// Slugs whose Wikipedia article title isn't `Slug_with_underscores` —
-// disambiguation pages (Hopper, Momo, Adobo all collide with non-food
-// meanings), missing dedicated articles (shoyu-ramen folds into Ramen),
-// and known romanization mismatches (pad-kra-pao vs Phat_kaphrao).
-const TITLE_OVERRIDES = {
-  adobo: 'Philippine_adobo',
-  hoppers: 'Appam',
-  kimbap: 'Gimbap',
-  momo: 'Momo_(food)',
-  'pad-kra-pao': 'Phat_kaphrao',
-  'risotto-milanese': 'Risotto',
-  'shoyu-ramen': 'Ramen',
-  'taiwanese-beef-noodle-soup': 'Beef_noodle_soup',
-  'tom-yum-goong': 'Tom_yum',
-  'wonton-noodle-soup': 'Wonton_noodles',
-};
 
 // 404 is allowed so the HEAD-probe / page-summary callers can
 // distinguish "URL is dead" from a transient error and decide whether
@@ -65,13 +49,6 @@ const throttledFetch = createThrottledFetcher({
 async function isLive(url) {
   const res = await throttledFetch(url, { method: 'HEAD' });
   return res.ok;
-}
-
-function slugToTitle(slug) {
-  if (TITLE_OVERRIDES[slug]) return TITLE_OVERRIDES[slug];
-  const parts = slug.split('-');
-  parts[0] = parts[0][0].toUpperCase() + parts[0].slice(1);
-  return parts.join('_');
 }
 
 async function lookupArticle(title) {

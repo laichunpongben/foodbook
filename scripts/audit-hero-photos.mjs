@@ -33,6 +33,9 @@ import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const REPORT_PATH = '/tmp/photo-audit.md';
+// Sidecar consumed by upgrade-flagged-photos.mjs to skip re-measurement.
+// Keyed by URL so cache survives slug renames.
+const DIMS_CACHE_PATH = '/tmp/photo-audit.json';
 const LABEL_WIDTH = 32;
 
 const argv = process.argv.slice(2);
@@ -193,8 +196,14 @@ async function main() {
     for (const e of errors) lines.push(`- ${e.slug} — ${e.error} (${e.heroUrl})`);
   }
 
+  const dimsCache = Object.fromEntries(
+    rows.map((r) => [r.heroUrl, { width: r.width, height: r.height }]),
+  );
+
   await writeFile(REPORT_PATH, lines.join('\n') + '\n');
+  await writeFile(DIMS_CACHE_PATH, JSON.stringify(dimsCache, null, 2) + '\n');
   process.stderr.write(`\nReport: ${REPORT_PATH}\n`);
+  process.stderr.write(`Cache:  ${DIMS_CACHE_PATH} (${rows.length} entries)\n`);
   process.stderr.write(`Flagged: ${flagged.length} / ${rows.length}\n`);
 }
 
