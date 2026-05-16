@@ -29,10 +29,14 @@ import sharp from 'sharp';
 
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
+import { RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
 import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const REPORT_PATH = '/tmp/photo-audit.md';
+// Sidecar consumed by upgrade-flagged-photos.mjs to skip re-measurement.
+// Keyed by URL so cache survives slug renames.
+const DIMS_CACHE_PATH = '/tmp/photo-audit.json';
 const LABEL_WIDTH = 32;
 
 const argv = process.argv.slice(2);
@@ -54,9 +58,10 @@ async function fetchBuffer(url) {
 // flagged is "worth a second look", not "definitely broken". The
 // sharpness threshold is calibrated after observing the full-corpus
 // distribution; tune again if the median of the clean set drifts.
+// Resolution gates are shared with upgrade-flagged-photos so the
+// two scripts stay in sync if we change what counts as "low res".
 const TH = {
-  minWidth: 1200,          // < 1200px wide can't fill a retina hero
-  minMegapixels: 1.5,      // < 1.5 MP usually means thumbnail-tier source
+  ...RESOLUTION_GATE,
   minSharpness: 1500,      // laplacian variance — < 1500 reads as soft on this corpus
   lumaDarkBelow: 50,       // mean luma < 50 = underexposed
   lumaBrightAbove: 215,    // mean luma > 215 = blown out
@@ -193,8 +198,14 @@ async function main() {
     for (const e of errors) lines.push(`- ${e.slug} — ${e.error} (${e.heroUrl})`);
   }
 
+  const dimsCache = Object.fromEntries(
+    rows.map((r) => [r.heroUrl, { width: r.width, height: r.height }]),
+  );
+
   await writeFile(REPORT_PATH, lines.join('\n') + '\n');
+  await writeFile(DIMS_CACHE_PATH, JSON.stringify(dimsCache, null, 2) + '\n');
   process.stderr.write(`\nReport: ${REPORT_PATH}\n`);
+  process.stderr.write(`Cache:  ${DIMS_CACHE_PATH} (${rows.length} entries)\n`);
   process.stderr.write(`Flagged: ${flagged.length} / ${rows.length}\n`);
 }
 
