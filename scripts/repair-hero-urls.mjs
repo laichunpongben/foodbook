@@ -20,13 +20,13 @@
  *   not the Filipino dish), use TITLE_OVERRIDES below.
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
+import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
 import { createThrottledFetcher } from './lib/throttled-fetch.mjs';
-import { slugToTitle } from './lib/wiki-titles.mjs';
+import { lookupArticle, slugToTitle } from './lib/wiki-titles.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 const LABEL_WIDTH = 28;
@@ -51,20 +51,6 @@ async function isLive(url) {
   return res.ok;
 }
 
-async function lookupArticle(title) {
-  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-  const res = await throttledFetch(url);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-async function rewriteHeroUrl(mdxPath, newUrl) {
-  const text = await readFile(mdxPath, 'utf8');
-  const updated = text.replace(/^heroUrl:\s*"[^"]*"$/m, `heroUrl: "${newUrl}"`);
-  if (updated === text) throw new Error('heroUrl: line not found');
-  await writeFile(mdxPath, updated);
-}
-
 const slugs = await listSlugs('dishes');
 
 console.log(`# repair-hero-urls ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
@@ -77,14 +63,16 @@ let errored = 0;
 
 for (const slug of slugs) {
   const mdx = join(DISHES_DIR, slug, 'index.mdx');
+  const label = slug.padEnd(LABEL_WIDTH);
   let fm;
   try {
     fm = await readFrontmatter(mdx);
-  } catch {
+  } catch (err) {
+    console.log(`${label}ERROR  frontmatter: ${err.message}`);
+    errored++;
     continue;
   }
   const heroUrl = getString(fm, 'heroUrl');
-  const label = slug.padEnd(LABEL_WIDTH);
 
   if (!heroUrl) {
     console.log(`${label}(no heroUrl)`);
@@ -108,7 +96,7 @@ for (const slug of slugs) {
   const title = slugToTitle(slug);
   let article;
   try {
-    article = await lookupArticle(title);
+    article = await lookupArticle(throttledFetch, title);
   } catch (err) {
     console.log(`${label}ERROR  ${err.message}`);
     errored++;

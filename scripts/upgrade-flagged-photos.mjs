@@ -22,15 +22,17 @@
  *   node scripts/upgrade-flagged-photos.mjs --write    # apply
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import sharp from 'sharp';
 
 import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
 import { getString, readFrontmatter } from './lib/frontmatter.mjs';
+import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
+import { RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
 import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
-import { slugToTitle } from './lib/wiki-titles.mjs';
+import { lookupArticle, slugToTitle } from './lib/wiki-titles.mjs';
 
 const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
 // Dim cache written by audit-hero-photos.mjs. Lets us skip measuring
@@ -40,12 +42,6 @@ const DIMS_CACHE_PATH = '/tmp/photo-audit.json';
 const LABEL_WIDTH = 28;
 
 const WRITE = process.argv.includes('--write');
-
-// Mirrors audit-hero-photos.mjs — anything failing these gates is a
-// candidate for upgrade. Other audit signals (sharpness, luma) can't be
-// fixed by swapping URLs.
-const MIN_WIDTH = 1200;
-const MIN_MEGAPIXELS = 1.5;
 
 // Require the new image to be at least this much bigger (in MP) than
 // the current one before proposing. Below this, the swap is churn.
@@ -79,20 +75,6 @@ async function measureCurrent(url) {
   return { width: meta.width ?? 0, height: meta.height ?? 0 };
 }
 
-async function lookupArticle(title) {
-  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-  const res = await throttledFetch(url);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-async function rewriteHeroUrl(mdxPath, newUrl) {
-  const text = await readFile(mdxPath, 'utf8');
-  const updated = text.replace(/^heroUrl:\s*"[^"]*"$/m, `heroUrl: "${newUrl}"`);
-  if (updated === text) throw new Error('heroUrl: line not found');
-  await writeFile(mdxPath, updated);
-}
-
 const slugs = await listSlugs('dishes');
 
 console.log(`# upgrade-flagged-photos ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
@@ -106,16 +88,18 @@ let errored = 0;
 
 for (const slug of slugs) {
   const mdx = join(DISHES_DIR, slug, 'index.mdx');
+  const label = slug.padEnd(LABEL_WIDTH);
   let fm;
   try {
     fm = await readFrontmatter(mdx);
-  } catch {
+  } catch (err) {
+    console.log(`${label}ERROR  frontmatter: ${err.message}`);
+    errored++;
     continue;
   }
   const heroUrl = getString(fm, 'heroUrl');
   if (!heroUrl) continue;
 
-  const label = slug.padEnd(LABEL_WIDTH);
   scanned++;
 
   let current;
@@ -129,13 +113,13 @@ for (const slug of slugs) {
 
   const currentMP = (current.width * current.height) / 1_000_000;
   // Skip dishes already meeting the resolution gates — nothing to upgrade.
-  if (current.width >= MIN_WIDTH && currentMP >= MIN_MEGAPIXELS) continue;
+  if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels) continue;
   flagged++;
 
   const title = slugToTitle(slug);
   let article;
   try {
-    article = await lookupArticle(title);
+    article = await lookupArticle(throttledFetch, title);
   } catch (err) {
     console.log(`${label}ERROR  lookup "${title}": ${err.message}`);
     errored++;

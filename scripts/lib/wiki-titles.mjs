@@ -1,5 +1,5 @@
-// Slug → Wikipedia article title mapping. Shared between
-// repair-hero-urls (re-source dead heroUrls) and
+// Slug → Wikipedia article mapping + the lookup that consumes it.
+// Shared between repair-hero-urls (re-source dead heroUrls) and
 // upgrade-flagged-photos (re-source low-quality heroUrls).
 
 // Slugs whose Wikipedia article title isn't `Slug_with_underscores` —
@@ -26,4 +26,15 @@ export function slugToTitle(slug) {
   const parts = slug.split('-');
   parts[0] = parts[0][0].toUpperCase() + parts[0].slice(1);
   return parts.join('_');
+}
+
+// Fetch the Wikipedia REST summary for an article title. Returns the
+// parsed body, or null on 404. The throttled fetcher is passed in so
+// each caller keeps its own UA / rate budget — `allowStatus: [404]`
+// must be set on it for the null-on-miss contract to hold.
+export async function lookupArticle(throttledFetch, title) {
+  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+  const res = await throttledFetch(url);
+  if (!res.ok) return null;
+  return res.json();
 }
