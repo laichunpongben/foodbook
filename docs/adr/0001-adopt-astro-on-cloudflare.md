@@ -1,6 +1,6 @@
 # ADR-0001 · Astro 5 (static output) on Cloudflare Pages + R2
 
-- **Status**: Accepted
+- **Status**: Accepted. **Photo-store clause superseded by [ADR-0008](0008-wikimedia-image-pipeline.md)** — dish heroes are served direct from Wikimedia with `heroFocal`, not from R2 with build-time variants. R2 remains the path for non-Wikimedia photography (gardens, restaurants, meals); none ships today.
 - **Date**: 2026-05-13
 
 ## Context
