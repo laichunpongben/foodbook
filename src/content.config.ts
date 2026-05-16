@@ -148,6 +148,10 @@ const ingredientSchema = z.object({
   from: z.string().optional(),
   /** Optional ingredient group, e.g. "for the sauce" / "for finishing". */
   group: z.string().optional(),
+  /** Optional GBIF taxon ID — pins the ingredient to a canonical species
+   *  (e.g. 2874875 for Litchi chinensis). Lets the almanac sidecar resolve
+   *  terroir/seasonality without name-matching. Lookup at gbif.org/species. */
+  gbifTaxonId: z.number().int().positive().optional(),
 });
 
 const stepSchema = z.object({
