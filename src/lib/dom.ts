@@ -7,12 +7,12 @@
 /** A WakeLockSentinel — what `wakeLock.request('screen')` resolves to. */
 export type WakeLockSentinel = {
   release(): Promise<void>;
-  addEventListener(type: 'release', cb: () => void): void;
+  addEventListener(type: "release", cb: () => void): void;
 };
 
 /** `navigator.wakeLock`, when implemented. */
 export type NavigatorWithWakeLock = Navigator & {
   wakeLock?: {
-    request(type: 'screen'): Promise<WakeLockSentinel>;
+    request(type: "screen"): Promise<WakeLockSentinel>;
   };
 };

@@ -14,17 +14,20 @@
  * strings) so no escaping is needed and `<a href>` link routing
  * stays native.
  */
-import L, {
-  type LatLngBoundsExpression,
-  type Map as LeafletMap,
-  type CircleMarker,
-} from 'leaflet';
+import L, { type CircleMarker, type LatLngBoundsExpression, type Map as LeafletMap } from "leaflet";
 
 const FARM_KINDS = [
-  'farm', 'producer', 'market', 'fishery', 'forager', 'mill', 'dairy', 'orchard',
+  "farm",
+  "producer",
+  "market",
+  "fishery",
+  "forager",
+  "mill",
+  "dairy",
+  "orchard",
 ] as const;
-export type FarmKind = typeof FARM_KINDS[number];
-export type PinKind = FarmKind | 'restaurant';
+export type FarmKind = (typeof FARM_KINDS)[number];
+export type PinKind = FarmKind | "restaurant";
 
 export interface MapPin {
   slug: string;
@@ -33,7 +36,7 @@ export interface MapPin {
   lng: number;
   kind: PinKind;
   /** Restaurants only — visited (filled) vs discovered (hollow). */
-  status?: 'visited' | 'discovered';
+  status?: "visited" | "discovered";
   /** For restaurants — used in popup subtitle. */
   city?: string;
   /** For farms — plain-text location ("Sarno Valley, Campania"). */
@@ -42,23 +45,23 @@ export interface MapPin {
   href: string;
 }
 
-const COLOUR_FARM = '#5d6e44';        // olive (matches --olive)
-const COLOUR_RESTAURANT = '#d2543b';  // paprika (matches --paprika)
+const COLOUR_FARM = "#5d6e44"; // olive (matches --olive)
+const COLOUR_RESTAURANT = "#d2543b"; // paprika (matches --paprika)
 
 function isFarm(kind: PinKind): kind is FarmKind {
-  return kind !== 'restaurant';
+  return kind !== "restaurant";
 }
 
 function kindLabel(pin: MapPin): string {
-  if (pin.kind === 'restaurant') {
-    return pin.status === 'discovered' ? 'Restaurant · discovered' : 'Restaurant · visited';
+  if (pin.kind === "restaurant") {
+    return pin.status === "discovered" ? "Restaurant · discovered" : "Restaurant · visited";
   }
   return pin.kind.charAt(0).toUpperCase() + pin.kind.slice(1);
 }
 
 function makeMarker(pin: MapPin): CircleMarker {
-  const isRestaurant = pin.kind === 'restaurant';
-  const isDiscovered = isRestaurant && pin.status === 'discovered';
+  const isRestaurant = pin.kind === "restaurant";
+  const isDiscovered = isRestaurant && pin.status === "discovered";
   const colour = isRestaurant ? COLOUR_RESTAURANT : COLOUR_FARM;
   return L.circleMarker([pin.lat, pin.lng], {
     radius: 7,
@@ -75,28 +78,28 @@ function makeMarker(pin: MapPin): CircleMarker {
  *  user-authored names/cities can't smuggle markup, and lets the link
  *  behave like a native <a>. */
 function buildPopup(pin: MapPin): HTMLElement {
-  const root = document.createElement('div');
+  const root = document.createElement("div");
 
   if (pin.heroUrl) {
-    const img = document.createElement('img');
+    const img = document.createElement("img");
     img.src = pin.heroUrl;
-    img.alt = '';
-    img.loading = 'lazy';
-    img.className = 'food-map-popup__photo';
+    img.alt = "";
+    img.loading = "lazy";
+    img.className = "food-map-popup__photo";
     root.appendChild(img);
   }
 
-  const body = document.createElement('div');
-  body.className = 'food-map-popup__body';
+  const body = document.createElement("div");
+  body.className = "food-map-popup__body";
 
-  const kind = document.createElement('p');
-  kind.className = 'food-map-popup__kind';
+  const kind = document.createElement("p");
+  kind.className = "food-map-popup__kind";
   kind.textContent = kindLabel(pin);
   body.appendChild(kind);
 
-  const name = document.createElement('p');
-  name.className = 'food-map-popup__name';
-  const link = document.createElement('a');
+  const name = document.createElement("p");
+  name.className = "food-map-popup__name";
+  const link = document.createElement("a");
   link.href = pin.href;
   link.textContent = pin.name;
   name.appendChild(link);
@@ -104,8 +107,8 @@ function buildPopup(pin: MapPin): HTMLElement {
 
   const sub = pin.city ?? pin.location;
   if (sub) {
-    const subEl = document.createElement('p');
-    subEl.className = 'food-map-popup__sub';
+    const subEl = document.createElement("p");
+    subEl.className = "food-map-popup__sub";
     subEl.textContent = sub;
     body.appendChild(subEl);
   }
@@ -121,9 +124,9 @@ export function mountFoodMap(el: HTMLElement, pins: readonly MapPin[]): LeafletM
     minZoom: 2,
   }).setView([20, 0], 2);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    subdomains: 'abcd',
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+    subdomains: "abcd",
     maxZoom: 19,
   }).addTo(map);
 
@@ -132,7 +135,7 @@ export function mountFoodMap(el: HTMLElement, pins: readonly MapPin[]): LeafletM
 
   for (const pin of pins) {
     const marker = makeMarker(pin).bindPopup(buildPopup(pin), {
-      className: 'food-map-popup',
+      className: "food-map-popup",
       minWidth: 220,
       maxWidth: 240,
       closeButton: false,
@@ -144,10 +147,16 @@ export function mountFoodMap(el: HTMLElement, pins: readonly MapPin[]): LeafletM
   farmLayer.addTo(map);
   restaurantLayer.addTo(map);
 
-  L.control.layers(undefined, {
-    'Farms &middot; producers': farmLayer,
-    'Restaurants': restaurantLayer,
-  }, { collapsed: false, position: 'topright' }).addTo(map);
+  L.control
+    .layers(
+      undefined,
+      {
+        "Farms &middot; producers": farmLayer,
+        Restaurants: restaurantLayer,
+      },
+      { collapsed: false, position: "topright" },
+    )
+    .addTo(map);
 
   if (pins.length > 0) {
     const bounds: LatLngBoundsExpression = pins.map((p) => [p.lat, p.lng] as [number, number]);

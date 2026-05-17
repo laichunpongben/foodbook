@@ -14,9 +14,9 @@
  *
  * Pure functions only — no DOM, no d3. The component handles SVG paths.
  */
-import type { CollectionEntry } from 'astro:content';
+import type { CollectionEntry } from "astro:content";
 
-export type Farm = CollectionEntry<'farms'>;
+export type Farm = CollectionEntry<"farms">;
 
 export interface FarmRef {
   name: string;
@@ -40,13 +40,33 @@ export interface SeasonProduct {
 export const TAU = Math.PI * 2;
 
 export const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ] as const;
 
 export const MONTH_NAMES_LONG = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 /** Is month `m` (1-12) inside a window from..to, handling wrap-around. */
@@ -90,7 +110,7 @@ export function collectProducts(farms: readonly Farm[]): SeasonProduct[] {
   return Array.from(byKey.values()).sort((a, b) => {
     const da = monthSpan(a.from, a.to);
     const db = monthSpan(b.from, b.to);
-    if (da !== db) return db - da;        // widest windows first (outer rings)
+    if (da !== db) return db - da; // widest windows first (outer rings)
     return a.product.localeCompare(b.product);
   });
 }
@@ -131,7 +151,10 @@ export function windowAngles(from: number, to: number): [number, number] {
 /** SVG position helper. Standard math angle θ from +x axis, but we
  *  rotate -π/2 so θ=0 lands at 12 o'clock (matching the wheel). */
 export function polarToCartesian(
-  cx: number, cy: number, r: number, angleFromTop: number,
+  cx: number,
+  cy: number,
+  r: number,
+  angleFromTop: number,
 ): { x: number; y: number } {
   const a = angleFromTop - Math.PI / 2;
   return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };

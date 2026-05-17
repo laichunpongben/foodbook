@@ -36,25 +36,48 @@
  *   No auth-gated tier; sensitive content does not enter this repo.
  */
 
-import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
-import { z } from 'astro/zod';
+import { defineCollection } from "astro:content";
+import { glob } from "astro/loaders";
+import { z } from "astro/zod";
 
 /* ----- shared primitives ----- */
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
-const visibility = z.enum(['public', 'unlisted']).default('public');
-const priceBand = z.enum(['$', '$$', '$$$', '$$$$']);
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
+const visibility = z.enum(["public", "unlisted"]).default("public");
+const priceBand = z.enum(["$", "$$", "$$$", "$$$$"]);
 
 /** Tags. Open set — add as needed. Keeps `/seasons` and the related rail
  *  workable. Not a substitute for embedding-based discovery. */
 const dishTags = [
-  'breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink',
-  'vegetarian', 'vegan', 'pescatarian',
-  'spring', 'summer', 'autumn', 'winter',
-  'italian', 'japanese', 'chinese', 'french', 'mexican', 'thai',
-  'indian', 'levantine', 'iberian', 'nordic',
-  'one-pot', 'baking', 'fermentation', 'grill', 'raw', 'preserved',
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+  "dessert",
+  "drink",
+  "vegetarian",
+  "vegan",
+  "pescatarian",
+  "spring",
+  "summer",
+  "autumn",
+  "winter",
+  "italian",
+  "japanese",
+  "chinese",
+  "french",
+  "mexican",
+  "thai",
+  "indian",
+  "levantine",
+  "iberian",
+  "nordic",
+  "one-pot",
+  "baking",
+  "fermentation",
+  "grill",
+  "raw",
+  "preserved",
 ] as const;
 
 /** One revision of a recipe. Latest entry surfaces as "Updated …" on
@@ -80,18 +103,18 @@ const dishStageSchema = z.object({
   /** Free prose for the stage. May contain inline <em>. */
   note: z.string().optional(),
   /** Slug refs to other collections, by stage. Validated at build time. */
-  farms: z.array(z.string()).default([]),         // SOURCE
-  garden: z.array(z.string()).default([]),        // GROW
-  recipes: z.array(z.string()).default([]),       // COOK
-  meals: z.array(z.string()).default([]),         // EAT
-  restaurants: z.array(z.string()).default([]),   // EAT (eaten out)
+  farms: z.array(z.string()).default([]), // SOURCE
+  garden: z.array(z.string()).default([]), // GROW
+  recipes: z.array(z.string()).default([]), // COOK
+  meals: z.array(z.string()).default([]), // EAT
+  restaurants: z.array(z.string()).default([]), // EAT (eaten out)
 });
 
 const dishes = defineCollection({
-  loader: glob({ pattern: 'dishes/*/index.mdx', base: './src/content' }),
+  loader: glob({ pattern: "dishes/*/index.mdx", base: "./src/content" }),
   schema: z.object({
-    title: z.string(),                              // may contain <em>
-    shortTitle: z.string(),                         // plain text for stats/tooltips
+    title: z.string(), // may contain <em>
+    shortTitle: z.string(), // plain text for stats/tooltips
     /** Path stem (no size suffix): /photos/dishes/<slug>/hero */
     hero: z.string(),
     /** Absolute URL to an external image (e.g. Wikimedia). Takes precedence
@@ -113,12 +136,14 @@ const dishes = defineCollection({
     tags: z.array(z.enum(dishTags)).default([]),
     visibility,
     /** Lifecycle stages — up to four, all optional. */
-    stages: z.object({
-      source: dishStageSchema.optional(),
-      grow: dishStageSchema.optional(),
-      cook: dishStageSchema.optional(),
-      eat: dishStageSchema.optional(),
-    }).default({}),
+    stages: z
+      .object({
+        source: dishStageSchema.optional(),
+        grow: dishStageSchema.optional(),
+        cook: dishStageSchema.optional(),
+        eat: dishStageSchema.optional(),
+      })
+      .default({}),
     /** Authored opening + closing bookends. Both optional — short
      *  entries skip them. */
     prologue: bookendSchema.optional(),
@@ -164,12 +189,12 @@ const stepSchema = z.object({
 });
 
 const recipes = defineCollection({
-  loader: glob({ pattern: 'recipes/*.mdx', base: './src/content' }),
+  loader: glob({ pattern: "recipes/*.mdx", base: "./src/content" }),
   schema: z.object({
     title: z.string(),
-    yield: z.string(),                              // "4 servings"
-    timePrep: z.string().optional(),                // "15 min"
-    timeCook: z.string().optional(),                // "2 h"
+    yield: z.string(), // "4 servings"
+    timePrep: z.string().optional(), // "15 min"
+    timeCook: z.string().optional(), // "2 h"
     hero: z.string().optional(),
     heroUrl: z.url().optional(),
     tags: z.array(z.enum(dishTags)).default([]),
@@ -205,14 +230,14 @@ const visitSchema = z.object({
  *  but is not required to be — a visited restaurant can also carry a
  *  discovery note documenting how you first heard of it. */
 const discoveredViaSchema = z.object({
-  source: z.string(),                          // "TasteAtlas", "Eating Europe"
+  source: z.string(), // "TasteAtlas", "Eating Europe"
   url: z.url().optional(),
   /** Specific signature that matches the dish — "Tagliatelle al ragù". */
   signature: z.string().optional(),
 });
 
 const restaurants = defineCollection({
-  loader: glob({ pattern: 'restaurants/*.mdx', base: './src/content' }),
+  loader: glob({ pattern: "restaurants/*.mdx", base: "./src/content" }),
   schema: z.object({
     name: z.string(),
     cuisine: z.string().optional(),
@@ -242,10 +267,10 @@ const seasonalWindowSchema = z.object({
 });
 
 const farms = defineCollection({
-  loader: glob({ pattern: 'farms/*.mdx', base: './src/content' }),
+  loader: glob({ pattern: "farms/*.mdx", base: "./src/content" }),
   schema: z.object({
     name: z.string(),
-    kind: z.enum(['farm', 'producer', 'market', 'fishery', 'forager', 'mill', 'dairy', 'orchard']),
+    kind: z.enum(["farm", "producer", "market", "fishery", "forager", "mill", "dairy", "orchard"]),
     /** Plain-text location, e.g. "Sarno Valley, Campania". Real address
      *  not required and discouraged. */
     location: z.string(),
@@ -267,13 +292,13 @@ const farms = defineCollection({
 /* ----- meals ----- */
 
 const meals = defineCollection({
-  loader: glob({ pattern: 'meals/*.mdx', base: './src/content' }),
+  loader: glob({ pattern: "meals/*.mdx", base: "./src/content" }),
   schema: z.object({
     title: z.string(),
     date: isoDate,
     /** Either a restaurant slug or the literal string 'home'. */
     location: z.string(),
-    occasion: z.string().optional(),                // "Easter", "weeknight", "tasting menu"
+    occasion: z.string().optional(), // "Easter", "weeknight", "tasting menu"
     /** Dish slugs referenced. */
     dishes: z.array(z.string()).default([]),
     /** Path stems for photos. */
@@ -289,13 +314,13 @@ const meals = defineCollection({
 /* ----- garden + pantry (log state) ----- */
 
 const garden = defineCollection({
-  loader: glob({ pattern: 'garden/*.mdx', base: './src/content' }),
+  loader: glob({ pattern: "garden/*.mdx", base: "./src/content" }),
   schema: z.object({
     plant: z.string(),
-    bed: z.string(),                                // "Bed A1", "balcony pot 3"
+    bed: z.string(), // "Bed A1", "balcony pot 3"
     planted: isoDate,
     harvested: isoDate.optional(),
-    yieldNote: z.string().optional(),               // "≈ 2 kg over 4 weeks"
+    yieldNote: z.string().optional(), // "≈ 2 kg over 4 weeks"
     heroUrl: z.url().optional(),
     visibility,
     note: z.string().optional(),
@@ -303,15 +328,17 @@ const garden = defineCollection({
 });
 
 const pantry = defineCollection({
-  loader: glob({ pattern: 'pantry.mdx', base: './src/content' }),
+  loader: glob({ pattern: "pantry.mdx", base: "./src/content" }),
   schema: z.object({
     updated: isoDate,
-    items: z.array(z.object({
-      slug: z.string(),                             // e.g. "olive-oil-arbequina"
-      label: z.string(),                            // human-readable
-      quantity: z.string().optional(),
-      from: z.string().optional(),                  // farm slug
-    })),
+    items: z.array(
+      z.object({
+        slug: z.string(), // e.g. "olive-oil-arbequina"
+        label: z.string(), // human-readable
+        quantity: z.string().optional(),
+        from: z.string().optional(), // farm slug
+      }),
+    ),
   }),
 });
 
