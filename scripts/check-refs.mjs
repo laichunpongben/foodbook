@@ -18,8 +18,7 @@ function extractRefs(fm) {
   // Naive: matches `farms: ['a', 'b']` style arrays.
   const out = { farms: [], recipes: [], restaurants: [], meals: [], garden: [], dishes: [] };
   const re = /\b(farms|recipes|restaurants|meals|garden|dishes):\s*\[([^\]]*)\]/g;
-  let m;
-  while ((m = re.exec(fm))) {
+  for (const m of fm.matchAll(re)) {
     const key = m[1];
     const items = m[2]
       .split(",")
@@ -38,8 +37,7 @@ function extractRefs(fm) {
 function extractIngredientFroms(fm) {
   const out = [];
   const re = /^ {4}from:\s*['"]?([^'"\n]+)['"]?\s*$/gm;
-  let m;
-  while ((m = re.exec(fm))) out.push(m[1].trim());
+  for (const m of fm.matchAll(re)) out.push(m[1].trim());
   return out;
 }
 

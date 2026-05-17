@@ -29,6 +29,8 @@ export async function dishesReferencing(
         return (stages.eat?.meals ?? []).includes(slug);
       case "restaurant":
         return (stages.eat?.restaurants ?? []).includes(slug);
+      default:
+        return false;
     }
   });
 }
