@@ -1,7 +1,7 @@
-import { readdir, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readdir, stat } from "node:fs/promises";
+import { join } from "node:path";
 
-export const CONTENT_ROOT = new URL('../../src/content/', import.meta.url).pathname;
+export const CONTENT_ROOT = new URL("../../src/content/", import.meta.url).pathname;
 
 // Enumerate slugs in a content collection. Handles both shapes — a
 // directory per slug containing `index.mdx`, or a flat `<slug>.mdx`
@@ -18,7 +18,7 @@ export async function listSlugs(collection) {
   for (const name of entries) {
     const st = await stat(join(dir, name));
     if (st.isDirectory()) out.push(name);
-    else if (name.endsWith('.mdx')) out.push(name.replace(/\.mdx$/, ''));
+    else if (name.endsWith(".mdx")) out.push(name.replace(/\.mdx$/, ""));
   }
   return out.sort();
 }

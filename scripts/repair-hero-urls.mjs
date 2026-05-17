@@ -20,24 +20,24 @@
  *   not the Filipino dish), use TITLE_OVERRIDES below.
  */
 
-import { join } from 'node:path';
+import { join } from "node:path";
 
-import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
-import { getString, readFrontmatter } from './lib/frontmatter.mjs';
-import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
-import { createThrottledFetcher } from './lib/throttled-fetch.mjs';
-import { lookupArticle, slugToTitle } from './lib/wiki-titles.mjs';
+import { CONTENT_ROOT, listSlugs } from "./lib/content.mjs";
+import { getString, readFrontmatter } from "./lib/frontmatter.mjs";
+import { rewriteHeroUrl } from "./lib/mdx-hero.mjs";
+import { createThrottledFetcher } from "./lib/throttled-fetch.mjs";
+import { lookupArticle, slugToTitle } from "./lib/wiki-titles.mjs";
 
-const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
+const DISHES_DIR = join(CONTENT_ROOT, "dishes");
 const LABEL_WIDTH = 28;
 
-const WRITE = process.argv.includes('--write');
+const WRITE = process.argv.includes("--write");
 
 // 404 is allowed so the HEAD-probe / page-summary callers can
 // distinguish "URL is dead" from a transient error and decide whether
 // to repair, rather than re-trying past a real miss.
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-repair/1.0',
+  ua: "foodbook-repair/1.0",
   gapMs: 800,
   backoffBaseMs: 4000,
   allowStatus: [404],
@@ -47,13 +47,13 @@ const throttledFetch = createThrottledFetcher({
 // rather than mistaking a DNS blip for a 404 (which would --write a
 // "repair" over a good URL).
 async function isLive(url) {
-  const res = await throttledFetch(url, { method: 'HEAD' });
+  const res = await throttledFetch(url, { method: "HEAD" });
   return res.ok;
 }
 
-const slugs = await listSlugs('dishes');
+const slugs = await listSlugs("dishes");
 
-console.log(`# repair-hero-urls ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
+console.log(`# repair-hero-urls ${WRITE ? "(WRITE)" : "(dry run)"}\n`);
 
 let live = 0;
 let repaired = 0;
@@ -62,7 +62,7 @@ let noPhoto = 0;
 let errored = 0;
 
 for (const slug of slugs) {
-  const mdx = join(DISHES_DIR, slug, 'index.mdx');
+  const mdx = join(DISHES_DIR, slug, "index.mdx");
   const label = slug.padEnd(LABEL_WIDTH);
   let fm;
   try {
@@ -72,7 +72,7 @@ for (const slug of slugs) {
     errored++;
     continue;
   }
-  const heroUrl = getString(fm, 'heroUrl');
+  const heroUrl = getString(fm, "heroUrl");
 
   if (!heroUrl) {
     console.log(`${label}(no heroUrl)`);
@@ -111,8 +111,10 @@ for (const slug of slugs) {
   // Wikipedia returns `disambiguation`, `no-extract`, etc. for pages
   // that don't carry usable content. Only `standard` articles have a
   // reliable lead image worth pasting.
-  if (article.type !== 'standard') {
-    console.log(`${label}${article.type.toUpperCase().padEnd(6)} "${article.title}" — non-standard page, set TITLE_OVERRIDES`);
+  if (article.type !== "standard") {
+    console.log(
+      `${label}${article.type.toUpperCase().padEnd(6)} "${article.title}" — non-standard page, set TITLE_OVERRIDES`,
+    );
     needsOverride++;
     continue;
   }
@@ -123,14 +125,14 @@ for (const slug of slugs) {
     continue;
   }
 
-  console.log(`${label}REPAIR "${article.title}" — ${article.description ?? '(no description)'}`);
-  console.log(`${' '.repeat(LABEL_WIDTH)}       → ${newUrl}`);
+  console.log(`${label}REPAIR "${article.title}" — ${article.description ?? "(no description)"}`);
+  console.log(`${" ".repeat(LABEL_WIDTH)}       → ${newUrl}`);
 
   if (WRITE) {
     try {
       await rewriteHeroUrl(mdx, newUrl);
     } catch (err) {
-      console.log(`${' '.repeat(LABEL_WIDTH)}       write failed: ${err.message}`);
+      console.log(`${" ".repeat(LABEL_WIDTH)}       write failed: ${err.message}`);
       errored++;
       continue;
     }
@@ -139,5 +141,5 @@ for (const slug of slugs) {
 }
 
 console.log(
-  `\n# ${live} live · ${repaired} ${WRITE ? 'rewritten' : 'repairable'} · ${needsOverride} need override · ${noPhoto} no photo · ${errored} error`,
+  `\n# ${live} live · ${repaired} ${WRITE ? "rewritten" : "repairable"} · ${needsOverride} need override · ${noPhoto} no photo · ${errored} error`,
 );

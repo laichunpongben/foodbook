@@ -22,26 +22,26 @@
  *   node scripts/upgrade-flagged-photos.mjs --write    # apply
  */
 
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import sharp from 'sharp';
+import sharp from "sharp";
 
-import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
-import { getString, readFrontmatter } from './lib/frontmatter.mjs';
-import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
-import { megapixels, RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
-import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
-import { lookupArticle, slugToTitle } from './lib/wiki-titles.mjs';
+import { CONTENT_ROOT, listSlugs } from "./lib/content.mjs";
+import { getString, readFrontmatter } from "./lib/frontmatter.mjs";
+import { rewriteHeroUrl } from "./lib/mdx-hero.mjs";
+import { megapixels, RESOLUTION_GATE } from "./lib/photo-thresholds.mjs";
+import { asBuffer, createThrottledFetcher } from "./lib/throttled-fetch.mjs";
+import { lookupArticle, slugToTitle } from "./lib/wiki-titles.mjs";
 
-const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
+const DISHES_DIR = join(CONTENT_ROOT, "dishes");
 // Dim cache written by audit-hero-photos.mjs. Lets us skip measuring
 // URLs that were just sized — Wikimedia rate-limits a back-to-back
 // audit + upgrade pass otherwise.
-const DIMS_CACHE_PATH = '/tmp/photo-audit.json';
+const DIMS_CACHE_PATH = "/tmp/photo-audit.json";
 const LABEL_WIDTH = 28;
 
-const WRITE = process.argv.includes('--write');
+const WRITE = process.argv.includes("--write");
 
 // Require the new image to be at least this much bigger (in MP) than
 // the current one before proposing. Below this, the swap is churn.
@@ -51,7 +51,7 @@ const UPGRADE_RATIO = 1.5;
 // upload.wikimedia.org in sequence, and an 800ms cadence got
 // rate-limited on a third of the corpus in testing.
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-upgrade/1.0',
+  ua: "foodbook-upgrade/1.0",
   gapMs: 1500,
   backoffBaseMs: 6000,
   allowStatus: [404],
@@ -59,10 +59,14 @@ const throttledFetch = createThrottledFetcher({
 
 let dimsCache = {};
 try {
-  dimsCache = JSON.parse(await readFile(DIMS_CACHE_PATH, 'utf8'));
-  console.log(`# loaded ${Object.keys(dimsCache).length} cached dimensions from ${DIMS_CACHE_PATH}\n`);
+  dimsCache = JSON.parse(await readFile(DIMS_CACHE_PATH, "utf8"));
+  console.log(
+    `# loaded ${Object.keys(dimsCache).length} cached dimensions from ${DIMS_CACHE_PATH}\n`,
+  );
 } catch {
-  console.log(`# no dims cache at ${DIMS_CACHE_PATH} — will measure every image (slower, rate-limited)\n`);
+  console.log(
+    `# no dims cache at ${DIMS_CACHE_PATH} — will measure every image (slower, rate-limited)\n`,
+  );
 }
 
 async function measureCurrent(url) {
@@ -71,13 +75,13 @@ async function measureCurrent(url) {
   const res = await throttledFetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = await asBuffer(res);
-  const meta = await sharp(buf, { failOn: 'none' }).metadata();
+  const meta = await sharp(buf, { failOn: "none" }).metadata();
   return { width: meta.width ?? 0, height: meta.height ?? 0 };
 }
 
-const slugs = await listSlugs('dishes');
+const slugs = await listSlugs("dishes");
 
-console.log(`# upgrade-flagged-photos ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
+console.log(`# upgrade-flagged-photos ${WRITE ? "(WRITE)" : "(dry run)"}\n`);
 
 let scanned = 0;
 let flagged = 0;
@@ -87,7 +91,7 @@ let needsOverride = 0;
 let errored = 0;
 
 for (const slug of slugs) {
-  const mdx = join(DISHES_DIR, slug, 'index.mdx');
+  const mdx = join(DISHES_DIR, slug, "index.mdx");
   const label = slug.padEnd(LABEL_WIDTH);
   let fm;
   try {
@@ -97,7 +101,7 @@ for (const slug of slugs) {
     errored++;
     continue;
   }
-  const heroUrl = getString(fm, 'heroUrl');
+  const heroUrl = getString(fm, "heroUrl");
   if (!heroUrl) continue;
 
   scanned++;
@@ -113,7 +117,8 @@ for (const slug of slugs) {
 
   const currentMP = megapixels(current);
   // Skip dishes already meeting the resolution gates — nothing to upgrade.
-  if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels) continue;
+  if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels)
+    continue;
   flagged++;
 
   const title = slugToTitle(slug);
@@ -130,8 +135,10 @@ for (const slug of slugs) {
     needsOverride++;
     continue;
   }
-  if (article.type !== 'standard') {
-    console.log(`${label}${article.type.toUpperCase().padEnd(6)} "${article.title}" — set TITLE_OVERRIDES`);
+  if (article.type !== "standard") {
+    console.log(
+      `${label}${article.type.toUpperCase().padEnd(6)} "${article.title}" — set TITLE_OVERRIDES`,
+    );
     needsOverride++;
     continue;
   }
@@ -158,12 +165,12 @@ for (const slug of slugs) {
   console.log(
     `${label}UPGRADE ${current.width}×${current.height} (${currentMP.toFixed(1)}MP) → ${img.width}×${img.height} (${newMP.toFixed(1)}MP)`,
   );
-  console.log(`${' '.repeat(LABEL_WIDTH)}        → ${img.source}`);
+  console.log(`${" ".repeat(LABEL_WIDTH)}        → ${img.source}`);
   if (WRITE) {
     try {
       await rewriteHeroUrl(mdx, img.source);
     } catch (err) {
-      console.log(`${' '.repeat(LABEL_WIDTH)}        write failed: ${err.message}`);
+      console.log(`${" ".repeat(LABEL_WIDTH)}        write failed: ${err.message}`);
       errored++;
       continue;
     }
@@ -172,5 +179,5 @@ for (const slug of slugs) {
 }
 
 console.log(
-  `\n# scanned ${scanned} · ${flagged} below resolution gate · ${upgraded} ${WRITE ? 'rewritten' : 'upgradable'} · ${noBetter} no better source · ${needsOverride} need title override · ${errored} error`,
+  `\n# scanned ${scanned} · ${flagged} below resolution gate · ${upgraded} ${WRITE ? "rewritten" : "upgradable"} · ${noBetter} no better source · ${needsOverride} need title override · ${errored} error`,
 );

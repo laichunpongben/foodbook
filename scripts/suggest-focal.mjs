@@ -20,21 +20,21 @@
  *   node scripts/suggest-focal.mjs --write    # apply
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import sharp from 'sharp';
+import sharp from "sharp";
 
-import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
-import { getString, readFrontmatter } from './lib/frontmatter.mjs';
-import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
+import { CONTENT_ROOT, listSlugs } from "./lib/content.mjs";
+import { getString, readFrontmatter } from "./lib/frontmatter.mjs";
+import { asBuffer, createThrottledFetcher } from "./lib/throttled-fetch.mjs";
 
-const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
-const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
+const DISHES_DIR = join(CONTENT_ROOT, "dishes");
 const LABEL_WIDTH = 28;
 
-const WRITE = process.argv.includes('--write');
+const WRITE = process.argv.includes("--write");
 
 // Landing card is 4:5 portrait; this is the surface where off-center
 // crops show up most. Detail-page hero shares the same focal but its
@@ -55,7 +55,7 @@ const SALIENCY_CLAMP_LO = 25;
 const SALIENCY_CLAMP_HI = 75;
 
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-focal/1.0',
+  ua: "foodbook-focal/1.0",
   gapMs: 1200,
 });
 
@@ -66,7 +66,7 @@ async function fetchBuffer(url) {
 async function loadPhoto({ heroUrl, hero }) {
   if (heroUrl) return fetchBuffer(heroUrl);
   if (hero) return readFile(join(PUBLIC_DIR, `${hero}-1280.jpg`));
-  throw new Error('no photo source');
+  throw new Error("no photo source");
 }
 
 async function suggest(buf) {
@@ -74,9 +74,9 @@ async function suggest(buf) {
   // the metadata call and the resize.
   const img = sharp(buf);
   const { width: W, height: H } = await img.metadata();
-  if (!W || !H) throw new Error('cannot read dimensions');
+  if (!W || !H) throw new Error("cannot read dimensions");
   const { info } = await img
-    .resize(TARGET_W, TARGET_H, { fit: 'cover', position: sharp.strategy.attention })
+    .resize(TARGET_W, TARGET_H, { fit: "cover", position: sharp.strategy.attention })
     .toBuffer({ resolveWithObject: true });
   // Map sharp's attention crop to a CSS `object-position` value:
   // cropOffsetLeft/Top are returned as negative translations of the
@@ -105,10 +105,10 @@ function clamp(v) {
 // Inserted under `heroUrl:` so the focal sits next to the source it
 // targets; falls back to `hero:` when only a local thumbnail is set.
 async function writeHeroFocal(mdxPath, focal) {
-  const text = await readFile(mdxPath, 'utf8');
-  for (const key of ['heroUrl', 'hero']) {
+  const text = await readFile(mdxPath, "utf8");
+  for (const key of ["heroUrl", "hero"]) {
     const next = text.replace(
-      new RegExp(`^(${key}:\\s*"[^"]*")$`, 'm'),
+      new RegExp(`^(${key}:\\s*"[^"]*")$`, "m"),
       `$1\nheroFocal: "${focal}"`,
     );
     if (next !== text) {
@@ -116,12 +116,12 @@ async function writeHeroFocal(mdxPath, focal) {
       return;
     }
   }
-  throw new Error('no hero/heroUrl anchor line found');
+  throw new Error("no hero/heroUrl anchor line found");
 }
 
-const slugs = await listSlugs('dishes');
+const slugs = await listSlugs("dishes");
 
-console.log(`# suggest-focal ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
+console.log(`# suggest-focal ${WRITE ? "(WRITE)" : "(dry run)"}\n`);
 
 let applied = 0;
 let kept = 0;
@@ -129,16 +129,16 @@ let skipped = 0;
 let errored = 0;
 
 for (const slug of slugs) {
-  const mdx = join(DISHES_DIR, slug, 'index.mdx');
+  const mdx = join(DISHES_DIR, slug, "index.mdx");
   let fm;
   try {
     fm = await readFrontmatter(mdx);
   } catch {
     continue;
   }
-  const heroFocal = getString(fm, 'heroFocal');
-  const heroUrl = getString(fm, 'heroUrl');
-  const hero = getString(fm, 'hero');
+  const heroFocal = getString(fm, "heroFocal");
+  const heroUrl = getString(fm, "heroUrl");
+  const hero = getString(fm, "hero");
   const label = slug.padEnd(LABEL_WIDTH);
 
   if (heroFocal) {
@@ -159,12 +159,15 @@ for (const slug of slugs) {
     const cx = clamp(fx);
     const cy = clamp(fy);
     if (Math.abs(cx - 50) < CENTER_TOLERANCE && Math.abs(cy - 50) < CENTER_TOLERANCE) {
-      console.log(`${label}center           (saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%, ${note})`);
+      console.log(
+        `${label}center           (saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%, ${note})`,
+      );
       kept++;
       continue;
     }
     const focal = `${cx.toFixed(0)}% ${cy.toFixed(0)}%`;
-    const clampNote = cx === fx && cy === fy ? '' : ` ← saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%`;
+    const clampNote =
+      cx === fx && cy === fy ? "" : ` ← saliency ${fx.toFixed(0)}% ${fy.toFixed(0)}%`;
     console.log(`${label}heroFocal: "${focal}"  (${note})${clampNote}`);
     if (WRITE) await writeHeroFocal(mdx, focal);
     applied++;
@@ -175,5 +178,5 @@ for (const slug of slugs) {
 }
 
 console.log(
-  `\n# ${applied} ${WRITE ? 'written' : 'suggested'} · ${kept} default-center · ${skipped} skipped · ${errored} error`,
+  `\n# ${applied} ${WRITE ? "written" : "suggested"} · ${kept} default-center · ${skipped} skipped · ${errored} error`,
 );

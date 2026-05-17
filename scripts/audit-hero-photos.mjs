@@ -22,31 +22,31 @@
  *   node scripts/audit-hero-photos.mjs --limit 20   # first 20 (for smoke)
  */
 
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import sharp from 'sharp';
+import sharp from "sharp";
 
-import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
-import { getString, readFrontmatter } from './lib/frontmatter.mjs';
-import { RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
-import { asBuffer, createThrottledFetcher } from './lib/throttled-fetch.mjs';
+import { CONTENT_ROOT, listSlugs } from "./lib/content.mjs";
+import { getString, readFrontmatter } from "./lib/frontmatter.mjs";
+import { RESOLUTION_GATE } from "./lib/photo-thresholds.mjs";
+import { asBuffer, createThrottledFetcher } from "./lib/throttled-fetch.mjs";
 
-const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
-const REPORT_PATH = '/tmp/photo-audit.md';
+const DISHES_DIR = join(CONTENT_ROOT, "dishes");
+const REPORT_PATH = "/tmp/photo-audit.md";
 // Sidecar consumed by upgrade-flagged-photos.mjs to skip re-measurement.
 // Keyed by URL so cache survives slug renames.
-const DIMS_CACHE_PATH = '/tmp/photo-audit.json';
+const DIMS_CACHE_PATH = "/tmp/photo-audit.json";
 const LABEL_WIDTH = 32;
 
 const argv = process.argv.slice(2);
 const LIMIT = (() => {
-  const i = argv.indexOf('--limit');
+  const i = argv.indexOf("--limit");
   return i >= 0 ? Number(argv[i + 1]) : Infinity;
 })();
 
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-audit/1.0',
+  ua: "foodbook-audit/1.0",
   gapMs: 1200,
 });
 
@@ -62,10 +62,10 @@ async function fetchBuffer(url) {
 // two scripts stay in sync if we change what counts as "low res".
 const TH = {
   ...RESOLUTION_GATE,
-  minSharpness: 1500,      // laplacian variance — < 1500 reads as soft on this corpus
-  lumaDarkBelow: 50,       // mean luma < 50 = underexposed
-  lumaBrightAbove: 215,    // mean luma > 215 = blown out
-  minContrast: 35,         // luma stdev < 35 = flat / hazy
+  minSharpness: 1500, // laplacian variance — < 1500 reads as soft on this corpus
+  lumaDarkBelow: 50, // mean luma < 50 = underexposed
+  lumaBrightAbove: 215, // mean luma > 215 = blown out
+  minContrast: 35, // luma stdev < 35 = flat / hazy
 };
 
 // 3x3 Laplacian kernel — high-frequency edge response. Variance of the
@@ -84,15 +84,13 @@ async function scoreImage(buf) {
   // Downsize to a fixed working width before stats — cheaper, and
   // normalizes sharpness across source resolutions so the threshold
   // doesn't have to scale.
-  const img = sharp(buf, { failOn: 'none' });
+  const img = sharp(buf, { failOn: "none" });
   const meta = await img.metadata();
   const width = meta.width ?? 0;
   const height = meta.height ?? 0;
   const megapixels = (width * height) / 1_000_000;
 
-  const luma = img
-    .resize({ width: 800, fit: 'inside', withoutEnlargement: true })
-    .greyscale();
+  const luma = img.resize({ width: 800, fit: "inside", withoutEnlargement: true }).greyscale();
 
   const lumaStats = await luma.clone().stats();
   const edgeStats = await luma.clone().convolve(LAPLACIAN).stats();
@@ -114,17 +112,17 @@ async function scoreImage(buf) {
 
 function flagsFor(s) {
   const flags = [];
-  if (s.width < TH.minWidth) flags.push('lowres');
-  if (s.megapixels < TH.minMegapixels) flags.push('small');
-  if (s.sharpness < TH.minSharpness) flags.push('soft');
-  if (s.lumaMean < TH.lumaDarkBelow) flags.push('dark');
-  if (s.lumaMean > TH.lumaBrightAbove) flags.push('blown-out');
-  if (s.lumaStdev < TH.minContrast) flags.push('flat');
+  if (s.width < TH.minWidth) flags.push("lowres");
+  if (s.megapixels < TH.minMegapixels) flags.push("small");
+  if (s.sharpness < TH.minSharpness) flags.push("soft");
+  if (s.lumaMean < TH.lumaDarkBelow) flags.push("dark");
+  if (s.lumaMean > TH.lumaBrightAbove) flags.push("blown-out");
+  if (s.lumaStdev < TH.minContrast) flags.push("flat");
   return flags;
 }
 
 async function main() {
-  const slugs = (await listSlugs('dishes')).slice(0, LIMIT);
+  const slugs = (await listSlugs("dishes")).slice(0, LIMIT);
   const rows = [];
   const errors = [];
 
@@ -133,9 +131,9 @@ async function main() {
   for (const slug of slugs) {
     i += 1;
     const label = slug.padEnd(LABEL_WIDTH);
-    const path = join(DISHES_DIR, slug, 'index.mdx');
+    const path = join(DISHES_DIR, slug, "index.mdx");
     const fm = await readFrontmatter(path);
-    const heroUrl = getString(fm, 'heroUrl');
+    const heroUrl = getString(fm, "heroUrl");
     if (!heroUrl) {
       process.stderr.write(`${label}  no heroUrl, skipping\n`);
       continue;
@@ -149,7 +147,7 @@ async function main() {
         `[${i}/${slugs.length}] ${label}  ` +
           `${s.width}x${s.height} (${s.megapixels.toFixed(1)}MP, ${(s.bytes / 1024).toFixed(0)}KB)  ` +
           `sharp=${s.sharpness.toFixed(0)}  luma=${s.lumaMean.toFixed(0)}/${s.lumaStdev.toFixed(0)}  ` +
-          `${flags.length ? '[' + flags.join(',') + ']' : 'OK'}\n`,
+          `${flags.length ? "[" + flags.join(",") + "]" : "OK"}\n`,
       );
     } catch (err) {
       errors.push({ slug, heroUrl, error: err.message });
@@ -166,35 +164,35 @@ async function main() {
   const clean = rows.length - flagged.length;
 
   const lines = [
-    '# Hero Photo Audit',
-    '',
+    "# Hero Photo Audit",
+    "",
     `Generated: ${new Date().toISOString()}`,
     `Scope: dishes (${rows.length} scored, ${errors.length} failed)`,
     `Flagged: ${flagged.length} / ${rows.length}  ·  Clean: ${clean}`,
-    '',
-    '## Thresholds',
-    '',
-    '```',
+    "",
+    "## Thresholds",
+    "",
+    "```",
     ...Object.entries(TH).map(([k, v]) => `${k.padEnd(20)} ${v}`),
-    '```',
-    '',
-    '## Flagged (worst first)',
-    '',
-    '| # | slug | w×h | MP | KB | sharp | luma μ | luma σ | flags |',
-    '|---|------|-----|----|----|-------|--------|--------|-------|',
+    "```",
+    "",
+    "## Flagged (worst first)",
+    "",
+    "| # | slug | w×h | MP | KB | sharp | luma μ | luma σ | flags |",
+    "|---|------|-----|----|----|-------|--------|--------|-------|",
     ...flagged.map((r, idx) => {
-      return `| ${idx + 1} | [${r.slug}](${r.heroUrl}) | ${r.width}×${r.height} | ${r.megapixels.toFixed(1)} | ${(r.bytes / 1024).toFixed(0)} | ${r.sharpness.toFixed(0)} | ${r.lumaMean.toFixed(0)} | ${r.lumaStdev.toFixed(0)} | ${r.flags.join(', ')} |`;
+      return `| ${idx + 1} | [${r.slug}](${r.heroUrl}) | ${r.width}×${r.height} | ${r.megapixels.toFixed(1)} | ${(r.bytes / 1024).toFixed(0)} | ${r.sharpness.toFixed(0)} | ${r.lumaMean.toFixed(0)} | ${r.lumaStdev.toFixed(0)} | ${r.flags.join(", ")} |`;
     }),
-    '',
-    '## Clean',
-    '',
+    "",
+    "## Clean",
+    "",
     ...rows
       .filter((r) => r.flags.length === 0)
       .map((r) => `- ${r.slug} — ${r.width}×${r.height}, sharp=${r.sharpness.toFixed(0)}`),
   ];
 
   if (errors.length) {
-    lines.push('', '## Fetch errors', '');
+    lines.push("", "## Fetch errors", "");
     for (const e of errors) lines.push(`- ${e.slug} — ${e.error} (${e.heroUrl})`);
   }
 
@@ -202,8 +200,8 @@ async function main() {
     rows.map((r) => [r.heroUrl, { width: r.width, height: r.height }]),
   );
 
-  await writeFile(REPORT_PATH, lines.join('\n') + '\n');
-  await writeFile(DIMS_CACHE_PATH, JSON.stringify(dimsCache, null, 2) + '\n');
+  await writeFile(REPORT_PATH, lines.join("\n") + "\n");
+  await writeFile(DIMS_CACHE_PATH, JSON.stringify(dimsCache, null, 2) + "\n");
   process.stderr.write(`\nReport: ${REPORT_PATH}\n`);
   process.stderr.write(`Cache:  ${DIMS_CACHE_PATH} (${rows.length} entries)\n`);
   process.stderr.write(`Flagged: ${flagged.length} / ${rows.length}\n`);

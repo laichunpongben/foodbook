@@ -9,10 +9,10 @@
  * in CI.
  */
 
-import { join } from 'node:path';
+import { join } from "node:path";
 
-import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
-import { readFrontmatter } from './lib/frontmatter.mjs';
+import { CONTENT_ROOT, listSlugs } from "./lib/content.mjs";
+import { readFrontmatter } from "./lib/frontmatter.mjs";
 
 function extractRefs(fm) {
   // Naive: matches `farms: ['a', 'b']` style arrays.
@@ -22,8 +22,8 @@ function extractRefs(fm) {
   while ((m = re.exec(fm))) {
     const key = m[1];
     const items = m[2]
-      .split(',')
-      .map((s) => s.trim().replace(/^['"]|['"]$/g, ''))
+      .split(",")
+      .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
       .filter(Boolean);
     out[key].push(...items);
   }
@@ -43,7 +43,7 @@ function extractIngredientFroms(fm) {
   return out;
 }
 
-const collections = ['dishes', 'recipes', 'restaurants', 'farms', 'meals', 'garden'];
+const collections = ["dishes", "recipes", "restaurants", "farms", "meals", "garden"];
 const slugs = Object.fromEntries(
   await Promise.all(collections.map(async (c) => [c, new Set(await listSlugs(c))])),
 );
@@ -53,7 +53,9 @@ const producerSlugs = new Set([...slugs.farms, ...slugs.garden]);
 for (const c of collections) {
   for (const slug of slugs[c]) {
     const path =
-      c === 'dishes' ? join(CONTENT_ROOT, c, slug, 'index.mdx') : join(CONTENT_ROOT, c, `${slug}.mdx`);
+      c === "dishes"
+        ? join(CONTENT_ROOT, c, slug, "index.mdx")
+        : join(CONTENT_ROOT, c, `${slug}.mdx`);
     let fm;
     try {
       fm = await readFrontmatter(path);
@@ -69,10 +71,12 @@ for (const c of collections) {
         }
       }
     }
-    if (c === 'recipes') {
+    if (c === "recipes") {
       for (const target of extractIngredientFroms(fm)) {
         if (!producerSlugs.has(target)) {
-          console.error(`✗ recipes/${slug} → ingredient from:${target} — missing in farms or garden`);
+          console.error(
+            `✗ recipes/${slug} → ingredient from:${target} — missing in farms or garden`,
+          );
           broken++;
         }
       }
@@ -84,4 +88,4 @@ if (broken > 0) {
   console.error(`\n${broken} broken reference(s).`);
   process.exit(1);
 }
-console.log('✓ all cross-references resolve');
+console.log("✓ all cross-references resolve");

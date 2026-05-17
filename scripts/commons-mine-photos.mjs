@@ -23,21 +23,21 @@
  *   node scripts/commons-mine-photos.mjs --write    # apply
  */
 
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import { CONTENT_ROOT, listSlugs } from './lib/content.mjs';
-import { getString, readFrontmatter } from './lib/frontmatter.mjs';
-import { rewriteHeroUrl } from './lib/mdx-hero.mjs';
-import { megapixels, RESOLUTION_GATE } from './lib/photo-thresholds.mjs';
-import { createThrottledFetcher } from './lib/throttled-fetch.mjs';
-import { slugToTitle } from './lib/wiki-titles.mjs';
+import { CONTENT_ROOT, listSlugs } from "./lib/content.mjs";
+import { getString, readFrontmatter } from "./lib/frontmatter.mjs";
+import { rewriteHeroUrl } from "./lib/mdx-hero.mjs";
+import { megapixels, RESOLUTION_GATE } from "./lib/photo-thresholds.mjs";
+import { createThrottledFetcher } from "./lib/throttled-fetch.mjs";
+import { slugToTitle } from "./lib/wiki-titles.mjs";
 
-const DISHES_DIR = join(CONTENT_ROOT, 'dishes');
-const DIMS_CACHE_PATH = '/tmp/photo-audit.json';
+const DISHES_DIR = join(CONTENT_ROOT, "dishes");
+const DIMS_CACHE_PATH = "/tmp/photo-audit.json";
 const LABEL_WIDTH = 28;
 
-const WRITE = process.argv.includes('--write');
+const WRITE = process.argv.includes("--write");
 
 // New image must be ≥ this many × current megapixels to be worth the
 // swap. Below this, churn outweighs the gain.
@@ -55,14 +55,14 @@ const CATEGORY_LIMIT = 50;
 // - parenthetical disambiguation absent from slug (bao → Bao (food))
 // - localized name folded into broader topic (kottbullar → Swedish meatballs)
 const CATEGORY_OVERRIDES = {
-  'banh-mi': 'Bánh_mì',
-  'chili-crab': 'Chilli_crab',
-  'gado-gado': 'Gado-gado',
-  'gua-bao': 'Gua_bao',
-  kottbullar: 'Köttbullar',
-  'rogan-josh': 'Rogan_Josh',
-  'roti-canai': 'Roti_prata',
-  'tonkotsu-ramen': 'Tonkotsu',
+  "banh-mi": "Bánh_mì",
+  "chili-crab": "Chilli_crab",
+  "gado-gado": "Gado-gado",
+  "gua-bao": "Gua_bao",
+  kottbullar: "Köttbullar",
+  "rogan-josh": "Rogan_Josh",
+  "roti-canai": "Roti_prata",
+  "tonkotsu-ramen": "Tonkotsu",
 };
 
 // Aspect bounds — skip extreme portraits (often menu cards or
@@ -76,10 +76,20 @@ const MAX_ASPECT = 2.5;
 // picking partial/contextual/ingredient photos. Case-insensitive
 // substring match against the title with underscores → spaces.
 const TITLE_DENYLIST = [
-  'half-eaten', 'half eaten', 'leftover', 'bitten', 'one bite',
-  'vending', 'restocking', 'restock',
-  'raw ingredients', 'preparation', 'making',
-  'menu', 'storefront', 'restaurant exterior',
+  "half-eaten",
+  "half eaten",
+  "leftover",
+  "bitten",
+  "one bite",
+  "vending",
+  "restocking",
+  "restock",
+  "raw ingredients",
+  "preparation",
+  "making",
+  "menu",
+  "storefront",
+  "restaurant exterior",
 ];
 
 // Slug → exact Commons file title (without `File:` prefix) to bypass
@@ -88,17 +98,17 @@ const TITLE_DENYLIST = [
 // presentation, etc.) and you've manually browsed for a better one.
 const MANUAL_PICKS = {
   // banh-mi: auto-pick is "Banh Mi Burger" — fusion, not the classic.
-  'banh-mi': '20240704 越式烤豬肉法國麵包.jpg',
+  "banh-mi": "20240704 越式烤豬肉法國麵包.jpg",
   // bouillabaisse: auto-pick is dieppoise (Normandy variant); this
   // is the classic Marseille-style preparation.
-  bouillabaisse: 'Bouillabaisse at restaurant Belge.jpg',
+  bouillabaisse: "Bouillabaisse at restaurant Belge.jpg",
   // chili-crab: auto-pick is HK "Crab Sauce with Bun"; this is the
   // classic Singapore chili crab preparation.
-  'chili-crab': 'Chilli crab-01.jpg',
+  "chili-crab": "Chilli crab-01.jpg",
 };
 
 const throttledFetch = createThrottledFetcher({
-  ua: 'foodbook-commons-mine/1.0',
+  ua: "foodbook-commons-mine/1.0",
   gapMs: 1500,
   backoffBaseMs: 6000,
 });
@@ -108,7 +118,7 @@ function slugToCategory(slug) {
 }
 
 async function commonsApi(params) {
-  const qs = new URLSearchParams({ action: 'query', format: 'json', ...params });
+  const qs = new URLSearchParams({ action: "query", format: "json", ...params });
   const res = await throttledFetch(`https://commons.wikimedia.org/w/api.php?${qs}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -116,9 +126,9 @@ async function commonsApi(params) {
 
 async function listCategoryFiles(category) {
   const data = await commonsApi({
-    list: 'categorymembers',
+    list: "categorymembers",
     cmtitle: `Category:${category}`,
-    cmtype: 'file',
+    cmtype: "file",
     cmlimit: String(CATEGORY_LIMIT),
   });
   return data.query?.categorymembers?.map((m) => m.title) ?? [];
@@ -127,21 +137,27 @@ async function listCategoryFiles(category) {
 async function getImageInfo(titles) {
   if (!titles.length) return [];
   const data = await commonsApi({
-    prop: 'imageinfo',
-    titles: titles.join('|'),
-    iiprop: 'size|url|mime',
+    prop: "imageinfo",
+    titles: titles.join("|"),
+    iiprop: "size|url|mime",
   });
   return Object.values(data.query?.pages ?? {})
     .map((p) => {
       const info = p.imageinfo?.[0];
       if (!info) return null;
-      return { title: p.title, width: info.width, height: info.height, url: info.url, mime: info.mime };
+      return {
+        title: p.title,
+        width: info.width,
+        height: info.height,
+        url: info.url,
+        mime: info.mime,
+      };
     })
     .filter(Boolean);
 }
 
 function passesDenylist(title) {
-  const lower = title.toLowerCase().replace(/_/g, ' ');
+  const lower = title.toLowerCase().replace(/_/g, " ");
   return !TITLE_DENYLIST.some((bad) => lower.includes(bad));
 }
 
@@ -150,7 +166,7 @@ function rankCandidates(candidates, current, currentUrl) {
   return candidates
     .filter((c) => {
       if (c.url === currentUrl) return false;
-      if (c.mime !== 'image/jpeg' && c.mime !== 'image/png') return false;
+      if (c.mime !== "image/jpeg" && c.mime !== "image/png") return false;
       if (c.width < RESOLUTION_GATE.minWidth) return false;
       const mp = megapixels(c);
       if (mp < RESOLUTION_GATE.minMegapixels) return false;
@@ -165,14 +181,16 @@ function rankCandidates(candidates, current, currentUrl) {
 
 let dimsCache;
 try {
-  dimsCache = JSON.parse(await readFile(DIMS_CACHE_PATH, 'utf8'));
+  dimsCache = JSON.parse(await readFile(DIMS_CACHE_PATH, "utf8"));
 } catch {
-  console.error(`# error: ${DIMS_CACHE_PATH} not found — run \`node scripts/audit-hero-photos.mjs\` first`);
+  console.error(
+    `# error: ${DIMS_CACHE_PATH} not found — run \`node scripts/audit-hero-photos.mjs\` first`,
+  );
   process.exit(1);
 }
-const slugs = await listSlugs('dishes');
+const slugs = await listSlugs("dishes");
 
-console.log(`# commons-mine-photos ${WRITE ? '(WRITE)' : '(dry run)'}\n`);
+console.log(`# commons-mine-photos ${WRITE ? "(WRITE)" : "(dry run)"}\n`);
 
 let scanned = 0;
 let flagged = 0;
@@ -182,7 +200,7 @@ let needsOverride = 0;
 let errored = 0;
 
 for (const slug of slugs) {
-  const mdx = join(DISHES_DIR, slug, 'index.mdx');
+  const mdx = join(DISHES_DIR, slug, "index.mdx");
   const label = slug.padEnd(LABEL_WIDTH);
   let fm;
   try {
@@ -192,15 +210,16 @@ for (const slug of slugs) {
     errored++;
     continue;
   }
-  const heroUrl = getString(fm, 'heroUrl');
+  const heroUrl = getString(fm, "heroUrl");
   if (!heroUrl) continue;
 
   scanned++;
 
   const current = dimsCache[heroUrl];
-  if (!current) continue;  // not in cache — was rate-limited last audit
+  if (!current) continue; // not in cache — was rate-limited last audit
   const currentMP = megapixels(current);
-  if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels) continue;
+  if (current.width >= RESOLUTION_GATE.minWidth && currentMP >= RESOLUTION_GATE.minMegapixels)
+    continue;
   flagged++;
 
   const category = slugToCategory(slug);
@@ -214,7 +233,9 @@ for (const slug of slugs) {
     continue;
   }
   if (!titles.length) {
-    console.log(`${label}NOCAT  "Category:${category}" empty or missing — add to CATEGORY_OVERRIDES`);
+    console.log(
+      `${label}NOCAT  "Category:${category}" empty or missing — add to CATEGORY_OVERRIDES`,
+    );
     needsOverride++;
     continue;
   }
@@ -240,25 +261,29 @@ for (const slug of slugs) {
   const manual = MANUAL_PICKS[slug];
   const manualHit = manual && ranked.find((c) => c.title === `File:${manual}`);
   if (manual && !manualHit) {
-    console.log(`${label}MANMISS override "${manual}" not in ranked set — falling back to auto-pick`);
+    console.log(
+      `${label}MANMISS override "${manual}" not in ranked set — falling back to auto-pick`,
+    );
   }
   const best = manualHit ?? ranked[0];
   const bestMP = megapixels(best);
-  const tag = manualHit ? 'MANUAL' : 'PICK  ';
+  const tag = manualHit ? "MANUAL" : "PICK  ";
   console.log(
-    `${label}${tag} ${current.width}×${current.height} (${currentMP.toFixed(1)}MP) → ${best.width}×${best.height} (${bestMP.toFixed(1)}MP) ${best.title.replace(/^File:/, '')}`,
+    `${label}${tag} ${current.width}×${current.height} (${currentMP.toFixed(1)}MP) → ${best.width}×${best.height} (${bestMP.toFixed(1)}MP) ${best.title.replace(/^File:/, "")}`,
   );
-  console.log(`${' '.repeat(LABEL_WIDTH)}        → ${best.url}`);
+  console.log(`${" ".repeat(LABEL_WIDTH)}        → ${best.url}`);
   // Print runners-up so the reviewer can spot a better one and add a MANUAL_PICK.
   for (const c of ranked.slice(1, 4)) {
     const mp = (c.width * c.height) / 1_000_000;
-    console.log(`${' '.repeat(LABEL_WIDTH)}  alt: ${c.width}×${c.height} (${mp.toFixed(1)}MP) ${c.title.replace(/^File:/, '')}`);
+    console.log(
+      `${" ".repeat(LABEL_WIDTH)}  alt: ${c.width}×${c.height} (${mp.toFixed(1)}MP) ${c.title.replace(/^File:/, "")}`,
+    );
   }
   if (WRITE) {
     try {
       await rewriteHeroUrl(mdx, best.url);
     } catch (err) {
-      console.log(`${' '.repeat(LABEL_WIDTH)}        write failed: ${err.message}`);
+      console.log(`${" ".repeat(LABEL_WIDTH)}        write failed: ${err.message}`);
       errored++;
       continue;
     }
@@ -267,5 +292,5 @@ for (const slug of slugs) {
 }
 
 console.log(
-  `\n# scanned ${scanned} · ${flagged} below resolution gate · ${upgraded} ${WRITE ? 'rewritten' : 'pickable'} · ${noBetter} no acceptable candidate · ${needsOverride} need category override · ${errored} error`,
+  `\n# scanned ${scanned} · ${flagged} below resolution gate · ${upgraded} ${WRITE ? "rewritten" : "pickable"} · ${noBetter} no acceptable candidate · ${needsOverride} need category override · ${errored} error`,
 );

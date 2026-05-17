@@ -22,8 +22,8 @@ export function createThrottledFetcher({
     lastFetchAt = Date.now();
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const res = await fetch(url, {
-        redirect: 'follow',
-        headers: { 'User-Agent': ua },
+        redirect: "follow",
+        headers: { "User-Agent": ua },
         ...init,
       });
       if (res.ok || allowStatus.includes(res.status)) return res;
@@ -33,7 +33,7 @@ export function createThrottledFetcher({
       }
       throw new Error(`HTTP ${res.status}`);
     }
-    throw new Error('exhausted retries');
+    throw new Error("exhausted retries");
   };
 }
 

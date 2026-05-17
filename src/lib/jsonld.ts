@@ -3,7 +3,7 @@
  * Render the returned objects via <JsonLd data={...} />.
  */
 
-export const SCHEMA_CTX = 'https://schema.org' as const;
+export const SCHEMA_CTX = "https://schema.org" as const;
 
 /** Absolute URL of an entry, e.g. entryUrl(site, 'recipes', 'carbonara') →
  *  https://food.databookman.com/recipes/carbonara/. Used by both the
@@ -25,12 +25,17 @@ export function breadcrumb(
   leaf: { label: string; url: string },
 ): Record<string, unknown> {
   return {
-    '@context': SCHEMA_CTX,
-    '@type': 'BreadcrumbList',
+    "@context": SCHEMA_CTX,
+    "@type": "BreadcrumbList",
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', site).toString() },
-      { '@type': 'ListItem', position: 2, name: section.label, item: sectionUrl(site, section.kind) },
-      { '@type': 'ListItem', position: 3, name: leaf.label, item: leaf.url },
+      { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", site).toString() },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: section.label,
+        item: sectionUrl(site, section.kind),
+      },
+      { "@type": "ListItem", position: 3, name: leaf.label, item: leaf.url },
     ],
   };
 }
