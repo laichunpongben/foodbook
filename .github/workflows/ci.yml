@@ -21,6 +21,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Biome lint + format check
+        run: npm run lint
+
       - name: Astro type-check
         run: npm run check
 
