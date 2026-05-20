@@ -118,17 +118,19 @@ foodbook/
     │   ├── Card.astro                 ← generic card (farms / restaurants / recipes)
     │   ├── IngredientCard.astro       ← single-ingredient card inside PlantSection
     │   ├── AppearsIn.astro            ← back-refs ("appears in N dishes") via src/lib/back-refs.ts
+    │   ├── Pager.astro                ← prev/next nav at the bottom of every entity-detail page
     │   ├── SeasonalWheel.astro        ← SVG circular calendar on /seasons
     │   ├── WikiImage.astro            ← <img> wrapper with srcset + loading=lazy + heroFocal honoring
     │   ├── SearchBar.astro            ← Pagefind UI
-    │   └── JsonLd.astro               ← schema.org emitter (Article / Recipe / Restaurant / Place / Breadcrumb)
+    │   └── JsonLd.astro               ← schema.org emitter (Article / Recipe / Restaurant / Place / Breadcrumb / WebSite / CollectionPage)
     │
     ├── lib/
     │   ├── dom.ts                     ← byId, requireById, prefersReducedMotion, WakeLock types
-    │   ├── journey.ts                 ← assembles Plant/Cook/Plate/Eat from a dish's stages
-    │   ├── jsonld.ts (+ jsonld.test.ts) ← SCHEMA_CTX, breadcrumb(), entryUrl()
+    │   ├── journey.ts (+ journey.test.ts) ← assembles Plant/Cook/Plate/Eat from a dish's stages; nameFromText
+    │   ├── jsonld.ts (+ jsonld.test.ts) ← SCHEMA_CTX, SITE_NAME, entryUrl, sectionUrl, breadcrumb, collectionPage
     │   ├── back-refs.ts (+ back-refs.test.ts) ← reverse index (which dishes reference this farm/recipe/restaurant)
     │   ├── seasons.ts (+ seasons.test.ts) ← season-window math; powers /seasons
+    │   ├── siblings.ts (+ siblings.test.ts) ← prev/next neighbours for entity-detail pages (used by Pager)
     │   ├── slug.ts (+ slug.test.ts)   ← bare(id) / bareSlug(id) — strip collection prefix (and dish `/index`)
     │   ├── visibility.ts (+ visibility.test.ts) ← public/unlisted filter + meta-robots emitter
     │   └── map/
@@ -193,7 +195,7 @@ CI is `.github/workflows/ci.yml`, running on `ubicloud-standard-2` with Node 24:
 | `npm run check` | Astro type-check across MDX, components, schemas |
 | `npm run check:refs` | Walk every cross-collection slug ref; fail on dangling pointer |
 | `npm run check:leaks` | Grep staged content for secret patterns (phone, AWS key, etc.) |
-| `npm test` | `vitest run` — covers `back-refs`, `jsonld`, `seasons`, `slug`, `visibility` in `src/lib/` |
+| `npm test` | `vitest run` — covers every exported function in `src/lib/` (`back-refs`, `journey`, `jsonld`, `seasons`, `siblings`, `slug`, `visibility`) |
 | `npm run build` | Astro static build |
 | Content-drift guard | For dishes / farms / recipes / restaurants: fail CI if `dist/<kind>/` count < `src/content/<kind>/` count. Catches the C-02 class of bug. |
 | Upload `dist` artifact | Only on `push` to `main`. |
