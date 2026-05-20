@@ -126,9 +126,10 @@ foodbook/
     ├── lib/
     │   ├── dom.ts                     ← byId, requireById, prefersReducedMotion, WakeLock types
     │   ├── journey.ts                 ← assembles Plant/Cook/Plate/Eat from a dish's stages
-    │   ├── jsonld.ts                  ← SCHEMA_CTX, breadcrumb(), entryUrl()
-    │   ├── back-refs.ts               ← reverse index (which dishes reference this farm/recipe/restaurant)
+    │   ├── jsonld.ts (+ jsonld.test.ts) ← SCHEMA_CTX, breadcrumb(), entryUrl()
+    │   ├── back-refs.ts (+ back-refs.test.ts) ← reverse index (which dishes reference this farm/recipe/restaurant)
     │   ├── seasons.ts (+ seasons.test.ts) ← season-window math; powers /seasons
+    │   ├── slug.ts (+ slug.test.ts)   ← bare(id) / bareSlug(id) — strip collection prefix (and dish `/index`)
     │   ├── visibility.ts (+ visibility.test.ts) ← public/unlisted filter + meta-robots emitter
     │   └── map/
     │       └── food.ts                ← Leaflet bootstrap + farm/restaurant/garden layers, CARTO Dark Matter tiles
@@ -192,11 +193,11 @@ CI is `.github/workflows/ci.yml`, running on `ubicloud-standard-2` with Node 24:
 | `npm run check` | Astro type-check across MDX, components, schemas |
 | `npm run check:refs` | Walk every cross-collection slug ref; fail on dangling pointer |
 | `npm run check:leaks` | Grep staged content for secret patterns (phone, AWS key, etc.) |
-| `npm test` | `vitest run` — currently covers `src/lib/seasons.ts` and `src/lib/visibility.ts` |
+| `npm test` | `vitest run` — covers `back-refs`, `jsonld`, `seasons`, `slug`, `visibility` in `src/lib/` |
 | `npm run build` | Astro static build |
 | Content-drift guard | For dishes / farms / recipes / restaurants: fail CI if `dist/<kind>/` count < `src/content/<kind>/` count. Catches the C-02 class of bug. |
 | Upload `dist` artifact | Only on `push` to `main`. |
-| `deploy` job | Downloads the artifact and runs `npx wrangler pages deploy dist --project-name=foodbook --branch=main`. Credentials via `CLOUDFLARE_API_TOKEN` secret + `CLOUDFLARE_ACCOUNT_ID` var. |
+| `deploy` job | Downloads the artifact and runs `npx wrangler pages deploy dist --project-name=foodbook --branch=main`. Credentials via `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets. |
 
 Cloudflare Pages git-integration is off — the wrangler-cli deploy from CI is the single deploy path. The build runs on PRs but doesn't publish.
 
