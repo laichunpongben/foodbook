@@ -395,6 +395,19 @@ footer.site-footer .footer-meta {
 }
 footer.site-footer .footer-meta a { color: var(--ink-soft); }
 
+/* Entity-detail pages — /farms/<slug>, /restaurants/<slug>, /meals/<slug>,
+ * /garden/<slug>. Width + the small "back to <listing>" affordance at the top. */
+.entity { padding: 3rem 0 6rem; max-width: 760px; }
+.entity .back {
+  display: inline-block;
+  margin-bottom: 2rem;
+  color: var(--ink-mute);
+  text-decoration: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+}
+.entity .back:hover { color: var(--paprika); }
+
 /* Collection index pages — /dishes, /farms, /recipes, /restaurants, /garden, /meals.
  * Per-page overrides (e.g. font-size, gap, dividers) sit in the page's own <style> block. */
 .index-page { padding: 4rem 0 6rem; max-width: 720px; }
