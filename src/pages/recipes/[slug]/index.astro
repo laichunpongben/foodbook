@@ -75,6 +75,15 @@ const description = [
 const prepIso = isoDuration(recipe.data.timePrep);
 const cookIso = isoDuration(recipe.data.timeCook);
 
+// Derive schema.org fields from the project's tag enum (see src/content.config.ts).
+const CUISINE_TAGS = new Set([
+  'italian', 'japanese', 'chinese', 'french', 'mexican', 'thai',
+  'indian', 'levantine', 'iberian', 'nordic',
+]);
+const CATEGORY_TAGS = new Set(['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink']);
+const cuisines = recipe.data.tags.filter((t) => CUISINE_TAGS.has(t));
+const categories = recipe.data.tags.filter((t) => CATEGORY_TAGS.has(t));
+
 const recipeLd = {
   '@context': SCHEMA_CTX,
   '@type': 'Recipe',
@@ -93,6 +102,9 @@ const recipeLd = {
   ...(cookIso && { cookTime: cookIso }),
   ...(recipe.data.heroUrl && { image: recipe.data.heroUrl }),
   ...(recipe.data.attribution && { author: { '@type': 'Person', name: recipe.data.attribution } }),
+  ...(cuisines.length > 0 && { recipeCuisine: cuisines }),
+  ...(categories.length > 0 && { recipeCategory: categories }),
+  ...(recipe.data.tags.length > 0 && { keywords: recipe.data.tags.join(', ') }),
 };
 
 const breadcrumbLd = breadcrumb(
