@@ -8,6 +8,7 @@ import PlantSection from '~/components/PlantSection.astro';
 import CookSection from '~/components/CookSection.astro';
 import PlateSection from '~/components/PlateSection.astro';
 import EatSection from '~/components/EatSection.astro';
+import Pager from '~/components/Pager.astro';
 import { getJourney } from '~/lib/journey';
 import { bareSlug } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
@@ -90,22 +91,11 @@ const breadcrumbLd = breadcrumb(
           </section>
         )}
 
-        {(prev || next) && (
-          <nav class="dish-pager" aria-label="Other dishes">
-            {prev && (
-              <a class="pager-link prev" href={`/dishes/${bareSlug(prev.id)}/`} rel="prev">
-                <span class="pager-eyebrow">Previous</span>
-                <span class="pager-title" set:html={prev.data.title} />
-              </a>
-            )}
-            {next && (
-              <a class="pager-link next" href={`/dishes/${bareSlug(next.id)}/`} rel="next">
-                <span class="pager-eyebrow">Next</span>
-                <span class="pager-title" set:html={next.data.title} />
-              </a>
-            )}
-          </nav>
-        )}
+        <Pager
+          ariaLabel="Other dishes"
+          prev={prev ? { href: `/dishes/${bareSlug(prev.id)}/`, title: prev.data.title } : null}
+          next={next ? { href: `/dishes/${bareSlug(next.id)}/`, title: next.data.title } : null}
+        />
       </div>
     </section>
   </article>
@@ -146,29 +136,4 @@ const breadcrumbLd = breadcrumb(
   .dish-prose .finale h2 {
     margin-bottom: 0.6rem;
   }
-
-  .dish-pager {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 4rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--rule);
-  }
-  .pager-link {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    text-decoration: none;
-    color: var(--ink);
-    max-width: 18rem;
-  }
-  .pager-link.next { margin-left: auto; text-align: right; align-items: flex-end; }
-  .pager-link:hover .pager-title { color: var(--paprika); }
-  .pager-eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-  }
-  .pager-title { font-family: var(--font-display); font-size: 1.1rem; }
 </style>
