@@ -1,8 +1,11 @@
 ---
 import { getCollection, render } from 'astro:content';
+import AppearsIn from '~/components/AppearsIn.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import JsonLd from '~/components/JsonLd.astro';
+import { dishesReferencing } from '~/lib/back-refs';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
+import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const recipes = await getCollection('recipes');
@@ -15,6 +18,7 @@ export async function getStaticPaths() {
 const { recipe } = Astro.props;
 const slug = recipe.id.replace(/^recipes\//, '');
 const { Content } = await render(recipe);
+const dishesUsingThisRecipe = publicOnly(await dishesReferencing('recipe', slug));
 
 // Look up the producer for an ingredient's `from` slug across farms and
 // garden collections. Returns the right href and display name, or null
@@ -167,5 +171,7 @@ const breadcrumbLd = breadcrumb(
         <pre style="white-space: pre-wrap; font-family: var(--font-body); color: var(--ink-soft);">{recipe.data.notes}</pre>
       </>
     )}
+
+    <AppearsIn dishes={dishesUsingThisRecipe} label="Cooked in" />
   </section>
 </BaseLayout>
