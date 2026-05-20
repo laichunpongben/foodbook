@@ -36,6 +36,7 @@ const restaurantLd = {
   '@type': 'Restaurant',
   name: d.name,
   url: restaurantUrl,
+  inLanguage: 'en',
   address: {
     '@type': 'PostalAddress',
     addressLocality: d.city,
@@ -45,6 +46,7 @@ const restaurantLd = {
   priceRange: d.priceBand,
   ...(d.cuisine && { servesCuisine: d.cuisine }),
   ...(d.heroUrl && { image: d.heroUrl }),
+  ...(d.tags.length > 0 && { keywords: d.tags.join(', ') }),
 };
 
 const breadcrumbLd = breadcrumb(

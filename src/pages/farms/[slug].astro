@@ -36,6 +36,7 @@ const farmLd = {
   '@type': 'LocalBusiness',
   name: d.name,
   url: farmUrl,
+  inLanguage: 'en',
   description: `${d.kind} · ${d.location}`,
   address: {
     '@type': 'PostalAddress',
@@ -45,6 +46,7 @@ const farmLd = {
   geo: { '@type': 'GeoCoordinates', latitude: d.lat, longitude: d.lng },
   ...(d.heroUrl && { image: d.heroUrl }),
   ...(d.url && { sameAs: [d.url] }),
+  ...(d.products && d.products.length > 0 && { makesOffer: d.products.map((p) => ({ '@type': 'Offer', name: p })) }),
 };
 
 const breadcrumbLd = breadcrumb(
