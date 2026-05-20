@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import SearchBar from '~/components/SearchBar.astro';
 ---
 
 <BaseLayout title="Not found" description="No such page in this archive.">
@@ -8,8 +9,9 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
     <h1>Page not found</h1>
     <p class="lead">
       The page you were looking for isn't in the archive. The slug may be wrong, the entry may
-      have been removed, or the page may not exist yet.
+      have been removed, or the page may not exist yet. Try a search:
     </p>
+    <SearchBar />
     <ul class="not-found-nav">
       <li><a href="/">Home</a></li>
       <li><a href="/world/">World</a></li>
