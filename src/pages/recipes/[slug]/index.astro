@@ -170,10 +170,12 @@ const breadcrumbLd = breadcrumb(
       ))}
     </ol>
 
+    {/* MDX body — author prose, renders nothing when the body is empty. */}
+    <Content />
+
     {recipe.data.notes && (
       <>
         <h2>Notes</h2>
-        <Content />
         <pre class="notes">{recipe.data.notes}</pre>
       </>
     )}
