@@ -41,10 +41,12 @@ const articleLd = {
   '@type': 'Article',
   headline: dish.data.shortTitle,
   url: dishUrl,
+  inLanguage: 'en',
   ...(dish.data.tagline && { description: dish.data.tagline }),
   ...(dish.data.heroUrl && { image: dish.data.heroUrl }),
   ...(dish.data.firstMade && { dateCreated: dish.data.firstMade }),
   ...(dish.data.origin && { about: dish.data.origin }),
+  ...(dish.data.tags.length > 0 && { keywords: dish.data.tags.join(', ') }),
 };
 
 const breadcrumbLd = breadcrumb(
