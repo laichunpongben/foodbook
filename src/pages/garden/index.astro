@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -10,11 +10,14 @@ const entries = publicOnly(await getCollection('garden')).sort((a, b) =>
   b.data.planted.localeCompare(a.data.planted),
 );
 const description = `${entries.length} garden beds tracked.`;
-const ld = collectionPage(Astro.site!, { label: 'Garden', kind: 'garden', description }, entries.length);
+const section = { label: 'Garden', kind: 'garden' };
+const ld = collectionPage(Astro.site!, { ...section, description }, entries.length);
+const crumb = breadcrumb(Astro.site!, section);
 ---
 
 <BaseLayout title="Garden" description={description}>
   <JsonLd data={ld} />
+  <JsonLd data={crumb} />
   <section class="container index-page">
     <p class="eyebrow">Grow</p>
     <h1>Garden</h1>

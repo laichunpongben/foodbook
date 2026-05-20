@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -20,15 +20,14 @@ for (const r of restaurants) {
 }
 const cities = [...byCity.entries()].sort(([a], [b]) => a.localeCompare(b));
 const description = `${restaurants.length} restaurants in the archive.`;
-const ld = collectionPage(
-  Astro.site!,
-  { label: 'Restaurants', kind: 'restaurants', description },
-  restaurants.length,
-);
+const section = { label: 'Restaurants', kind: 'restaurants' };
+const ld = collectionPage(Astro.site!, { ...section, description }, restaurants.length);
+const crumb = breadcrumb(Astro.site!, section);
 ---
 
 <BaseLayout title="Restaurants" description={description}>
   <JsonLd data={ld} />
+  <JsonLd data={crumb} />
   <section class="container index-page">
     <p class="eyebrow">Eat</p>
     <h1>Restaurants</h1>
