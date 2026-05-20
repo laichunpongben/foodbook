@@ -124,7 +124,7 @@ const breadcrumbLd = breadcrumb(
 >
   <JsonLd data={recipeLd} />
   <JsonLd data={breadcrumbLd} />
-  <section class="container" style="padding: 4rem 0;">
+  <section class="container recipe">
     <p class="eyebrow">Recipe</p>
     <h1>{recipe.data.title}</h1>
     <p class="lead">
@@ -133,20 +133,16 @@ const breadcrumbLd = breadcrumb(
       {recipe.data.timeCook && <> · cook {recipe.data.timeCook}</>}
     </p>
 
-    <p style="margin-top: 1.5rem;">
-      <a href={`/recipes/${slug}/cook/`} style="font-weight: 500;">→ Open in cook mode</a>
+    <p class="cook-link">
+      <a href={`/recipes/${slug}/cook/`}>→ Open in cook mode</a>
     </p>
 
-    {recipe.data.attribution && (
-      <p style="color: var(--ink-mute); font-size: 0.88rem; margin-top: 1rem;">
-        {recipe.data.attribution}
-      </p>
-    )}
+    {recipe.data.attribution && <p class="attribution">{recipe.data.attribution}</p>}
 
-    <h2 style="margin-top: 3rem;">Ingredients</h2>
+    <h2>Ingredients</h2>
     {[...groups.entries()].map(([groupName, items]) => (
       <>
-        {groupName && <h3 style="margin-top: 1.5rem;">{groupName}</h3>}
+        {groupName && <h3 class="group-heading">{groupName}</h3>}
         <ul>
           {items.map((ing) => {
             const producer = ing.from ? findProducer(ing.from) : null;
@@ -162,15 +158,13 @@ const breadcrumbLd = breadcrumb(
       </>
     ))}
 
-    <h2 style="margin-top: 3rem;">Method</h2>
-    <ol>
+    <h2>Method</h2>
+    <ol class="method">
       {recipe.data.steps.map((step) => (
-        <li style="margin-bottom: 1rem;">
+        <li>
           {step.text}
           {step.durationSeconds && (
-            <span style="color: var(--ink-mute); margin-left: 0.5rem; font-size: 0.9rem;">
-              · {Math.round(step.durationSeconds / 60)} min
-            </span>
+            <span class="step-duration">· {Math.round(step.durationSeconds / 60)} min</span>
           )}
         </li>
       ))}
@@ -178,9 +172,9 @@ const breadcrumbLd = breadcrumb(
 
     {recipe.data.notes && (
       <>
-        <h2 style="margin-top: 3rem;">Notes</h2>
+        <h2>Notes</h2>
         <Content />
-        <pre style="white-space: pre-wrap; font-family: var(--font-body); color: var(--ink-soft);">{recipe.data.notes}</pre>
+        <pre class="notes">{recipe.data.notes}</pre>
       </>
     )}
 
@@ -193,3 +187,27 @@ const breadcrumbLd = breadcrumb(
     />
   </section>
 </BaseLayout>
+
+<style>
+  .recipe { padding: 4rem 0; }
+  .recipe .cook-link { margin-top: 1.5rem; }
+  .recipe .cook-link a { font-weight: 500; }
+  .recipe .attribution {
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+    margin-top: 1rem;
+  }
+  .recipe h2 { margin-top: 3rem; }
+  .recipe .group-heading { margin-top: 1.5rem; }
+  .recipe .method li { margin-bottom: 1rem; }
+  .recipe .step-duration {
+    color: var(--ink-mute);
+    margin-left: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .recipe .notes {
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    color: var(--ink-soft);
+  }
+</style>
