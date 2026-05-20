@@ -216,7 +216,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
 
   return {
     dish: {
-      slug: bare(dish.id),
+      slug: bareSlug(dish.id),
       label: dish.data.shortTitle,
       title: dish.data.title,
       tagline: dish.data.tagline,
