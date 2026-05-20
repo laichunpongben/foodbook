@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
+import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { collectionPage } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -30,9 +32,17 @@ for (const f of farms) {
 const groups = kindOrder
   .map((k) => [k, byKind.get(k) ?? []] as const)
   .filter(([, list]) => list.length > 0);
+
+const description = `${farms.length} sources in the archive.`;
+const ld = collectionPage(
+  Astro.site!,
+  { label: 'Farms & producers', kind: 'farms', description },
+  farms.length,
+);
 ---
 
-<BaseLayout title="Farms & producers" description={`${farms.length} sources in the archive.`}>
+<BaseLayout title="Farms & producers" description={description}>
+  <JsonLd data={ld} />
   <section class="container index-page">
     <p class="eyebrow">Source</p>
     <h1>Farms & producers</h1>

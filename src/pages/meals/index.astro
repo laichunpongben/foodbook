@@ -1,15 +1,20 @@
 ---
 import { getCollection } from 'astro:content';
+import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { collectionPage } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 const meals = publicOnly(await getCollection('meals')).sort((a, b) =>
   b.data.date.localeCompare(a.data.date),
 );
+const description = `${meals.length} meal events logged.`;
+const ld = collectionPage(Astro.site!, { label: 'Meals', kind: 'meals', description }, meals.length);
 ---
 
-<BaseLayout title="Meals" description={`${meals.length} meal events logged.`}>
+<BaseLayout title="Meals" description={description}>
+  <JsonLd data={ld} />
   <section class="container index-page">
     <p class="eyebrow">Eat</p>
     <h1>Meals</h1>

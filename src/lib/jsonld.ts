@@ -4,6 +4,7 @@
  */
 
 export const SCHEMA_CTX = "https://schema.org" as const;
+export const SITE_NAME = "Foodbook" as const;
 
 /** Absolute URL of an entry, e.g. entryUrl(site, 'recipes', 'carbonara') →
  *  https://food.databookman.com/recipes/carbonara/. Used by both the
@@ -16,6 +17,25 @@ export function entryUrl(site: URL, kind: string, slug: string): string {
  *  https://food.databookman.com/recipes/. */
 export function sectionUrl(site: URL, kind: string): string {
   return new URL(`/${kind}/`, site).toString();
+}
+
+/** CollectionPage: a listing page like /dishes/ or /recipes/. `count` is
+ *  the size of the listing — search engines use it as a hint at the
+ *  collection's scale without spidering every entry. */
+export function collectionPage(
+  site: URL,
+  section: { label: string; kind: string; description: string },
+  count: number,
+): Record<string, unknown> {
+  return {
+    "@context": SCHEMA_CTX,
+    "@type": "CollectionPage",
+    name: section.label,
+    url: sectionUrl(site, section.kind),
+    description: section.description,
+    isPartOf: { "@type": "WebSite", url: new URL("/", site).toString(), name: SITE_NAME },
+    mainEntity: { "@type": "ItemList", numberOfItems: count },
+  };
 }
 
 /** BreadcrumbList: Home → <section> → <leaf>. */
