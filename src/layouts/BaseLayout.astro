@@ -92,6 +92,7 @@ const currentYear = new Date().getFullYear();
       </button>
       <nav id="primary-nav" aria-label="Primary" data-open="false">
         <a href="/dishes/" aria-current={Astro.url.pathname.startsWith('/dishes') ? 'page' : undefined}>Dishes</a>
+        <a href="/recipes/" aria-current={Astro.url.pathname.startsWith('/recipes') ? 'page' : undefined}>Recipes</a>
         <a href="/world/" aria-current={Astro.url.pathname.startsWith('/world') ? 'page' : undefined}>World</a>
         <a href="/seasons/" aria-current={Astro.url.pathname.startsWith('/seasons') ? 'page' : undefined}>Seasons</a>
         <a href="/restaurants/" aria-current={Astro.url.pathname.startsWith('/restaurants') ? 'page' : undefined}>Restaurants</a>
