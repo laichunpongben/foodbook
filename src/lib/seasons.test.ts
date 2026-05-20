@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { inSeason, mergeWindows, monthSpan, TAU, windowAngles } from "./seasons";
+import {
+  collectProducts,
+  type Farm,
+  inSeason,
+  mergeWindows,
+  monthSpan,
+  polarToCartesian,
+  TAU,
+  windowAngles,
+} from "./seasons";
+
+function fakeFarm(
+  id: string,
+  name: string,
+  windows: { product: string; from: number; to: number }[],
+): Farm {
+  return { id, data: { name, seasonalWindow: windows } } as unknown as Farm;
+}
 
 describe("inSeason", () => {
   it("matches months inside a non-wrapping window", () => {
@@ -64,5 +81,52 @@ describe("windowAngles", () => {
   it("keeps endAngle > startAngle when the window wraps", () => {
     const [start, end] = windowAngles(10, 2);
     expect(end).toBeGreaterThan(start);
+  });
+});
+
+describe("collectProducts", () => {
+  it("merges the same product across multiple farms into one entry", () => {
+    const farms = [
+      fakeFarm("farms/a", "Farm A", [{ product: "Tomato", from: 7, to: 9 }]),
+      fakeFarm("farms/b", "Farm B", [{ product: "tomato", from: 6, to: 10 }]),
+    ];
+    const out = collectProducts(farms);
+    expect(out).toHaveLength(1);
+    expect(out[0].key).toBe("tomato");
+    expect(out[0].from).toBe(6);
+    expect(out[0].to).toBe(10);
+    expect(out[0].farms.map((f) => f.slug)).toEqual(["farms/a", "farms/b"]);
+  });
+
+  it("sorts widest windows first, then alphabetically on ties", () => {
+    const farms = [
+      fakeFarm("farms/a", "Farm A", [
+        { product: "Basil", from: 5, to: 8 },
+        { product: "Apple", from: 9, to: 11 },
+        { product: "Quince", from: 9, to: 11 },
+        { product: "Squash", from: 10, to: 2 },
+      ]),
+    ];
+    const out = collectProducts(farms);
+    expect(out.map((p) => p.product)).toEqual(["Squash", "Basil", "Apple", "Quince"]);
+  });
+
+  it("returns an empty list when a farm has no seasonal windows", () => {
+    const farms = [fakeFarm("farms/a", "Farm A", [])];
+    expect(collectProducts(farms)).toEqual([]);
+  });
+});
+
+describe("polarToCartesian", () => {
+  it("places angle 0 at 12 o'clock (directly above the center)", () => {
+    const { x, y } = polarToCartesian(0, 0, 10, 0);
+    expect(x).toBeCloseTo(0);
+    expect(y).toBeCloseTo(-10);
+  });
+
+  it("places angle TAU/4 at 3 o'clock (clockwise)", () => {
+    const { x, y } = polarToCartesian(0, 0, 10, TAU / 4);
+    expect(x).toBeCloseTo(10);
+    expect(y).toBeCloseTo(0);
   });
 });
