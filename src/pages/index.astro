@@ -2,7 +2,9 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import DishCard from '~/components/DishCard.astro';
+import JsonLd from '~/components/JsonLd.astro';
 import SearchBar from '~/components/SearchBar.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -15,12 +17,23 @@ const dishes = publicOnly(allDishes).sort((a, b) => {
 
 // Pick a hero dish — the most recent, with a hero photo.
 const heroDish = dishes[0];
+
+const site = Astro.site!;
+const websiteLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebSite',
+  name: 'Foodbook',
+  url: site.toString(),
+  description: 'An archive of the food lifecycle — farms, gardens, kitchens, restaurants.',
+  inLanguage: 'en',
+};
 ---
 
 <BaseLayout
   title="Foodbook"
   description="An archive of the food lifecycle — farms, gardens, kitchens, restaurants."
 >
+  <JsonLd data={websiteLd} />
   <section class="hero">
     {heroDish && (
       <div
