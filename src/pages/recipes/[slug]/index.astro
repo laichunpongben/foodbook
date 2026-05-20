@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import AppearsIn from '~/components/AppearsIn.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import JsonLd from '~/components/JsonLd.astro';
+import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
@@ -20,6 +21,17 @@ const { recipe } = Astro.props;
 const slug = bare(recipe.id);
 const { Content } = await render(recipe);
 const dishesUsingThisRecipe = publicOnly(await dishesReferencing('recipe', slug));
+
+// Prev/next in the same alphabetical-by-title order as /recipes/.
+const allPublicRecipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+const currentIndex = allPublicRecipes.findIndex((r) => r.id === recipe.id);
+const prev = currentIndex > 0 ? allPublicRecipes[currentIndex - 1] : null;
+const next =
+  currentIndex >= 0 && currentIndex < allPublicRecipes.length - 1
+    ? allPublicRecipes[currentIndex + 1]
+    : null;
 
 // Resolve an ingredient's `from` slug to its farm or garden entry.
 // Returns the right href and display name, or null if the slug doesn't
@@ -169,5 +181,11 @@ const breadcrumbLd = breadcrumb(
     )}
 
     <AppearsIn dishes={dishesUsingThisRecipe} label="Cooked in" />
+
+    <Pager
+      ariaLabel="Other recipes"
+      prev={prev ? { href: `/recipes/${bare(prev.id)}/`, title: prev.data.title } : null}
+      next={next ? { href: `/recipes/${bare(next.id)}/`, title: next.data.title } : null}
+    />
   </section>
 </BaseLayout>

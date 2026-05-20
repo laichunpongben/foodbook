@@ -1,0 +1,69 @@
+---
+/**
+ * Pager — prev/next navigation at the bottom of an entity-detail page.
+ *
+ * Renders one or two links. If only `prev` or only `next` is given,
+ * the other side collapses and the single link aligns to the
+ * appropriate edge. If neither is given, renders nothing.
+ *
+ * Titles may contain authored `<em>` (same trust boundary as
+ * AppearsIn / index pages) so `title` is set via `set:html`.
+ */
+
+interface PagerLink {
+  href: string;
+  title: string;
+}
+
+interface Props {
+  prev?: PagerLink | null;
+  next?: PagerLink | null;
+  ariaLabel?: string;
+}
+
+const { prev, next, ariaLabel = 'Pagination' } = Astro.props;
+---
+
+{(prev || next) && (
+  <nav class="pager" aria-label={ariaLabel}>
+    {prev && (
+      <a class="pager-link prev" href={prev.href} rel="prev">
+        <span class="pager-eyebrow">Previous</span>
+        <span class="pager-title" set:html={prev.title} />
+      </a>
+    )}
+    {next && (
+      <a class="pager-link next" href={next.href} rel="next">
+        <span class="pager-eyebrow">Next</span>
+        <span class="pager-title" set:html={next.title} />
+      </a>
+    )}
+  </nav>
+)}
+
+<style>
+  .pager {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .pager-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    text-decoration: none;
+    color: var(--ink);
+    max-width: 18rem;
+  }
+  .pager-link.next { margin-left: auto; text-align: right; align-items: flex-end; }
+  .pager-link:hover .pager-title { color: var(--paprika); }
+  .pager-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .pager-title { font-family: var(--font-display); font-size: 1.1rem; }
+</style>
