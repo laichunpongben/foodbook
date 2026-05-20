@@ -4,17 +4,18 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
 import EntityBanner from '~/components/EntityBanner.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
   const beds = await getCollection('garden');
   return beds.map((g) => ({
-    params: { slug: g.id.replace(/^garden\//, '') },
+    params: { slug: bare(g.id) },
     props: { bed: g },
   }));
 }
 
 const { bed } = Astro.props;
-const slug = bed.id.replace(/^garden\//, '');
+const slug = bare(bed.id);
 const { Content } = await render(bed);
 const dishes = await dishesReferencing('garden', slug);
 const d = bed.data;

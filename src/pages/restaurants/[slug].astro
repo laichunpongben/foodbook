@@ -6,17 +6,18 @@ import JsonLd from '~/components/JsonLd.astro';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import EntityBanner from '~/components/EntityBanner.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
   const restaurants = await getCollection('restaurants');
   return restaurants.map((r) => ({
-    params: { slug: r.id.replace(/^restaurants\//, '') },
+    params: { slug: bare(r.id) },
     props: { restaurant: r },
   }));
 }
 
 const { restaurant } = Astro.props;
-const slug = restaurant.id.replace(/^restaurants\//, '');
+const slug = bare(restaurant.id);
 const { Content } = await render(restaurant);
 const dishes = await dishesReferencing('restaurant', slug);
 

@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 const farms = publicOnly(await getCollection('farms')).sort((a, b) =>
@@ -46,7 +47,7 @@ const groups = kindOrder
         <ul class="index-list">
           {list.map((f) => (
             <li>
-              <a href={`/farms/${f.id.replace(/^farms\//, '')}/`}>{f.data.name}</a>
+              <a href={`/farms/${bare(f.id)}/`}>{f.data.name}</a>
               <span class="meta">{f.data.location}{f.data.country && `, ${f.data.country}`}</span>
             </li>
           ))}

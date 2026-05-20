@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 const recipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
@@ -20,7 +21,7 @@ const recipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
     <ul class="index-list divided">
       {recipes.map((r) => (
         <li>
-          <a href={`/recipes/${r.id.replace(/^recipes\//, '')}/`}>{r.data.title}</a>
+          <a href={`/recipes/${bare(r.id)}/`}>{r.data.title}</a>
           <span class="meta">
             {[r.data.yield, r.data.timeCook].filter(Boolean).join(' · ')}
           </span>

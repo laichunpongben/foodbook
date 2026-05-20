@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 // shortTitle drives the sort key because title may contain authored <em>.
@@ -19,7 +20,7 @@ const dishes = publicOnly(await getCollection('dishes')).sort((a, b) =>
       {dishes.map((d) => (
         <li>
           {/* title may contain authored <em>; safe to set:html. */}
-          <a href={`/dishes/${d.id.replace(/^dishes\//, '')}/`} set:html={d.data.title} />
+          <a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} />
           {d.data.tagline && <span class="tagline">{d.data.tagline}</span>}
         </li>
       ))}

@@ -5,31 +5,27 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const recipes = await getCollection('recipes');
   return recipes.map((recipe) => ({
-    params: { slug: recipe.id.replace(/^recipes\//, '') },
+    params: { slug: bare(recipe.id) },
     props: { recipe },
   }));
 }
 
 const { recipe } = Astro.props;
-const slug = recipe.id.replace(/^recipes\//, '');
+const slug = bare(recipe.id);
 const { Content } = await render(recipe);
 const dishesUsingThisRecipe = publicOnly(await dishesReferencing('recipe', slug));
 
-// Look up the producer for an ingredient's `from` slug across farms and
-// garden collections. Returns the right href and display name, or null
-// if the slug doesn't resolve (renderer falls back to plain text).
-// glob loader includes the collection prefix in `id` (e.g. `farms/<slug>`),
-// so strip it when comparing to the bare `ing.from`.
+// Resolve an ingredient's `from` slug to its farm or garden entry.
+// Returns the right href and display name, or null if the slug doesn't
+// resolve — the renderer then falls back to plain text.
 const farms = await getCollection('farms');
 const gardens = await getCollection('garden');
-function bare(id: string): string {
-  return id.replace(/^[^/]+\//, '');
-}
 function findProducer(s: string): { href: string; label: string } | null {
   const farm = farms.find((f) => bare(f.id) === s);
   if (farm) return { href: `/farms/${bare(farm.id)}/`, label: farm.data.name };

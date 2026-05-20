@@ -11,9 +11,9 @@ import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import type { APIRoute } from "astro";
 import { entryUrl } from "~/lib/jsonld";
+import { bare } from "~/lib/slug";
 import { publicOnly } from "~/lib/visibility";
 
-const bare = (id: string) => id.replace(/^[^/]+\//, "");
 const stripEm = (s: string) => s.replace(/<\/?em>/g, "");
 
 function section<E extends { id: string }>(
