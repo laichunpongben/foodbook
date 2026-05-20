@@ -6,17 +6,18 @@ import JsonLd from '~/components/JsonLd.astro';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import EntityBanner from '~/components/EntityBanner.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
   const farms = await getCollection('farms');
   return farms.map((f) => ({
-    params: { slug: f.id.replace(/^farms\//, '') },
+    params: { slug: bare(f.id) },
     props: { farm: f },
   }));
 }
 
 const { farm } = Astro.props;
-const slug = farm.id.replace(/^farms\//, '');
+const slug = bare(farm.id);
 const { Content } = await render(farm);
 const dishes = await dishesReferencing('farm', slug);
 const d = farm.data;

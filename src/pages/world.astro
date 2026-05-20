@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 import type { MapPin } from '~/lib/map/food';
 
@@ -71,7 +72,7 @@ const restaurantCount = restaurants.length;
           <ul>
             {farms.map((f) => (
               <li>
-                <a href={`/farms/${f.id.replace(/^farms\//, '')}/`}>{f.data.name}</a>
+                <a href={`/farms/${bare(f.id)}/`}>{f.data.name}</a>
                 {' — '}{f.data.kind} at {f.data.location}{f.data.country && `, ${f.data.country}`}
               </li>
             ))}
@@ -84,7 +85,7 @@ const restaurantCount = restaurants.length;
           <ul>
             {restaurants.map((r) => (
               <li>
-                <a href={`/restaurants/${r.id.replace(/^restaurants\//, '')}/`}>{r.data.name}</a>
+                <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
                 {' — '}{[r.data.cuisine, r.data.city, r.data.country].filter(Boolean).join(', ')}
               </li>
             ))}

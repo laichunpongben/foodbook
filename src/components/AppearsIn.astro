@@ -5,6 +5,7 @@
  */
 
 import type { CollectionEntry } from 'astro:content';
+import { bare } from '~/lib/slug';
 
 interface Props {
   dishes: CollectionEntry<'dishes'>[];
@@ -20,7 +21,7 @@ const { dishes, label = 'Appears in' } = Astro.props;
     <ul>
       {dishes.map((d) => (
         <li>
-          <a href={`/dishes/${d.id.replace(/^dishes\//, '')}/`} set:html={d.data.title} />
+          <a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} />
           {d.data.tagline && <span class="line">{d.data.tagline}</span>}
         </li>
       ))}

@@ -14,6 +14,7 @@
  */
 
 import { type CollectionEntry, getCollection } from "astro:content";
+import { bare, bareSlug } from "~/lib/slug";
 
 export interface JourneyOrigin {
   kind: "farm" | "garden";
@@ -86,11 +87,8 @@ async function loadMap<T extends "farms" | "garden" | "recipes" | "restaurants" 
 ): Promise<Map<string, CollectionEntry<T>>> {
   const entries = (await getCollection(collection)) as CollectionEntry<T>[];
   const map = new Map<string, CollectionEntry<T>>();
-  const prefix = `${collection}/`;
   for (const e of entries) {
-    const slug = e.id.startsWith(prefix) ? e.id.slice(prefix.length) : e.id;
-    const trimmed = slug.replace(/\/index$/, "");
-    map.set(trimmed, e);
+    map.set(bareSlug(e.id), e);
   }
   return map;
 }
@@ -133,7 +131,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
         if (farm) {
           origin = {
             kind: "farm",
-            slug: farm.id.replace(/^farms\//, ""),
+            slug: bare(farm.id),
             name: farm.data.name,
             location: farm.data.location,
             heroUrl: farm.data.heroUrl,
@@ -143,7 +141,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
           if (garden) {
             origin = {
               kind: "garden",
-              slug: garden.id.replace(/^garden\//, ""),
+              slug: bare(garden.id),
               name: garden.data.plant,
               location: garden.data.bed,
               heroUrl: garden.data.heroUrl,
@@ -167,7 +165,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
   const cook: JourneyCookNode[] = recipes.map((r) => {
     const time = [r.data.timePrep, r.data.timeCook].filter(Boolean).join(" + ");
     return {
-      slug: r.id.replace(/^recipes\//, ""),
+      slug: bare(r.id),
       label: r.data.title,
       meta: time ? `${r.data.yield} · ${time}` : r.data.yield,
       facts: [],
@@ -188,7 +186,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
   const eat: JourneyEatNode[] = [
     ...meals.map<JourneyEatNode>((m) => ({
       kind: "meal",
-      slug: m.id.replace(/^meals\//, ""),
+      slug: bare(m.id),
       label: m.data.title,
       meta: [m.data.date, m.data.occasion].filter(Boolean).join(" · "),
       facts:
@@ -203,7 +201,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
       else if (r.data.cuisine) facts.push(r.data.cuisine);
       return {
         kind: "restaurant",
-        slug: r.id.replace(/^restaurants\//, ""),
+        slug: bare(r.id),
         label: r.data.name,
         meta: visited
           ? `${r.data.priceBand} · ${r.data.city}`
@@ -218,7 +216,7 @@ export async function getJourney(dish: CollectionEntry<"dishes">): Promise<Journ
 
   return {
     dish: {
-      slug: dish.id.replace(/^dishes\//, ""),
+      slug: bare(dish.id),
       label: dish.data.shortTitle,
       title: dish.data.title,
       tagline: dish.data.tagline,

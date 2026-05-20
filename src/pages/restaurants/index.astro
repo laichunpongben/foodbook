@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 const restaurants = publicOnly(await getCollection('restaurants')).sort((a, b) =>
@@ -33,7 +34,7 @@ const cities = [...byCity.entries()].sort(([a], [b]) => a.localeCompare(b));
         <ul class="index-list">
           {list.map((r) => (
             <li>
-              <a href={`/restaurants/${r.id.replace(/^restaurants\//, '')}/`}>{r.data.name}</a>
+              <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
               <span class="meta">
                 {[r.data.cuisine, r.data.priceBand].filter(Boolean).join(' · ')}
               </span>

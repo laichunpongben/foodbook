@@ -11,6 +11,7 @@ import { getCollection } from "astro:content";
 import rss from "@astrojs/rss";
 import type { APIRoute } from "astro";
 import { entryUrl } from "~/lib/jsonld";
+import { bare } from "~/lib/slug";
 import { publicOnly } from "~/lib/visibility";
 
 interface FeedItem {
@@ -22,8 +23,6 @@ interface FeedItem {
 
 // Reader-friendly cap; without it every farm/recipe/restaurant addition bloats the feed.
 const FEED_LIMIT = 50;
-
-const bare = (id: string) => id.replace(/^[^/]+\//, "");
 
 function byDateThenTitle(a: FeedItem, b: FeedItem): number {
   if (a.pubDate && b.pubDate) return b.pubDate.getTime() - a.pubDate.getTime();

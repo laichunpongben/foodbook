@@ -4,34 +4,30 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import AppearsIn from '~/components/AppearsIn.astro';
 import EntityBanner from '~/components/EntityBanner.astro';
+import { bare, bareSlug } from '~/lib/slug';
 
 export async function getStaticPaths() {
   const meals = await getCollection('meals');
   return meals.map((m) => ({
-    params: { slug: m.id.replace(/^meals\//, '') },
+    params: { slug: bare(m.id) },
     props: { meal: m },
   }));
 }
 
 const { meal } = Astro.props;
-const slug = meal.id.replace(/^meals\//, '');
+const slug = bare(meal.id);
 const { Content } = await render(meal);
 const dishes = await dishesReferencing('meal', slug);
 const d = meal.data;
 
 const allDishes = await getCollection('dishes');
 const dishLabel = new Map(
-  allDishes.map((entry) => [
-    entry.id.replace(/^dishes\//, '').replace(/\/index$/, ''),
-    entry.data.shortTitle ?? entry.data.title,
-  ]),
+  allDishes.map((entry) => [bareSlug(entry.id), entry.data.shortTitle ?? entry.data.title]),
 );
 
 const restaurant = d.location === 'home'
   ? null
-  : (await getCollection('restaurants')).find(
-      (r) => r.id.replace(/^restaurants\//, '') === d.location,
-    );
+  : (await getCollection('restaurants')).find((r) => bare(r.id) === d.location);
 const locationLabel = restaurant?.data.name ?? d.location;
 ---
 

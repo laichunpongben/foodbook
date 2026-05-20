@@ -9,17 +9,18 @@ import CookSection from '~/components/CookSection.astro';
 import PlateSection from '~/components/PlateSection.astro';
 import EatSection from '~/components/EatSection.astro';
 import { getJourney } from '~/lib/journey';
+import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
   return dishes.map((dish) => ({
-    params: { slug: dish.id.replace(/^dishes\//, '') },
+    params: { slug: bare(dish.id) },
     props: { dish },
   }));
 }
 
 const { dish } = Astro.props;
-const slug = dish.id.replace(/^dishes\//, '');
+const slug = bare(dish.id);
 const { Content } = await render(dish);
 const journey = await getJourney(dish);
 

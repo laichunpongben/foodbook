@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 const meals = publicOnly(await getCollection('meals')).sort((a, b) =>
@@ -19,7 +20,7 @@ const meals = publicOnly(await getCollection('meals')).sort((a, b) =>
     <ul class="index-list divided">
       {meals.map((m) => (
         <li>
-          <a href={`/meals/${m.id.replace(/^meals\//, '')}/`}>{m.data.title}</a>
+          <a href={`/meals/${bare(m.id)}/`}>{m.data.title}</a>
           <span class="meta">
             {m.data.date}
             {m.data.occasion && <> · {m.data.occasion}</>}
