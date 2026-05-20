@@ -96,7 +96,7 @@ async function loadMap<T extends "farms" | "garden" | "recipes" | "restaurants" 
 /** When a recipe doesn't carry an explicit `name:` on an ingredient,
  *  strip the leading quantity from the `text:` line so the card has
  *  something readable to show. */
-function nameFromText(text: string): string {
+export function nameFromText(text: string): string {
   const stripped = text.replace(
     /^[\d.,/\s]*(kg|g|ml|l|tsp|tbsp|cup|cups|cloves?|stalks?|bunch|bunches|pcs?|pieces?)\s+/i,
     "",
