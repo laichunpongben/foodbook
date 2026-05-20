@@ -1,0 +1,65 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About"
+  description="An archive of the food lifecycle — farms, gardens, kitchens, restaurants. What Foodbook is, what it isn't, and where AI lives in it."
+>
+  <article class="about container">
+    <p class="eyebrow">About</p>
+    <h1>An archive of the food lifecycle</h1>
+
+    <p class="lead">
+      Foodbook follows a dish — or an ingredient — through up to four lifecycle stages:
+      the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
+      the meal where it landed. Each <a href="/dishes/">dish entry</a> weaves them together.
+    </p>
+
+    <h2 id="ai">AI-assisted authoring</h2>
+
+    <p>
+      Foodbook uses Claude (Anthropic) for <em>authoring assistance</em>, not authorship.
+      The editorial voice is the author's. AI does extraction and discovery; the prose is hand-written.
+    </p>
+
+    <p>
+      <strong>What's shipped today:</strong> a CLI extraction pipeline
+      (<code>npm&nbsp;run&nbsp;extract</code>) that reads a URL or photo, asks Claude
+      with vision + structured output for a draft, and writes the result to
+      <code>src/content/recipes/_drafts/</code>. The draft is never auto-committed —
+      every recipe is edited by hand before it lands on the site.
+    </p>
+
+    <p>
+      <strong>What's designed but not running yet:</strong> a reader-side
+      conversational search (RAG over the corpus, with citations by slug); a
+      cook-mode voice + chat coach with <code>set_timer</code> and
+      <code>advance_step</code> tools; a "more like this" related-entries rail.
+      The full plan, including non-goals (no AI prose, no AI photos, no AI
+      reranking the canonical lists), is in
+      <a href="https://github.com/laichunpongben/foodbook/blob/main/docs/ai-first.md">docs/ai-first.md</a>.
+    </p>
+
+    <p>
+      Where Claude is involved, the dish or recipe carries an
+      <code>attribution</code> field naming the source.
+    </p>
+
+    <h2>Source</h2>
+
+    <p>
+      The codebase is at
+      <a href="https://github.com/laichunpongben/foodbook">github.com/laichunpongben/foodbook</a>
+      — issues and PRs welcome.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .about { padding: 4rem 0 6rem; max-width: 720px; }
+  .about h1 { margin-bottom: 1.5rem; }
+  .about h2 { margin-top: 3rem; }
+  .about p { color: var(--ink-soft); }
+  .about a { color: var(--paprika); }
+</style>
