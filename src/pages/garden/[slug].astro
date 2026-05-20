@@ -3,7 +3,9 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
 import EntityBanner from '~/components/EntityBanner.astro';
+import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
@@ -19,6 +21,8 @@ const slug = bare(bed.id);
 const { Content } = await render(bed);
 const dishes = await dishesReferencing('garden', slug);
 const d = bed.data;
+
+const { prev, next } = await siblingsOf('garden', bed.id, (g) => g.data.planted, 'desc');
 ---
 
 <BaseLayout
@@ -45,6 +49,12 @@ const d = bed.data;
     <Content />
 
     <AppearsIn dishes={dishes} label="Used in" />
+
+    <Pager
+      ariaLabel="Other garden beds"
+      prev={prev ? { href: `/garden/${bare(prev.id)}/`, title: prev.data.plant } : null}
+      next={next ? { href: `/garden/${bare(next.id)}/`, title: next.data.plant } : null}
+    />
   </article>
 </BaseLayout>
 

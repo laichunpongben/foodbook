@@ -10,8 +10,8 @@ import PlateSection from '~/components/PlateSection.astro';
 import EatSection from '~/components/EatSection.astro';
 import Pager from '~/components/Pager.astro';
 import { getJourney } from '~/lib/journey';
+import { siblingsOf } from '~/lib/siblings';
 import { bareSlug } from '~/lib/slug';
-import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
@@ -26,15 +26,7 @@ const slug = bareSlug(dish.id);
 const { Content } = await render(dish);
 const journey = await getJourney(dish);
 
-// Prev/next in the same alphabetical-by-shortTitle order as /dishes/.
-// Unlisted dishes drop out of the chain (and we don't render the nav on them).
-const allPublic = publicOnly(await getCollection('dishes')).sort((a, b) =>
-  a.data.shortTitle.localeCompare(b.data.shortTitle, undefined, { sensitivity: 'base' }),
-);
-const currentIndex = allPublic.findIndex((d) => d.id === dish.id);
-const prev = currentIndex > 0 ? allPublic[currentIndex - 1] : null;
-const next =
-  currentIndex >= 0 && currentIndex < allPublic.length - 1 ? allPublic[currentIndex + 1] : null;
+const { prev, next } = await siblingsOf('dishes', dish.id, (d) => d.data.shortTitle);
 
 const hasIngredients = journey.ingredients.length > 0;
 const hasRecipes = journey.cook.length > 0;

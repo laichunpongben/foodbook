@@ -4,6 +4,8 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import AppearsIn from '~/components/AppearsIn.astro';
 import EntityBanner from '~/components/EntityBanner.astro';
+import Pager from '~/components/Pager.astro';
+import { siblingsOf } from '~/lib/siblings';
 import { bare, bareSlug } from '~/lib/slug';
 
 export async function getStaticPaths() {
@@ -29,6 +31,8 @@ const restaurant = d.location === 'home'
   ? null
   : (await getCollection('restaurants')).find((r) => bare(r.id) === d.location);
 const locationLabel = restaurant?.data.name ?? d.location;
+
+const { prev, next } = await siblingsOf('meals', meal.id, (m) => m.data.date, 'desc');
 ---
 
 <BaseLayout
@@ -61,6 +65,12 @@ const locationLabel = restaurant?.data.name ?? d.location;
     )}
 
     <AppearsIn dishes={dishes} label="Referenced by" />
+
+    <Pager
+      ariaLabel="Other meals"
+      prev={prev ? { href: `/meals/${bare(prev.id)}/`, title: prev.data.title } : null}
+      next={next ? { href: `/meals/${bare(next.id)}/`, title: next.data.title } : null}
+    />
   </article>
 </BaseLayout>
 
