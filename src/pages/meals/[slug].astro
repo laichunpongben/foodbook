@@ -44,7 +44,7 @@ const { prev, next } = await siblingsOf('meals', meal.id, (m) => m.data.date, 'd
 >
   {d.heroUrl && <EntityBanner url={d.heroUrl} alt={`${d.title} — meal on ${d.date}`} />}
   <article class="entity container">
-    <a class="back" href="/">← Dishes</a>
+    <a class="back" href="/meals/">← Meals</a>
 
     <p class="eyebrow">Meal · {d.date}{d.occasion && ` · ${d.occasion}`}</p>
     <h1>{d.title}</h1>

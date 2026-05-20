@@ -34,7 +34,7 @@ const { prev, next } = await siblingsOf('garden', bed.id, (g) => g.data.planted,
 >
   {d.heroUrl && <EntityBanner url={d.heroUrl} alt={`${d.plant} in ${d.bed}`} />}
   <article class="entity container">
-    <a class="back" href="/">← Dishes</a>
+    <a class="back" href="/garden/">← Garden</a>
 
     <p class="eyebrow">Grow · {d.bed}</p>
     <h1>{d.plant}</h1>
