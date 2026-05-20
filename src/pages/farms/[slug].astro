@@ -5,7 +5,9 @@ import AppearsIn from '~/components/AppearsIn.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import EntityBanner from '~/components/EntityBanner.astro';
+import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
@@ -21,6 +23,8 @@ const slug = bare(farm.id);
 const { Content } = await render(farm);
 const dishes = await dishesReferencing('farm', slug);
 const d = farm.data;
+
+const { prev, next } = await siblingsOf('farms', farm.id, (f) => f.data.name);
 
 const monthName = (m: number) =>
   ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1] ?? String(m);
@@ -101,6 +105,12 @@ const breadcrumbLd = breadcrumb(
     )}
 
     <AppearsIn dishes={dishes} label="Used in" />
+
+    <Pager
+      ariaLabel="Other farms"
+      prev={prev ? { href: `/farms/${bare(prev.id)}/`, title: prev.data.name } : null}
+      next={next ? { href: `/farms/${bare(next.id)}/`, title: next.data.name } : null}
+    />
   </article>
 </BaseLayout>
 

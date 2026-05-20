@@ -5,7 +5,9 @@ import AppearsIn from '~/components/AppearsIn.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import EntityBanner from '~/components/EntityBanner.astro';
+import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
 
 export async function getStaticPaths() {
@@ -20,6 +22,8 @@ const { restaurant } = Astro.props;
 const slug = bare(restaurant.id);
 const { Content } = await render(restaurant);
 const dishes = await dishesReferencing('restaurant', slug);
+
+const { prev, next } = await siblingsOf('restaurants', restaurant.id, (r) => r.data.name);
 
 const d = restaurant.data;
 const visited = (d.visits ?? []).length > 0;
@@ -114,6 +118,12 @@ const breadcrumbLd = breadcrumb(
     )}
 
     <AppearsIn dishes={dishes} label="Known to serve" />
+
+    <Pager
+      ariaLabel="Other restaurants"
+      prev={prev ? { href: `/restaurants/${bare(prev.id)}/`, title: prev.data.name } : null}
+      next={next ? { href: `/restaurants/${bare(next.id)}/`, title: next.data.name } : null}
+    />
   </article>
 </BaseLayout>
 
