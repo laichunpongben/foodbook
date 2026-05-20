@@ -9,20 +9,31 @@ import CookSection from '~/components/CookSection.astro';
 import PlateSection from '~/components/PlateSection.astro';
 import EatSection from '~/components/EatSection.astro';
 import { getJourney } from '~/lib/journey';
-import { bare } from '~/lib/slug';
+import { bareSlug } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
   return dishes.map((dish) => ({
-    params: { slug: bare(dish.id) },
+    params: { slug: bareSlug(dish.id) },
     props: { dish },
   }));
 }
 
 const { dish } = Astro.props;
-const slug = bare(dish.id);
+const slug = bareSlug(dish.id);
 const { Content } = await render(dish);
 const journey = await getJourney(dish);
+
+// Prev/next in the same alphabetical-by-shortTitle order as /dishes/.
+// Unlisted dishes drop out of the chain (and we don't render the nav on them).
+const allPublic = publicOnly(await getCollection('dishes')).sort((a, b) =>
+  a.data.shortTitle.localeCompare(b.data.shortTitle, undefined, { sensitivity: 'base' }),
+);
+const currentIndex = allPublic.findIndex((d) => d.id === dish.id);
+const prev = currentIndex > 0 ? allPublic[currentIndex - 1] : null;
+const next =
+  currentIndex >= 0 && currentIndex < allPublic.length - 1 ? allPublic[currentIndex + 1] : null;
 
 const hasIngredients = journey.ingredients.length > 0;
 const hasRecipes = journey.cook.length > 0;
@@ -78,6 +89,23 @@ const breadcrumbLd = breadcrumb(
             <p set:html={dish.data.finale.prose} />
           </section>
         )}
+
+        {(prev || next) && (
+          <nav class="dish-pager" aria-label="Other dishes">
+            {prev && (
+              <a class="pager-link prev" href={`/dishes/${bareSlug(prev.id)}/`} rel="prev">
+                <span class="pager-eyebrow">Previous</span>
+                <span class="pager-title" set:html={prev.data.title} />
+              </a>
+            )}
+            {next && (
+              <a class="pager-link next" href={`/dishes/${bareSlug(next.id)}/`} rel="next">
+                <span class="pager-eyebrow">Next</span>
+                <span class="pager-title" set:html={next.data.title} />
+              </a>
+            )}
+          </nav>
+        )}
       </div>
     </section>
   </article>
@@ -118,4 +146,29 @@ const breadcrumbLd = breadcrumb(
   .dish-prose .finale h2 {
     margin-bottom: 0.6rem;
   }
+
+  .dish-pager {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .pager-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    text-decoration: none;
+    color: var(--ink);
+    max-width: 18rem;
+  }
+  .pager-link.next { margin-left: auto; text-align: right; align-items: flex-end; }
+  .pager-link:hover .pager-title { color: var(--paprika); }
+  .pager-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .pager-title { font-family: var(--font-display); font-size: 1.1rem; }
 </style>
