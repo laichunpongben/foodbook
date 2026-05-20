@@ -481,7 +481,7 @@ async function main() {
   console.log(`Resolved ${catalog.size} → URL · ${failures.length} failed`);
   if (failures.length) {
     console.log("Failures:");
-    for (const f of failures) console.log("  " + f);
+    for (const f of failures) console.log(`  ${f}`);
   }
 
   let totalAdds = 0;

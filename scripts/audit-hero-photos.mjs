@@ -147,7 +147,7 @@ async function main() {
         `[${i}/${slugs.length}] ${label}  ` +
           `${s.width}x${s.height} (${s.megapixels.toFixed(1)}MP, ${(s.bytes / 1024).toFixed(0)}KB)  ` +
           `sharp=${s.sharpness.toFixed(0)}  luma=${s.lumaMean.toFixed(0)}/${s.lumaStdev.toFixed(0)}  ` +
-          `${flags.length ? "[" + flags.join(",") + "]" : "OK"}\n`,
+          `${flags.length ? `[${flags.join(",")}]` : "OK"}\n`,
       );
     } catch (err) {
       errors.push({ slug, heroUrl, error: err.message });
@@ -200,8 +200,8 @@ async function main() {
     rows.map((r) => [r.heroUrl, { width: r.width, height: r.height }]),
   );
 
-  await writeFile(REPORT_PATH, lines.join("\n") + "\n");
-  await writeFile(DIMS_CACHE_PATH, JSON.stringify(dimsCache, null, 2) + "\n");
+  await writeFile(REPORT_PATH, `${lines.join("\n")}\n`);
+  await writeFile(DIMS_CACHE_PATH, `${JSON.stringify(dimsCache, null, 2)}\n`);
   process.stderr.write(`\nReport: ${REPORT_PATH}\n`);
   process.stderr.write(`Cache:  ${DIMS_CACHE_PATH} (${rows.length} entries)\n`);
   process.stderr.write(`Flagged: ${flagged.length} / ${rows.length}\n`);
