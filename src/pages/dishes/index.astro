@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
+import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { collectionPage } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -8,9 +10,12 @@ import { publicOnly } from '~/lib/visibility';
 const dishes = publicOnly(await getCollection('dishes')).sort((a, b) =>
   a.data.shortTitle.localeCompare(b.data.shortTitle, undefined, { sensitivity: 'base' }),
 );
+const description = `${dishes.length} dishes in the archive.`;
+const ld = collectionPage(Astro.site!, { label: 'Dishes', kind: 'dishes', description }, dishes.length);
 ---
 
-<BaseLayout title="Dishes" description={`${dishes.length} dishes in the archive.`}>
+<BaseLayout title="Dishes" description={description}>
+  <JsonLd data={ld} />
   <section class="container index-page">
     <p class="eyebrow">Dishes</p>
     <h1>Dishes</h1>

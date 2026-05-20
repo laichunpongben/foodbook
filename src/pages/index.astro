@@ -4,7 +4,7 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import DishCard from '~/components/DishCard.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import SearchBar from '~/components/SearchBar.astro';
-import { SCHEMA_CTX } from '~/lib/jsonld';
+import { SCHEMA_CTX, SITE_NAME } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -22,7 +22,7 @@ const site = Astro.site!;
 const websiteLd = {
   '@context': SCHEMA_CTX,
   '@type': 'WebSite',
-  name: 'Foodbook',
+  name: SITE_NAME,
   url: site.toString(),
   description: 'An archive of the food lifecycle — farms, gardens, kitchens, restaurants.',
   inLanguage: 'en',

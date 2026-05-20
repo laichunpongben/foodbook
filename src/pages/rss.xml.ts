@@ -10,7 +10,7 @@
 import { getCollection } from "astro:content";
 import rss from "@astrojs/rss";
 import type { APIRoute } from "astro";
-import { entryUrl } from "~/lib/jsonld";
+import { entryUrl, SITE_NAME } from "~/lib/jsonld";
 import { bare } from "~/lib/slug";
 import { publicOnly } from "~/lib/visibility";
 
@@ -71,7 +71,7 @@ export const GET: APIRoute = async ({ site }) => {
   items.sort(byDateThenTitle);
 
   return rss({
-    title: "Foodbook",
+    title: SITE_NAME,
     description: "An archive of the food lifecycle — farms, gardens, kitchens, restaurants.",
     site,
     items: items.slice(0, FEED_LIMIT),

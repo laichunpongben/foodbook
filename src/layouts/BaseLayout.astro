@@ -2,6 +2,7 @@
 import '@fontsource-variable/inter/index.css';
 import '@fontsource-variable/fraunces/full.css';
 import '~/styles/global.css';
+import { SITE_NAME } from '~/lib/jsonld';
 
 interface Props {
   title: string;
@@ -18,7 +19,6 @@ interface Props {
   ogType?: 'website' | 'article';
 }
 
-const SITE_NAME = 'Foodbook';
 const SITE_TAGLINE = 'An archive of the food lifecycle';
 const {
   title,
