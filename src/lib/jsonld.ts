@@ -38,24 +38,24 @@ export function collectionPage(
   };
 }
 
-/** BreadcrumbList: Home → <section> → <leaf>. */
+/** BreadcrumbList: Home → <section>, optionally → <leaf>.
+ *  Omit `leaf` on collection index pages; supply it on entity-detail pages. */
 export function breadcrumb(
   site: URL,
   section: { label: string; kind: string },
-  leaf: { label: string; url: string },
+  leaf?: { label: string; url: string },
 ): Record<string, unknown> {
-  return {
-    "@context": SCHEMA_CTX,
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", site).toString() },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: section.label,
-        item: sectionUrl(site, section.kind),
-      },
-      { "@type": "ListItem", position: 3, name: leaf.label, item: leaf.url },
-    ],
-  };
+  const itemListElement: Record<string, unknown>[] = [
+    { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", site).toString() },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: section.label,
+      item: sectionUrl(site, section.kind),
+    },
+  ];
+  if (leaf) {
+    itemListElement.push({ "@type": "ListItem", position: 3, name: leaf.label, item: leaf.url });
+  }
+  return { "@context": SCHEMA_CTX, "@type": "BreadcrumbList", itemListElement };
 }

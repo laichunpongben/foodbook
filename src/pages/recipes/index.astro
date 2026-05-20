@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -10,11 +10,14 @@ const recipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
   a.data.title.localeCompare(b.data.title),
 );
 const description = `${recipes.length} recipes in the archive.`;
-const ld = collectionPage(Astro.site!, { label: 'Recipes', kind: 'recipes', description }, recipes.length);
+const section = { label: 'Recipes', kind: 'recipes' };
+const ld = collectionPage(Astro.site!, { ...section, description }, recipes.length);
+const crumb = breadcrumb(Astro.site!, section);
 ---
 
 <BaseLayout title="Recipes" description={description}>
   <JsonLd data={ld} />
+  <JsonLd data={crumb} />
   <section class="container index-page">
     <p class="eyebrow">Cook</p>
     <h1>Recipes</h1>
