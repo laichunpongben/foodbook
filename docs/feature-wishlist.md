@@ -26,7 +26,6 @@ When something here ships, move it to `architecture.md` and update the relevant 
 | Cookware diary | low | S | low | Not enough content. |
 | Email digest (monthly meal summary, AI-drafted) | low | M | low | Personal use; nice if it lands automatically. |
 | ICS export for planned meals / dinner parties | medium | S | low | Travelbook has this for trip dates; could mirror. |
-| Static search (Pagefind) | medium | S | medium | Wait 'til ~50 entries. |
 | Public landing page redesign | medium | M | low | Default to Travelbook's pattern; revisit once the rest exists. |
 
 ## Explicitly *not* on the list
