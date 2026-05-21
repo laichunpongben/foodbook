@@ -7,23 +7,27 @@ import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import EntityBanner from '~/components/EntityBanner.astro';
 import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { relatedByTags } from '~/lib/related';
 import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const restaurants = await getCollection('restaurants');
+  const allPublic = publicOnly(restaurants);
   return restaurants.map((r) => ({
     params: { slug: bare(r.id) },
-    props: { restaurant: r },
+    props: { restaurant: r, allPublic },
   }));
 }
 
-const { restaurant } = Astro.props;
+const { restaurant, allPublic } = Astro.props;
 const slug = bare(restaurant.id);
 const { Content } = await render(restaurant);
 const dishes = await dishesReferencing('restaurant', slug);
 
 const { prev, next } = await siblingsOf('restaurants', restaurant.id, (r) => r.data.name);
+const related = relatedByTags(allPublic, restaurant, (r) => r.data.name);
 
 const d = restaurant.data;
 const visited = (d.visits ?? []).length > 0;
@@ -129,6 +133,20 @@ const breadcrumbLd = breadcrumb(
 
     <AppearsIn dishes={dishes} label="Known to serve" />
 
+    {related.length > 0 && (
+      <section class="related-rail" aria-labelledby="related-heading">
+        <p class="eyebrow" id="related-heading">More like this</p>
+        <ul>
+          {related.map((r) => (
+            <li>
+              <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
+              <span class="meta">{[r.data.cuisine, r.data.city].filter(Boolean).join(' · ')}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
     <Pager
       ariaLabel="Other restaurants"
       prev={prev ? { href: `/restaurants/${bare(prev.id)}/`, title: prev.data.name } : null}
@@ -146,4 +164,5 @@ const breadcrumbLd = breadcrumb(
   .visits ul { list-style: none; padding: 0; margin: 1rem 0 0; }
   .visits li { padding: 0.5rem 0; }
   .visit-note { color: var(--ink-mute); font-size: 0.9rem; margin-top: 0.25rem; }
+  .entity .related-rail { margin-top: 3rem; }
 </style>
