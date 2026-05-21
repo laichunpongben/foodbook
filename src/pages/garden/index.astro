@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { breadcrumb, collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -11,7 +11,11 @@ const entries = publicOnly(await getCollection('garden')).sort((a, b) =>
 );
 const description = `${entries.length} garden beds tracked.`;
 const section = { label: 'Garden', kind: 'garden' };
-const ld = collectionPage(Astro.site!, { ...section, description }, entries.length);
+const items = entries.map((g) => ({
+  name: g.data.plant,
+  url: entryUrl(Astro.site!, 'garden', bare(g.id)),
+}));
+const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);
 ---
 

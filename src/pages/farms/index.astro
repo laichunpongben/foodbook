@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { breadcrumb, collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -35,7 +35,11 @@ const groups = kindOrder
 
 const description = `${farms.length} sources in the archive.`;
 const section = { label: 'Farms & producers', kind: 'farms' };
-const ld = collectionPage(Astro.site!, { ...section, description }, farms.length);
+const items = farms.map((f) => ({
+  name: f.data.name,
+  url: entryUrl(Astro.site!, 'farms', bare(f.id)),
+}));
+const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);
 ---
 

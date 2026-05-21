@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { breadcrumb, collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -11,7 +11,11 @@ const meals = publicOnly(await getCollection('meals')).sort((a, b) =>
 );
 const description = `${meals.length} meal events logged.`;
 const section = { label: 'Meals', kind: 'meals' };
-const ld = collectionPage(Astro.site!, { ...section, description }, meals.length);
+const items = meals.map((m) => ({
+  name: m.data.title,
+  url: entryUrl(Astro.site!, 'meals', bare(m.id)),
+}));
+const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);
 ---
 
