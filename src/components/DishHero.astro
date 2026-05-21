@@ -38,7 +38,7 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
           <p class="stage-eyebrow dish-hero-since">In repertoire since {repertoireSince}</p>
         )}
         {tags.length > 0 && (
-          <ul class="dish-hero-tags" aria-label="Tags">
+          <ul class="tag-chips dish-hero-tags" aria-label="Tags">
             {tags.map((t) => <li>{t}</li>)}
           </ul>
         )}
@@ -116,23 +116,7 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
     margin-top: 1.6rem;
   }
 
-  .dish-hero-tags {
-    list-style: none;
-    padding: 0;
-    margin: 1.2rem 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-  .dish-hero-tags li {
-    padding: 0.25rem 0.7rem;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    color: var(--ink-mute);
-    text-transform: lowercase;
-  }
+  .dish-hero-tags { margin-top: 1.2rem; }
 
   .dish-hero-figure {
     aspect-ratio: 4 / 5;
