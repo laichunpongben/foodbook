@@ -214,7 +214,7 @@ const breadcrumbLd = breadcrumb(
     <AppearsIn dishes={dishesUsingThisRecipe} label="Cooked in" />
 
     {related.length > 0 && (
-      <section class="related" aria-labelledby="related-heading">
+      <section class="related-rail" aria-labelledby="related-heading">
         <p class="eyebrow" id="related-heading">More like this</p>
         <ul>
           {related.map((r) => (
@@ -258,25 +258,5 @@ const breadcrumbLd = breadcrumb(
     color: var(--ink-soft);
   }
   .recipe .tag-chips { margin-top: 1.5rem; }
-  .recipe .related {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--rule);
-  }
-  .recipe .related ul {
-    list-style: none;
-    padding: 0;
-    margin: 1rem 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .recipe .related a {
-    font-family: var(--font-display);
-    font-size: 1.05rem;
-    text-decoration: none;
-    color: var(--ink);
-  }
-  .recipe .related a:hover { color: var(--paprika); }
-  .recipe .related .meta { color: var(--ink-mute); font-size: 0.85rem; margin-left: 0.5rem; }
+  .recipe .related-rail { margin-top: 3rem; }
 </style>
