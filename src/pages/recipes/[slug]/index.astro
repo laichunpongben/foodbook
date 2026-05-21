@@ -6,24 +6,28 @@ import JsonLd from '~/components/JsonLd.astro';
 import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
+import { relatedByTags } from '~/lib/related';
 import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const recipes = await getCollection('recipes');
+  const allPublic = publicOnly(recipes);
   return recipes.map((recipe) => ({
     params: { slug: bare(recipe.id) },
-    props: { recipe },
+    props: { recipe, allPublic },
   }));
 }
 
-const { recipe } = Astro.props;
+const { recipe, allPublic } = Astro.props;
 const slug = bare(recipe.id);
 const { Content } = await render(recipe);
 const dishesUsingThisRecipe = publicOnly(await dishesReferencing('recipe', slug));
 
 const { prev, next } = await siblingsOf('recipes', recipe.id, (r) => r.data.title);
+
+const related = relatedByTags(allPublic, recipe, (r) => r.data.title);
 
 // Resolve an ingredient's `from` slug to its farm or garden entry.
 // Returns the right href and display name, or null if the slug doesn't
@@ -209,6 +213,20 @@ const breadcrumbLd = breadcrumb(
 
     <AppearsIn dishes={dishesUsingThisRecipe} label="Cooked in" />
 
+    {related.length > 0 && (
+      <section class="related" aria-labelledby="related-heading">
+        <p class="eyebrow" id="related-heading">More like this</p>
+        <ul>
+          {related.map((r) => (
+            <li>
+              <a href={`/recipes/${bare(r.id)}/`}>{r.data.title}</a>
+              <span class="meta">{[r.data.yield, r.data.timeCook].filter(Boolean).join(' · ')}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
     <Pager
       ariaLabel="Other recipes"
       prev={prev ? { href: `/recipes/${bare(prev.id)}/`, title: prev.data.title } : null}
@@ -240,4 +258,25 @@ const breadcrumbLd = breadcrumb(
     color: var(--ink-soft);
   }
   .recipe .tag-chips { margin-top: 1.5rem; }
+  .recipe .related {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+  .recipe .related ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .recipe .related a {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .recipe .related a:hover { color: var(--paprika); }
+  .recipe .related .meta { color: var(--ink-mute); font-size: 0.85rem; margin-left: 0.5rem; }
 </style>
