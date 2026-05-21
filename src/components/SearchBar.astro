@@ -17,6 +17,7 @@
     placeholder="Search dishes, recipes, farms, restaurants…"
     autocomplete="off"
   />
+  <kbd class="search-bar__hint" aria-hidden="true">/</kbd>
   <button id="site-search-submit" type="button" class="search-bar__submit" aria-label="Search">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <circle cx="11" cy="11" r="7"/>
@@ -142,6 +143,20 @@
   }
   input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); flushSearch(); } });
   document.getElementById('site-search-submit')?.addEventListener('click', flushSearch);
+
+  // Press '/' anywhere on the page to jump focus into the search input —
+  // standard convention in docs sites (MDN, GitHub, Tailwind). Guards
+  // against firing while typing in another input or with a modifier held.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const target = e.target as HTMLElement | null;
+    const tag = target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+    if (!input) return;
+    e.preventDefault();
+    input.focus();
+    input.select();
+  });
 </script>
 
 <style>
@@ -169,6 +184,25 @@
     min-width: 0;
   }
   .search-bar input::placeholder { color: var(--ink-mute); }
+
+  .search-bar__hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4rem;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--ink-mute);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+  /* Hide the kbd hint on touch / coarse-pointer devices where '/' isn't
+     a useful shortcut and the chip just adds noise. */
+  @media (pointer: coarse), (max-width: 520px) {
+    .search-bar__hint { display: none; }
+  }
   .search-bar__submit {
     appearance: none;
     background: var(--paprika);
