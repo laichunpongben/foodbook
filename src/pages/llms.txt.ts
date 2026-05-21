@@ -38,6 +38,19 @@ export const GET: APIRoute = async ({ site }) => {
     getCollection("restaurants").then(publicOnly),
   ]);
 
+  // "Recent" surfaces the freshest signal first for AI crawlers that pull
+  // only a fragment of the file. Dishes sort by `firstMade`; recipes by
+  // their latest authored revision. Both fall through silently when undated.
+  const recentDishes = [...dishes]
+    .filter((d) => d.data.firstMade)
+    .sort((a, b) => (b.data.firstMade ?? "").localeCompare(a.data.firstMade ?? ""))
+    .slice(0, 5);
+  const recentRecipes = [...recipes]
+    .map((r) => ({ r, date: r.data.revisions[r.data.revisions.length - 1]?.date ?? "" }))
+    .filter(({ date }) => date)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+
   const lines: string[] = [
     "# Foodbook",
     "",
@@ -48,6 +61,17 @@ export const GET: APIRoute = async ({ site }) => {
     `- [World map](${sectionUrl(site, "world")}): farm/producer/restaurant pins on one map.`,
     `- [Seasons](${sectionUrl(site, "seasons")}): wheel of products in season this month, drawn from farm windows.`,
     `- [Pantry](${sectionUrl(site, "pantry")}): current inventory snapshot with provenance links.`,
+    "",
+    "## Recent",
+    "",
+    ...recentDishes.map(
+      (d) =>
+        `- ${d.data.firstMade} · Dish · [${stripEm(d.data.shortTitle)}](${entryUrl(site, "dishes", bare(d.id))})`,
+    ),
+    ...recentRecipes.map(
+      ({ r, date }) =>
+        `- ${date} · Recipe · [${stripEm(r.data.title)}](${entryUrl(site, "recipes", bare(r.id))})`,
+    ),
     "",
     ...section<CollectionEntry<"dishes">>(
       "Dishes",
