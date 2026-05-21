@@ -5,7 +5,13 @@
  * Uses a real `<img>` (not a CSS background-image) so the browser can
  * lazy-load it, surface alt text to assistive tech, and apply native
  * fetch priority — none of which work on background images.
+ *
+ * Wikimedia Commons URLs get a srcset built on `Special:FilePath?width=N`
+ * so cards request a card-sized thumbnail (~280–480px wide on the grid)
+ * rather than the raw 3840px source.
  */
+
+import WikiImage from './WikiImage.astro';
 
 interface Props {
   slug: string;
@@ -17,20 +23,30 @@ interface Props {
 }
 
 const { slug, title, tagline, hero, heroUrl, heroFocal } = Astro.props;
-const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
-// alt left empty: the surrounding `aria-label` on the <a> already
-// names the link, so the image is decorative for AT.
+const localPhoto = hero ? `${hero}-1280.jpg` : '';
+// Grid is repeat(auto-fill, minmax(280px, 1fr)) inside a ~1200px container,
+// so cards render at 280–600px depending on viewport.
+const sizes = '(min-width: 1100px) 25vw, (min-width: 720px) 33vw, 50vw';
+const focalStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
 ---
 
 <a class="dish-card" href={`/dishes/${slug}/`} aria-label={title}>
-  {photoUrl && (
+  {heroUrl ? (
+    <WikiImage
+      url={heroUrl}
+      alt=""
+      sizes={sizes}
+      class="photo"
+      style={focalStyle}
+    />
+  ) : localPhoto && (
     <img
       class="photo"
-      src={photoUrl}
+      src={localPhoto}
       alt=""
       loading="lazy"
       decoding="async"
-      style={heroFocal ? `object-position: ${heroFocal}` : undefined}
+      style={focalStyle}
     />
   )}
   <div class="overlay" />
