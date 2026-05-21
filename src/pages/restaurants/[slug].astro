@@ -94,6 +94,21 @@ const breadcrumbLd = breadcrumb(
       <span class="price">{d.priceBand}</span>
     </p>
 
+    {/* Tap-target for "where is it" — opens the user's default map app via the
+        geo: URI on mobile, falls back to a Google Maps URL elsewhere via the
+        intent handler. Plain anchor — no JS. */}
+    <p class="maps-link">
+      <a
+        href={`https://www.google.com/maps/search/?api=1&query=${d.lat},${d.lng}`}
+        target="_blank"
+        rel="noopener"
+        aria-label={`Open ${d.name} on Google Maps in a new tab`}
+      >
+        Open in Maps ↗
+      </a>
+      <span class="muted"> · {d.lat.toFixed(4)}, {d.lng.toFixed(4)}</span>
+    </p>
+
     {d.tags.length > 0 && (
       <ul class="tag-chips entity-tags" aria-label="Tags">
         {d.tags.map((t) => <li><a href={`/tags/${t}/`}>{t}</a></li>)}
@@ -160,6 +175,9 @@ const breadcrumbLd = breadcrumb(
   .signature { margin-top: 1.2rem; color: var(--ink-soft); }
   .cite { font-size: 0.88rem; color: var(--paprika); }
   .price { color: var(--olive); }
+  .maps-link { margin-top: 1.2rem; font-size: 0.9rem; }
+  .maps-link a { color: var(--paprika); }
+  .maps-link .muted { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
   .visits { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
   .visits ul { list-style: none; padding: 0; margin: 1rem 0 0; }
   .visits li { padding: 0.5rem 0; }
