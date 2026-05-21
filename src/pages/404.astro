@@ -8,6 +8,28 @@ import { publicOnly } from '~/lib/visibility';
 const recent = publicOnly(await getCollection('dishes'))
   .sort((a, b) => (b.data.firstMade ?? '').localeCompare(a.data.firstMade ?? ''))
   .slice(0, 6);
+
+// Surface the top tags as recovery anchors — someone landing on a 404 may
+// have mistyped a slug they remember by topic. Tag counts come from dishes +
+// recipes + restaurants + meals, mirroring /tags/[tag].
+const [dishes, recipes, restaurants, meals] = await Promise.all([
+  getCollection('dishes').then(publicOnly),
+  getCollection('recipes').then(publicOnly),
+  getCollection('restaurants').then(publicOnly),
+  getCollection('meals').then(publicOnly),
+]);
+const tagCounts = new Map<string, number>();
+const bump = (tags: readonly string[]) => {
+  for (const t of tags) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+};
+for (const d of dishes) bump(d.data.tags);
+for (const r of recipes) bump(r.data.tags);
+for (const r of restaurants) bump(r.data.tags);
+for (const m of meals) bump(m.data.tags);
+const topTags = [...tagCounts.entries()]
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 12)
+  .map(([name, count]) => ({ name, count }));
 ---
 
 <BaseLayout title="Not found" description="No such page in this archive.">
@@ -26,7 +48,23 @@ const recent = publicOnly(await getCollection('dishes'))
       <li><a href="/world/">World</a></li>
       <li><a href="/seasons/">Seasons</a></li>
       <li><a href="/pantry/">Pantry</a></li>
+      <li><a href="/tags/">Tags</a></li>
+      <li><a href="/recent/">Recent</a></li>
     </ul>
+
+    {topTags.length > 0 && (
+      <div class="recovery">
+        <p class="eyebrow">Browse by tag</p>
+        <ul class="recovery-tags">
+          {topTags.map((t) => (
+            <li>
+              <a href={`/tags/${t.name}/`}>{t.name}<span class="count">{t.count}</span></a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
     {recent.length > 0 && (
       <div class="recent">
         <p class="eyebrow">Recent dishes</p>
@@ -77,6 +115,33 @@ const recent = publicOnly(await getCollection('dishes'))
   .not-found-nav a {
     color: var(--paprika);
   }
+  .recovery {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .recovery-tags {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .recovery-tags a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+  .recovery-tags a:hover { border-color: var(--paprika); color: var(--paprika); }
+  .recovery-tags .count { color: var(--ink-mute); font-size: 0.78rem; }
   .recent {
     margin-top: 3rem;
     padding-top: 2rem;
