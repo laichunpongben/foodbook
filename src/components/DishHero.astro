@@ -18,11 +18,35 @@ interface Props {
 }
 
 const { dish, scrollTo } = Astro.props;
-const { shortTitle, title, tagline, origin, heroUrl, heroFocal, prologue, firstMade, tags } = dish.data;
+const { shortTitle, title, tagline, origin, heroUrl, heroFocal, prologue, firstMade, tags, stages } = dish.data;
 
 const repertoireSince = firstMade
   ? new Date(firstMade).toLocaleDateString('en', { month: 'short', year: 'numeric' })
   : null;
+
+// A stage is "covered" when the author filled in a note OR pointed at any
+// ref (farm / garden plot / recipe / meal / restaurant). Mirrors the
+// hasIngredients/hasRecipes/hasEats predicates the page itself uses to
+// decide whether to render PlantSection / CookSection / EatSection.
+type StageKey = 'source' | 'grow' | 'cook' | 'eat';
+const stageLabel: Record<StageKey, string> = {
+  source: 'Source',
+  grow: 'Grow',
+  cook: 'Cook',
+  eat: 'Eat',
+};
+const isStageCovered = (key: StageKey): boolean => {
+  const s = stages[key];
+  if (!s) return false;
+  if (s.note && s.note.trim().length > 0) return true;
+  return (
+    s.farms.length + s.garden.length + s.recipes.length + s.meals.length + s.restaurants.length > 0
+  );
+};
+const lifecycle: Array<{ key: StageKey; covered: boolean }> = (
+  ['source', 'grow', 'cook', 'eat'] as const
+).map((key) => ({ key, covered: isStageCovered(key) }));
+const coveredCount = lifecycle.filter((s) => s.covered).length;
 
 const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
 ---
@@ -42,6 +66,17 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
             {tags.map((t) => <li><a href={`/tags/${t}/`}>{t}</a></li>)}
           </ul>
         )}
+        <ul
+          class="dish-hero-lifecycle"
+          aria-label={`Lifecycle coverage: ${coveredCount} of 4 stages`}
+        >
+          {lifecycle.map(({ key, covered }) => (
+            <li class:list={['lifecycle-step', { 'is-covered': covered }]}>
+              <span aria-hidden="true" class="dot" />
+              <span>{stageLabel[key]}</span>
+            </li>
+          ))}
+        </ul>
       </div>
       {heroUrl && (
         <WikiImage
@@ -117,6 +152,43 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
   }
 
   .dish-hero-tags { margin-top: 1.2rem; }
+
+  /* Source · Grow · Cook · Eat — at-a-glance coverage of the 4 lifecycle
+   * stages. Dot filled paprika when the stage has authored content, hollow
+   * otherwise. Tracks the same definition the page uses to decide whether
+   * to render PlantSection / CookSection / EatSection. */
+  .dish-hero-lifecycle {
+    list-style: none;
+    padding: 0;
+    margin: 1.6rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.1rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .lifecycle-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    line-height: 1;
+  }
+  .lifecycle-step .dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    border: 1px solid var(--ink-mute);
+    background: transparent;
+  }
+  .lifecycle-step.is-covered { color: var(--ink-soft); }
+  .lifecycle-step.is-covered .dot {
+    background: var(--paprika);
+    border-color: var(--paprika);
+  }
 
   .dish-hero-figure {
     aspect-ratio: 4 / 5;
