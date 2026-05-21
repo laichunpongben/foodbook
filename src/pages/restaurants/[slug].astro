@@ -96,7 +96,7 @@ const breadcrumbLd = breadcrumb(
 
     {d.tags.length > 0 && (
       <ul class="tag-chips entity-tags" aria-label="Tags">
-        {d.tags.map((t) => <li>{t}</li>)}
+        {d.tags.map((t) => <li><a href={`/tags/${t}/`}>{t}</a></li>)}
       </ul>
     )}
 

@@ -472,7 +472,10 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
   letter-spacing: 0.04em;
   color: var(--ink-mute);
   text-transform: lowercase;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
+.tag-chips li a { color: inherit; text-decoration: none; }
+.tag-chips li:hover { border-color: var(--paprika); color: var(--paprika); }
 
 /* "More like this" rail used on recipe + dish detail pages. Top margin
  * is the parent's responsibility — different vertical rhythm per page. */
