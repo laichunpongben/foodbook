@@ -46,18 +46,19 @@ for (const ing of recipe.data.ingredients) {
   groups.get(k)!.push(ing);
 }
 
-/** Returns undefined for unparseable inputs; schema.org tolerates absence. */
-function isoDuration(s: string | undefined): string | undefined {
-  if (!s) return undefined;
+function isoMinutes(s: string | undefined): number {
+  if (!s) return 0;
   const trimmed = s.trim().toLowerCase();
-  const hMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*h(?:our)?s?/);
-  const mMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*m(?:in)?(?:ute)?s?/);
-  const hours = hMatch ? Number(hMatch[1]) : 0;
-  const minutes = mMatch ? Number(mMatch[1]) : 0;
-  if (hours === 0 && minutes === 0) return undefined;
-  const totalMinutes = Math.round(hours * 60 + minutes);
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
+  const hours = Number(trimmed.match(/(\d+(?:\.\d+)?)\s*h(?:our)?s?/)?.[1] ?? 0);
+  const minutes = Number(trimmed.match(/(\d+(?:\.\d+)?)\s*m(?:in)?(?:ute)?s?/)?.[1] ?? 0);
+  return Math.round(hours * 60 + minutes);
+}
+
+/** Returns undefined for unparseable / zero inputs; schema.org tolerates absence. */
+function isoDuration(minutes: number): string | undefined {
+  if (minutes === 0) return undefined;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
   return `PT${h ? `${h}H` : ''}${m ? `${m}M` : ''}`;
 }
 
@@ -72,8 +73,11 @@ const description = [
   recipe.data.timeCook && `cook ${recipe.data.timeCook}`,
   recipe.data.attribution && `via ${recipe.data.attribution}`,
 ].filter(Boolean).join(' · ').slice(0, 155);
-const prepIso = isoDuration(recipe.data.timePrep);
-const cookIso = isoDuration(recipe.data.timeCook);
+const prepMin = isoMinutes(recipe.data.timePrep);
+const cookMin = isoMinutes(recipe.data.timeCook);
+const prepIso = isoDuration(prepMin);
+const cookIso = isoDuration(cookMin);
+const totalIso = isoDuration(prepMin + cookMin);
 
 // Derive schema.org fields from the project's tag enum (see src/content.config.ts).
 const CUISINE_TAGS = new Set([
@@ -113,6 +117,7 @@ const recipeLd = {
   })),
   ...(prepIso && { prepTime: prepIso }),
   ...(cookIso && { cookTime: cookIso }),
+  ...(totalIso && { totalTime: totalIso }),
   ...(recipe.data.heroUrl && { image: recipe.data.heroUrl }),
   ...(recipe.data.attribution && { author: { '@type': 'Person', name: recipe.data.attribution } }),
   ...(datePublished && { datePublished }),
