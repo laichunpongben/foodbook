@@ -1,0 +1,131 @@
+---
+/**
+ * /credits — photo attribution surface.
+ *
+ * Every dish / restaurant / farm hero photo comes from Wikimedia Commons
+ * today (heroUrl pattern). This page makes the attribution chain visible:
+ * one row per entry, link from the entry name to its detail page and from
+ * the hero URL back to the Wikimedia file page. License remains CC per
+ * Commons; this page is the human-readable index of that trail.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+interface CreditRow {
+  href: string;
+  name: string;
+  heroUrl: string;
+  /** Wikimedia "file page" — strip the upload.wikimedia.org redirect to a
+   *  Commons file page so a reader can see author + license. Format:
+   *  https://upload.wikimedia.org/wikipedia/commons/<x>/<xx>/Name.jpg
+   *  → https://commons.wikimedia.org/wiki/File:Name.jpg */
+  commonsFilePage?: string;
+}
+
+const wikimediaFilePage = (url: string): string | undefined => {
+  const m = url.match(/^https?:\/\/[^/]+\/wikipedia\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/?]+)/);
+  if (!m) {
+    const filePath = url.match(/Special:FilePath\/([^?]+)/);
+    if (filePath) return `https://commons.wikimedia.org/wiki/File:${filePath[1]}`;
+    return undefined;
+  }
+  return `https://commons.wikimedia.org/wiki/File:${m[1]}`;
+};
+
+const collect = async (kind: string, urlBase: string) => {
+  const entries = publicOnly(await getCollection(kind as 'dishes'));
+  const rows: CreditRow[] = [];
+  for (const e of entries) {
+    const heroUrl = (e.data as { heroUrl?: string }).heroUrl;
+    if (!heroUrl) continue;
+    const name =
+      (e.data as { shortTitle?: string; title?: string; name?: string }).shortTitle ??
+      (e.data as { name?: string; title?: string }).name ??
+      (e.data as { title?: string }).title ??
+      bare(e.id);
+    rows.push({
+      href: `${urlBase}${bare(e.id)}/`,
+      name,
+      heroUrl,
+      commonsFilePage: wikimediaFilePage(heroUrl),
+    });
+  }
+  return rows.sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const dishCredits = await collect('dishes', '/dishes/');
+const recipeCredits = await collect('recipes', '/recipes/');
+const restaurantCredits = await collect('restaurants', '/restaurants/');
+const farmCredits = await collect('farms', '/farms/');
+const totalCredits =
+  dishCredits.length + recipeCredits.length + restaurantCredits.length + farmCredits.length;
+
+const site = Astro.site!;
+const description = `Photo attribution for ${totalCredits} hero images across the archive — every image links back to its Wikimedia Commons file page.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Photo credits',
+  url: sectionUrl(site, 'credits'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'Credits', kind: 'credits' });
+---
+
+<BaseLayout title="Photo credits" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
+  <section class="container credits">
+    <p class="eyebrow">Attribution</p>
+    <h1>Photo credits</h1>
+    <p class="lead">
+      Every hero photograph in this archive is sourced from
+      <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>
+      under a Creative Commons or public-domain license. Each row links back to the file page so
+      you can see the original uploader, license, and (when documented) the photographer.
+      {totalCredits} attributions in total.
+    </p>
+
+    {[
+      { label: 'Dishes', rows: dishCredits },
+      { label: 'Recipes', rows: recipeCredits },
+      { label: 'Restaurants', rows: restaurantCredits },
+      { label: 'Farms & producers', rows: farmCredits },
+    ].filter((s) => s.rows.length > 0).map((section) => (
+      <div class="credits-group">
+        <h2>{section.label} <span class="muted">· {section.rows.length}</span></h2>
+        <ul class="credits-list">
+          {section.rows.map((r) => (
+            <li>
+              <a href={r.href} set:html={r.name} />
+              {' — '}
+              {r.commonsFilePage ? (
+                <a href={r.commonsFilePage} target="_blank" rel="noopener">Wikimedia file page ↗</a>
+              ) : (
+                <a href={r.heroUrl} target="_blank" rel="noopener">source ↗</a>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .credits { padding: 4rem 0 6rem; max-width: 720px; }
+  .credits .lead { color: var(--ink-soft); margin-bottom: 2rem; }
+  .credits .lead a { color: var(--paprika); }
+  .credits-group { margin-top: 2.5rem; }
+  .credits-group h2 { font-size: 1.4rem; margin-bottom: 0.6rem; }
+  .credits-group .muted { color: var(--ink-mute); font-weight: 400; font-size: 0.85rem; }
+  .credits-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+  .credits-list li { color: var(--ink-soft); }
+  .credits-list a { color: var(--ink); }
+  .credits-list a:hover { color: var(--paprika); }
+</style>
