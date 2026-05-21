@@ -1,0 +1,24 @@
+/* TEAM */
+
+  Author + Maintainer: The Foodbook author
+  Editorial voice: Hand-written
+  AI assistance: Claude (Anthropic) for extraction + discovery only — never for prose
+  See: /about#ai
+
+/* SITE */
+
+  Stack: Astro 6 · TypeScript · MDX
+  Hosting: Cloudflare Pages
+  Search: Pagefind (client-side, static index built at deploy)
+  Map: Leaflet with OpenStreetMap tiles
+  Type: Fraunces (display) · Inter (body) — both via @fontsource-variable
+  Photos: Wikimedia Commons (CC-licensed), credited per entry
+  Feeds: /rss.xml · /feed.json · /llms.txt · /llms-full.txt
+  Last build: see footer
+
+/* THANKS */
+
+  Wikimedia Commons photographers — every dish hero photo
+  OpenStreetMap contributors — basemap on /world
+  Pagefind — fast static-index search
+  Astro — the right tool for this archive
