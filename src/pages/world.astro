@@ -42,6 +42,10 @@ const pins: MapPin[] = [
 
 const farmCount = farms.length;
 const restaurantCount = restaurants.length;
+const countries = new Set<string>();
+for (const f of farms) if (f.data.country) countries.add(f.data.country);
+for (const r of restaurants) if (r.data.country) countries.add(r.data.country);
+const countryCount = countries.size;
 
 const site = Astro.site!;
 const description = `A map of where food comes from — ${farmCount} farms and ${restaurantCount} restaurants pinned worldwide.`;
@@ -66,7 +70,8 @@ const crumb = breadcrumb(site, { label: 'World', kind: 'world' });
       Farms, producers, and markets on one layer; restaurants on another —
       filled paprika for places visited, hollow rings for places only discovered.
       {farmCount} {farmCount === 1 ? 'farm' : 'farms'} ·
-      {restaurantCount} {restaurantCount === 1 ? 'restaurant' : 'restaurants'}.
+      {restaurantCount} {restaurantCount === 1 ? 'restaurant' : 'restaurants'} ·
+      {countryCount} {countryCount === 1 ? 'country' : 'countries'}.
     </p>
     <div
       id="food-map"
