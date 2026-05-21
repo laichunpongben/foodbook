@@ -19,14 +19,20 @@ export function sectionUrl(site: URL, kind: string): string {
   return new URL(`/${kind}/`, site).toString();
 }
 
-/** CollectionPage: a listing page like /dishes/ or /recipes/. `count` is
- *  the size of the listing — search engines use it as a hint at the
- *  collection's scale without spidering every entry. */
+/** CollectionPage: a listing page like /dishes/ or /recipes/. `items`
+ *  becomes the ItemList's `itemListElement[]` so search engines can
+ *  discover entries without spidering every page. */
 export function collectionPage(
   site: URL,
   section: { label: string; kind: string; description: string },
-  count: number,
+  items: { name: string; url: string }[],
 ): Record<string, unknown> {
+  const itemListElement = items.map((it, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: it.name,
+    url: it.url,
+  }));
   return {
     "@context": SCHEMA_CTX,
     "@type": "CollectionPage",
@@ -34,7 +40,7 @@ export function collectionPage(
     url: sectionUrl(site, section.kind),
     description: section.description,
     isPartOf: { "@type": "WebSite", url: new URL("/", site).toString(), name: SITE_NAME },
-    mainEntity: { "@type": "ItemList", numberOfItems: count },
+    mainEntity: { "@type": "ItemList", numberOfItems: items.length, itemListElement },
   };
 }
 

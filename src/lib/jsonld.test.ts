@@ -46,17 +46,28 @@ describe("breadcrumb", () => {
 });
 
 describe("collectionPage", () => {
+  const items = [
+    { name: "Carbonara", url: `${BASE}/recipes/carbonara/` },
+    { name: "Ragù", url: `${BASE}/recipes/ragu/` },
+  ];
   const ld = collectionPage(
     SITE,
-    { label: "Recipes", kind: "recipes", description: "5 recipes in the archive." },
-    5,
+    { label: "Recipes", kind: "recipes", description: "2 recipes in the archive." },
+    items,
   );
 
-  it("emits a CollectionPage with the section URL and item count", () => {
+  it("emits a CollectionPage with the section URL and an itemized ItemList", () => {
     expect(ld["@type"]).toBe("CollectionPage");
     expect(ld.name).toBe("Recipes");
     expect(ld.url).toBe(`${BASE}/recipes/`);
-    expect(ld.mainEntity).toEqual({ "@type": "ItemList", numberOfItems: 5 });
+    expect(ld.mainEntity).toEqual({
+      "@type": "ItemList",
+      numberOfItems: 2,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Carbonara", url: `${BASE}/recipes/carbonara/` },
+        { "@type": "ListItem", position: 2, name: "Ragù", url: `${BASE}/recipes/ragu/` },
+      ],
+    });
   });
 
   it("links isPartOf back to the WebSite root", () => {
@@ -64,6 +75,15 @@ describe("collectionPage", () => {
       "@type": "WebSite",
       url: `${BASE}/`,
       name: SITE_NAME,
+    });
+  });
+
+  it("handles empty collections — numberOfItems 0, empty itemListElement", () => {
+    const empty = collectionPage(SITE, { label: "Recipes", kind: "recipes", description: "" }, []);
+    expect(empty.mainEntity).toEqual({
+      "@type": "ItemList",
+      numberOfItems: 0,
+      itemListElement: [],
     });
   });
 });

@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import { breadcrumb, collectionPage } from '~/lib/jsonld';
+import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -12,7 +12,11 @@ const dishes = publicOnly(await getCollection('dishes')).sort((a, b) =>
 );
 const description = `${dishes.length} dishes in the archive.`;
 const section = { label: 'Dishes', kind: 'dishes' };
-const ld = collectionPage(Astro.site!, { ...section, description }, dishes.length);
+const items = dishes.map((d) => ({
+  name: d.data.shortTitle,
+  url: entryUrl(Astro.site!, 'dishes', bare(d.id)),
+}));
+const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);
 ---
 
