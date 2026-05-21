@@ -107,6 +107,9 @@ const currentYear = new Date().getFullYear();
       <slot />
     </main>
 
+    {/* Hidden onscreen; revealed via @media print so paper readers can find the source. */}
+    <p class="print-source" aria-hidden="true">Source: {canonical}</p>
+
     <footer class="site-footer">
       <div class="container">
         <p>
