@@ -4,7 +4,9 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import AppearsIn from '~/components/AppearsIn.astro';
 import EntityBanner from '~/components/EntityBanner.astro';
+import JsonLd from '~/components/JsonLd.astro';
 import Pager from '~/components/Pager.astro';
+import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import { siblingsOf } from '~/lib/siblings';
 import { bare, bareSlug } from '~/lib/slug';
 
@@ -33,6 +35,31 @@ const restaurant = d.location === 'home'
 const locationLabel = restaurant?.data.name ?? d.location;
 
 const { prev, next } = await siblingsOf('meals', meal.id, (m) => m.data.date, 'desc');
+
+const site = Astro.site!;
+const mealUrl = entryUrl(site, 'meals', slug);
+const mealLocation = restaurant
+  ? {
+      '@type': 'Restaurant',
+      name: restaurant.data.name,
+      url: entryUrl(site, 'restaurants', bare(restaurant.id)),
+      address: { '@type': 'PostalAddress', addressLocality: restaurant.data.city,
+        ...(restaurant.data.country && { addressCountry: restaurant.data.country }) },
+    }
+  : { '@type': 'Place', name: 'Home' };
+const mealLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'FoodEvent',
+  name: d.title,
+  url: mealUrl,
+  startDate: d.date,
+  location: mealLocation,
+  inLanguage: 'en',
+  ...(d.occasion && { description: d.occasion }),
+  ...(d.heroUrl && { image: d.heroUrl }),
+  ...(d.tags.length > 0 && { keywords: d.tags.join(', ') }),
+};
+const breadcrumbLd = breadcrumb(site, { label: 'Meals', kind: 'meals' }, { label: d.title, url: mealUrl });
 ---
 
 <BaseLayout
@@ -42,6 +69,8 @@ const { prev, next } = await siblingsOf('meals', meal.id, (m) => m.data.date, 'd
   heroUrl={d.heroUrl}
   ogType="article"
 >
+  <JsonLd data={mealLd} />
+  <JsonLd data={breadcrumbLd} />
   {d.heroUrl && <EntityBanner url={d.heroUrl} alt={`${d.title} — meal on ${d.date}`} />}
   <article class="entity container">
     <a class="back" href="/meals/">← Meals</a>
