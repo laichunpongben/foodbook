@@ -3,8 +3,9 @@
  *
  * Drives readers (Feedly / Inoreader / NetNewsWire) and AI ingestion
  * crawlers (Perplexity, Kagi, Reader-mode) via the pubDate freshness
- * signal. Dish items sort newest-first by `firstMade`; non-dish items
- * omit pubDate and trail alphabetically.
+ * signal. Dish items sort newest-first by `firstMade`; recipes sort by
+ * latest revision date so freshly-revised recipes resurface; farms +
+ * restaurants omit pubDate and trail alphabetically.
  */
 
 import { getCollection } from "astro:content";
@@ -51,11 +52,17 @@ export const GET: APIRoute = async ({ site }) => {
       pubDate: d.data.firstMade ? new Date(d.data.firstMade) : undefined,
     })),
     // Non-dish items get a kind prefix so a mixed feed reader can tell them apart.
-    ...recipes.map((r) => ({
-      title: `Recipe · ${r.data.title}`,
-      link: entryUrl(site, "recipes", bare(r.id)),
-      description: `${r.data.yield}${r.data.timeCook ? ` · ${r.data.timeCook}` : ""}`,
-    })),
+    // Recipes carry authored `revisions[]`; the latest revision date drives
+    // pubDate so freshly-revised recipes resurface at the top of the feed.
+    ...recipes.map((r) => {
+      const latest = r.data.revisions[r.data.revisions.length - 1];
+      return {
+        title: `Recipe · ${r.data.title}`,
+        link: entryUrl(site, "recipes", bare(r.id)),
+        description: `${r.data.yield}${r.data.timeCook ? ` · ${r.data.timeCook}` : ""}`,
+        ...(latest && { pubDate: new Date(latest.date) }),
+      };
+    }),
     ...farms.map((f) => ({
       title: `Farm · ${f.data.name}`,
       link: entryUrl(site, "farms", bare(f.id)),
