@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 import type { MapPin } from '~/lib/map/food';
@@ -40,12 +42,23 @@ const pins: MapPin[] = [
 
 const farmCount = farms.length;
 const restaurantCount = restaurants.length;
+
+const site = Astro.site!;
+const description = `A map of where food comes from — ${farmCount} farms and ${restaurantCount} restaurants pinned worldwide.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'World food map',
+  url: sectionUrl(site, 'world'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'World', kind: 'world' });
 ---
 
-<BaseLayout
-  title="World"
-  description="A map of where food comes from — farms, producers, markets, restaurants."
->
+<BaseLayout title="World" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
   <section class="container" style="padding: 4rem 0;">
     <p class="eyebrow">Terroir + table</p>
     <h1>World food map</h1>
