@@ -10,6 +10,22 @@ import { publicOnly } from '~/lib/visibility';
 const dishes = publicOnly(await getCollection('dishes')).sort((a, b) =>
   a.data.shortTitle.localeCompare(b.data.shortTitle, undefined, { sensitivity: 'base' }),
 );
+
+// Bucket dishes into A–Z groups by shortTitle's first letter; anything
+// not starting with [A–Z] (digits, diacritics that don't fold to A–Z, etc.)
+// falls into a single '#' bucket rendered after Z.
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const buckets = new Map<string, typeof dishes>();
+for (const letter of LETTERS) buckets.set(letter, []);
+buckets.set('#', []);
+for (const d of dishes) {
+  const first = d.data.shortTitle.charAt(0).toUpperCase();
+  const key = LETTERS.includes(first) ? first : '#';
+  buckets.get(key)!.push(d);
+}
+const groups = [...buckets.entries()].filter(([, list]) => list.length > 0);
+const presentLetters = new Set(groups.map(([k]) => k));
+
 const description = `${dishes.length} dishes in the archive.`;
 const section = { label: 'Dishes', kind: 'dishes' };
 const items = dishes.map((d) => ({
@@ -29,15 +45,33 @@ const crumb = breadcrumb(Astro.site!, section);
     <h1>Dishes</h1>
     <p class="lead">Every dish in the archive — {dishes.length} entries, alphabetical.</p>
 
-    <ul class="index-list dish-list">
-      {dishes.map((d) => (
-        <li>
-          {/* title may contain authored <em>; safe to set:html. */}
-          <a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} />
-          {d.data.tagline && <span class="tagline">{d.data.tagline}</span>}
-        </li>
-      ))}
-    </ul>
+    <nav class="az-bar" aria-label="Jump to letter">
+      {[...LETTERS, '#'].map((letter) =>
+        presentLetters.has(letter) ? (
+          <a href={`#letter-${letter === '#' ? 'symbol' : letter}`}>{letter}</a>
+        ) : (
+          <span aria-disabled="true">{letter}</span>
+        ),
+      )}
+    </nav>
+
+    {groups.map(([letter, list]) => {
+      const anchor = letter === '#' ? 'symbol' : letter;
+      return (
+        <section class="az-group" aria-labelledby={`letter-${anchor}`}>
+          <h2 id={`letter-${anchor}`} class="az-heading">{letter}</h2>
+          <ul class="index-list dish-list">
+            {list.map((d) => (
+              <li>
+                {/* title may contain authored <em>; safe to set:html. */}
+                <a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} />
+                {d.data.tagline && <span class="tagline">{d.data.tagline}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
+    })}
   </section>
 </BaseLayout>
 
@@ -45,4 +79,44 @@ const crumb = breadcrumb(Astro.site!, section);
   .dish-list { gap: 1rem; }
   .dish-list li { padding-bottom: 1rem; border-bottom: 1px solid var(--rule); gap: 0.2rem; }
   .dish-list a { font-size: 1.25rem; }
+
+  .az-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.35rem;
+    padding: 0.75rem 0;
+    margin: 0 0 2rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    letter-spacing: 0.04em;
+  }
+  .az-bar a,
+  .az-bar span {
+    min-width: 1.4rem;
+    padding: 0.15rem 0.35rem;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .az-bar a { color: var(--ink); }
+  .az-bar a:hover { color: var(--paprika); background: rgba(210, 84, 59, 0.08); }
+  .az-bar span { color: var(--ink-mute); opacity: 0.4; cursor: default; }
+
+  .az-group { margin-bottom: 2.5rem; scroll-margin-top: 4.5rem; }
+  .az-heading {
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--rule);
+  }
 </style>
