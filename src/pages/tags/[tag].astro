@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import JsonLd from '~/components/JsonLd.astro';
-import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
+import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare, bareSlug } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
@@ -64,26 +64,24 @@ export async function getStaticPaths() {
   }));
 }
 
-const { tag, entries } = Astro.props;
-entries.sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name));
+const { tag, entries: rawEntries } = Astro.props;
+const entries = [...rawEntries].sort(
+  (a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name),
+);
 
 const site = Astro.site!;
 const tagUrl = entryUrl(site, 'tags', tag);
 const description = `${entries.length} entries tagged ${tag}.`;
-const items = entries.map((e) => ({ name: e.name, url: new URL(e.href, site).toString(), description: e.meta || undefined }));
-const ld = {
-  '@context': SCHEMA_CTX,
-  '@type': 'CollectionPage',
-  name: `Tag · ${tag}`,
-  url: tagUrl,
-  description,
-  inLanguage: 'en',
-  mainEntity: {
-    '@type': 'ItemList',
-    numberOfItems: items.length,
-    itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, url: it.url, ...(it.description && { description: it.description }) })),
-  },
-};
+const items = entries.map((e) => ({
+  name: e.name,
+  url: new URL(e.href, site).toString(),
+  ...(e.meta && { description: e.meta }),
+}));
+const ld = collectionPage(
+  site,
+  { label: `Tag · ${tag}`, kind: `tags/${tag}`, description },
+  items,
+);
 const crumb = breadcrumb(site, { label: 'Tags', kind: 'tags' }, { label: tag, url: tagUrl });
 ---
 
