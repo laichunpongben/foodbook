@@ -4,3 +4,10 @@ Sitemap: https://food.databookman.com/sitemap-index.xml
 
 # Unlisted entries emit their own noindex meta tag at the page level.
 # AI scrapers are not blocked here — opt out per-entry via visibility: unlisted.
+
+# Companion endpoints for AI ingestion (llmstxt.org convention):
+#   /llms.txt        — concise table of contents
+#   /llms-full.txt   — verbose corpus dump (prose included)
+# Companion feeds for readers:
+#   /rss.xml         — RSS 2.0
+#   /feed.json       — JSON Feed 1.1
