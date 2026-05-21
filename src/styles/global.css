@@ -434,6 +434,8 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
 .index-list a:hover { color: var(--paprika); }
 .index-list .meta { color: var(--ink-mute); font-size: 0.88rem; }
 .index-list .tagline { color: var(--ink-mute); font-size: 0.92rem; }
+/* Modifier — adds a hairline between rows. */
+.divided li { padding-bottom: 0.8rem; border-bottom: 1px solid var(--rule); }
 .index-page .index-group { margin-bottom: 2.5rem; }
 .index-page .index-group > h2 {
   font-size: 1.1rem;
