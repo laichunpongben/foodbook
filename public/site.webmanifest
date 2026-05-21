@@ -8,9 +8,40 @@
   "background_color": "#0a0d11",
   "theme_color": "#0a0d11",
   "lang": "en",
+  "categories": ["food", "lifestyle", "reference"],
   "icons": [
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
     { "src": "/icon-32.png", "sizes": "32x32", "type": "image/png" }
+  ],
+  "shortcuts": [
+    {
+      "name": "What's in season",
+      "short_name": "Seasons",
+      "description": "Products in season this month from farm + producer windows.",
+      "url": "/seasons/",
+      "icons": [{ "src": "/icon-32.png", "sizes": "32x32" }]
+    },
+    {
+      "name": "World map",
+      "short_name": "World",
+      "description": "Farms, producers, and restaurants on one map.",
+      "url": "/world/",
+      "icons": [{ "src": "/icon-32.png", "sizes": "32x32" }]
+    },
+    {
+      "name": "Recent",
+      "short_name": "Recent",
+      "description": "Reverse-chronological timeline across the archive.",
+      "url": "/recent/",
+      "icons": [{ "src": "/icon-32.png", "sizes": "32x32" }]
+    },
+    {
+      "name": "Browse tags",
+      "short_name": "Tags",
+      "description": "Every tag with its entry count.",
+      "url": "/tags/",
+      "icons": [{ "src": "/icon-32.png", "sizes": "32x32" }]
+    }
   ]
 }
