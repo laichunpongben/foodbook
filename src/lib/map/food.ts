@@ -52,6 +52,37 @@ function isFarm(kind: PinKind): kind is FarmKind {
   return kind !== "restaurant";
 }
 
+/** Rewrite a Wikimedia Commons hero URL to a popup-sized thumbnail.
+ *  Leaflet popups render at roughly 280×110 — fetching the 1280px
+ *  source for every restaurant/farm pin is wasted bandwidth. */
+function popupThumbUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    // Special:FilePath form — override ?width=
+    if (
+      parsed.hostname === "commons.wikimedia.org" &&
+      parsed.pathname.startsWith("/wiki/Special:FilePath/")
+    ) {
+      parsed.searchParams.set("width", "640");
+      return parsed.toString();
+    }
+    // upload.wikimedia.org/thumb form — swap `<N>px-` prefix
+    if (parsed.hostname === "upload.wikimedia.org" && parsed.pathname.includes("/thumb/")) {
+      const segs = parsed.pathname.split("/");
+      const last = segs[segs.length - 1];
+      const m = last && /^\d+px-(.+)$/.exec(last);
+      if (m) {
+        segs[segs.length - 1] = `640px-${m[1]}`;
+        parsed.pathname = segs.join("/");
+        return parsed.toString();
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return url;
+}
+
 function kindLabel(pin: MapPin): string {
   if (pin.kind === "restaurant") {
     return pin.status === "discovered" ? "Restaurant · discovered" : "Restaurant · visited";
@@ -82,9 +113,10 @@ function buildPopup(pin: MapPin): HTMLElement {
 
   if (pin.heroUrl) {
     const img = document.createElement("img");
-    img.src = pin.heroUrl;
+    img.src = popupThumbUrl(pin.heroUrl);
     img.alt = "";
     img.loading = "lazy";
+    img.decoding = "async";
     img.className = "food-map-popup__photo";
     root.appendChild(img);
   }
