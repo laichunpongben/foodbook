@@ -1,0 +1,60 @@
+---
+/**
+ * /random — pick a random dish and redirect.
+ *
+ * Static-site constraint: the build can't roll a fresh die per request,
+ * so the slug list is baked into the page and a tiny inline script
+ * picks one client-side. Falls back to a list of links if JS is off.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const dishes = publicOnly(await getCollection('dishes'));
+const slugs = dishes.map((d) => bare(d.id));
+---
+
+<BaseLayout
+  title="Random dish"
+  description="Open a random dish from the archive."
+  unlisted={true}
+>
+  <section class="container random">
+    <p class="eyebrow">Surprise me</p>
+    <h1>Spinning the wheel…</h1>
+    <p class="lead">
+      Picking one of {dishes.length} dishes at random. If your browser has JS off,
+      pick one from the list below — that's the whole catalogue.
+    </p>
+
+    <noscript>
+      <ul class="random-fallback">
+        {dishes.map((d) => (
+          <li><a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} /></li>
+        ))}
+      </ul>
+    </noscript>
+  </section>
+</BaseLayout>
+
+<script define:vars={{ slugs }}>
+  if (slugs.length > 0) {
+    const pick = slugs[Math.floor(Math.random() * slugs.length)];
+    window.location.replace(`/dishes/${pick}/`);
+  }
+</script>
+
+<style>
+  .random { padding: 6rem 0; text-align: center; max-width: 36rem; margin: 0 auto; }
+  .random .lead { color: var(--ink-soft); }
+  .random-fallback {
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0 0;
+    columns: 2;
+    column-gap: 1.5rem;
+    text-align: left;
+  }
+  .random-fallback li { padding: 0.3rem 0; break-inside: avoid; }
+</style>
