@@ -1,0 +1,122 @@
+---
+/**
+ * /colophon — technical credits + how the site is built.
+ *
+ * /about explains what Foodbook is editorially; this page is the
+ * tech-curious counterpart. Documents stack, type, hosting, search,
+ * map tiles, build process, license posture.
+ */
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
+
+const site = Astro.site!;
+const description = 'Technical colophon — stack, type, hosting, search, map tiles, build process.';
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Colophon',
+  url: sectionUrl(site, 'colophon'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'Colophon', kind: 'colophon' });
+---
+
+<BaseLayout title="Colophon" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
+  <article class="colophon container">
+    <p class="eyebrow">Technical</p>
+    <h1>Colophon</h1>
+    <p class="lead">
+      How this site is built. <a href="/about/">/about</a> covers what it <em>is</em>; this is
+      what it <em>runs on</em>.
+    </p>
+
+    <dl class="colophon-list">
+      <dt>Framework</dt>
+      <dd>Astro 6 with MDX content collections. Output is fully static.</dd>
+
+      <dt>Hosting</dt>
+      <dd>Cloudflare Pages. Edge CDN, no origin server.</dd>
+
+      <dt>Type</dt>
+      <dd>
+        <a href="https://fonts.google.com/specimen/Fraunces" target="_blank" rel="noopener">Fraunces</a>
+        (display) and
+        <a href="https://rsms.me/inter/" target="_blank" rel="noopener">Inter</a>
+        (body), both served via @fontsource-variable so the variable axes ship as one file each.
+      </dd>
+
+      <dt>Theme</dt>
+      <dd>
+        Hand-written dark editorial theme; cook mode flips to a parchment
+        kitchen palette (ADR-0003).
+        Accent colours: paprika (#d2543b) and olive (#5d6e44).
+      </dd>
+
+      <dt>Search</dt>
+      <dd>
+        <a href="https://pagefind.app/" target="_blank" rel="noopener">Pagefind</a>
+        — static client-side index built at the end of every deploy. No backend.
+      </dd>
+
+      <dt>Map</dt>
+      <dd>
+        <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a>
+        with <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> tiles.
+      </dd>
+
+      <dt>Seasonal wheel</dt>
+      <dd>
+        Server-rendered SVG via <a href="https://d3js.org/d3-shape" target="_blank" rel="noopener">d3-shape</a>.
+        No client-side JS — the wheel ships fully painted.
+      </dd>
+
+      <dt>Photos</dt>
+      <dd>
+        Every hero photo from
+        <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>
+        under CC / public-domain. See <a href="/credits/">the credits page</a> for the per-image trail.
+      </dd>
+
+      <dt>Authoring</dt>
+      <dd>
+        Hand-written prose in MDX. AI (Claude) assists with extraction and discovery only
+        — see <a href="/about#ai">about → AI-assisted authoring</a>.
+      </dd>
+
+      <dt>Feeds</dt>
+      <dd>
+        <a href="/rss.xml">RSS 2.0</a>, <a href="/feed.json">JSON Feed 1.1</a>,
+        <a href="/llms.txt">/llms.txt</a> + <a href="/llms-full.txt">/llms-full.txt</a> for AI ingestion.
+      </dd>
+
+      <dt>JSON API</dt>
+      <dd>
+        Structured exports under <a href="/api/index.json">/api/</a> — one endpoint per collection plus a directory.
+      </dd>
+    </dl>
+  </article>
+</BaseLayout>
+
+<style>
+  .colophon { padding: 4rem 0 6rem; max-width: 720px; }
+  .colophon .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+  .colophon .lead a, .colophon-list a { color: var(--paprika); }
+  .colophon-list { margin: 0; }
+  .colophon-list dt {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin: 1.4rem 0 0.3rem;
+  }
+  .colophon-list dd {
+    margin: 0;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--rule);
+  }
+</style>
