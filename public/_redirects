@@ -1,6 +1,10 @@
 # /sitemap.xml is the de-facto path; we emit /sitemap-index.xml via @astrojs/sitemap.
 /sitemap.xml  /sitemap-index.xml  301
 
+# Bare /api lands on the JSON discovery endpoint.
+/api  /api/index.json  302
+/api/  /api/index.json  302
+
 # Catch-all so Cloudflare Pages returns HTTP 404 on unknown paths instead
 # of the SPA fallback (which serves /index.html with 200 — a soft-404).
 /*  /404.html  404
