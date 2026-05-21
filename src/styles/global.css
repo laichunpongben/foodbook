@@ -452,6 +452,26 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
  * readers can find the page again. */
 .print-source { display: none; }
 
+/* Tag chips — small rounded pills shown on dish and recipe headers.
+ * Top margin is the parent's responsibility (different rhythm per context). */
+.tag-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tag-chips li {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-mute);
+  text-transform: lowercase;
+}
+
 /* Print — recipes are the main use-case; dark palette burns ink and the
  * chrome (nav/search/footer/pager/AppearsIn) is paper noise. Force
  * black-on-white, hide site furniture, keep ingredients and steps
