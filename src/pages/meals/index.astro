@@ -9,7 +9,9 @@ import { publicOnly } from '~/lib/visibility';
 const meals = publicOnly(await getCollection('meals')).sort((a, b) =>
   b.data.date.localeCompare(a.data.date),
 );
-const description = `${meals.length} meal events logged.`;
+const description = meals.length === 0
+  ? 'No meal events logged yet — see /dishes or /restaurants for the upstream lifecycle stages.'
+  : `${meals.length} meal events logged.`;
 const section = { label: 'Meals', kind: 'meals' };
 const items = meals.map((m) => ({
   name: m.data.title,
@@ -26,20 +28,59 @@ const crumb = breadcrumb(Astro.site!, section);
   <section class="container index-page">
     <p class="eyebrow">Eat</p>
     <h1>Meals</h1>
-    <p class="lead">
-      {meals.length} {meals.length === 1 ? 'meal' : 'meals'} logged — the moments where the lifecycle ends.
-    </p>
 
-    <ul class="index-list divided">
-      {meals.map((m) => (
-        <li>
-          <a href={`/meals/${bare(m.id)}/`}>{m.data.title}</a>
-          <span class="meta">
-            {m.data.date}
-            {m.data.occasion && <> · {m.data.occasion}</>}
-          </span>
-        </li>
-      ))}
-    </ul>
+    {meals.length === 0 ? (
+      <>
+        <p class="lead">
+          A meal is the last lifecycle stage — the moment a dish gets eaten. The collection is
+          live but no events are authored yet.
+        </p>
+        <p class="lead muted">
+          In the meantime, the other lifecycle stages are populated:
+        </p>
+        <ul class="meals-detour">
+          <li><a href="/dishes/">Browse all dishes →</a> the editorial spine, with up to four lifecycle stages per entry.</li>
+          <li><a href="/restaurants/">Restaurants visited &amp; discovered →</a> places worth tracing a dish back to.</li>
+          <li><a href="/recent/">Recently added →</a> the timeline across everything dated.</li>
+        </ul>
+      </>
+    ) : (
+      <>
+        <p class="lead">
+          {meals.length} {meals.length === 1 ? 'meal' : 'meals'} logged — the moments where the lifecycle ends.
+        </p>
+        <ul class="index-list divided">
+          {meals.map((m) => (
+            <li>
+              <a href={`/meals/${bare(m.id)}/`}>{m.data.title}</a>
+              <span class="meta">
+                {m.data.date}
+                {m.data.occasion && <> · {m.data.occasion}</>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
   </section>
 </BaseLayout>
+
+<style>
+  .meals-detour {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .meals-detour li {
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .meals-detour a {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+  }
+  .muted { color: var(--ink-mute); }
+</style>
