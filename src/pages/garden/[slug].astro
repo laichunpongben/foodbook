@@ -26,6 +26,15 @@ const d = bed.data;
 
 const { prev, next } = await siblingsOf('garden', bed.id, (g) => g.data.planted, 'desc');
 
+// Days from planting → harvest (or → today if still in the ground).
+const MS_PER_DAY = 86_400_000;
+const plantedDate = new Date(d.planted);
+const endDate = d.harvested ? new Date(d.harvested) : new Date();
+const daysInGround = Math.max(0, Math.round((endDate.getTime() - plantedDate.getTime()) / MS_PER_DAY));
+const daysLabel = d.harvested
+  ? `${daysInGround} days from planting to harvest`
+  : `${daysInGround} days in the ground (still growing)`;
+
 const site = Astro.site!;
 const gardenUrl = entryUrl(site, 'garden', slug);
 const gardenLd = {
@@ -64,6 +73,7 @@ const breadcrumbLd = breadcrumb(site, { label: 'Garden', kind: 'garden' }, { lab
       Planted <strong>{d.planted}</strong>
       {d.harvested && <> · harvested <strong>{d.harvested}</strong></>}
     </p>
+    <p class="stage-eyebrow garden-days">{daysLabel}</p>
 
     {d.yieldNote && <p><strong>Yield:</strong> {d.yieldNote}</p>}
     {d.note && <p set:html={d.note} />}
@@ -79,3 +89,7 @@ const breadcrumbLd = breadcrumb(site, { label: 'Garden', kind: 'garden' }, { lab
     />
   </article>
 </BaseLayout>
+
+<style>
+  .garden-days { margin-top: 0.8rem; }
+</style>
