@@ -81,8 +81,15 @@ const CUISINE_TAGS = new Set([
   'indian', 'levantine', 'iberian', 'nordic',
 ]);
 const CATEGORY_TAGS = new Set(['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink']);
+// schema.org RestrictedDiet vocabulary — vegan implies vegetarian, so emit both.
+const DIET_URI: Partial<Record<typeof recipe.data.tags[number], string[]>> = {
+  vegan: ['https://schema.org/VeganDiet', 'https://schema.org/VegetarianDiet'],
+  vegetarian: ['https://schema.org/VegetarianDiet'],
+  pescatarian: ['https://schema.org/PescetarianDiet'],
+};
 const cuisines = recipe.data.tags.filter((t) => CUISINE_TAGS.has(t));
 const categories = recipe.data.tags.filter((t) => CATEGORY_TAGS.has(t));
+const suitableForDiet = [...new Set(recipe.data.tags.flatMap((t) => DIET_URI[t] ?? []))];
 
 // Revisions are authored chronologically; first is earliest, last is most recent.
 const revisions = recipe.data.revisions;
@@ -112,6 +119,7 @@ const recipeLd = {
   ...(dateModified && dateModified !== datePublished && { dateModified }),
   ...(cuisines.length > 0 && { recipeCuisine: cuisines }),
   ...(categories.length > 0 && { recipeCategory: categories }),
+  ...(suitableForDiet.length > 0 && { suitableForDiet }),
   ...(recipe.data.tags.length > 0 && { keywords: recipe.data.tags.join(', ') }),
 };
 
