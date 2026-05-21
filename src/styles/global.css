@@ -472,6 +472,29 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
   text-transform: lowercase;
 }
 
+/* "More like this" rail used on recipe + dish detail pages. Top margin
+ * is the parent's responsibility — different vertical rhythm per page. */
+.related-rail {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+.related-rail ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.related-rail a {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+.related-rail a:hover { color: var(--paprika); }
+.related-rail .meta { color: var(--ink-mute); font-size: 0.85rem; margin-left: 0.5rem; }
+
 /* Print — recipes are the main use-case; dark palette burns ink and the
  * chrome (nav/search/footer/pager/AppearsIn) is paper noise. Force
  * black-on-white, hide site furniture, keep ingredients and steps
