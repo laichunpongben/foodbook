@@ -6,8 +6,8 @@ import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 
 const pantry = await getEntry('pantry', 'pantry');
-const items = pantry?.data.items ?? [];
-const updated = pantry?.data.updated;
+if (!pantry) throw new Error('pantry.mdx missing — collection schema requires it');
+const { items, updated } = pantry.data;
 
 const farms = await getCollection('farms');
 const farmBySlug = new Map(farms.map((f) => [bare(f.id), f]));
@@ -44,15 +44,19 @@ const crumb = breadcrumb(site, { label: 'Pantry', kind: 'pantry' });
       <ul class="index-list divided">
         {items.map((item) => {
           const farm = item.from ? farmBySlug.get(item.from) : undefined;
+          const provenanceText = farm ? null : item.from;
+          const hasMeta = Boolean(item.quantity || farm || provenanceText);
+          const sep = item.quantity && (farm || provenanceText) ? ' · ' : '';
           return (
             <li>
               <span class="label">{item.label}</span>
-              <span class="meta">
-                {item.quantity}
-                {item.quantity && farm && ' · '}
-                {farm && <a href={`/farms/${bare(farm.id)}/`}>{farm.data.name}</a>}
-                {item.from && !farm && <span> · {item.from}</span>}
-              </span>
+              {hasMeta && (
+                <span class="meta">
+                  {item.quantity}{sep}
+                  {farm && <a href={`/farms/${bare(farm.id)}/`}>{farm.data.name}</a>}
+                  {provenanceText}
+                </span>
+              )}
             </li>
           );
         })}
