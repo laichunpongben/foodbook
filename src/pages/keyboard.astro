@@ -1,0 +1,149 @@
+---
+/**
+ * /keyboard — keyboard-shortcut reference.
+ *
+ * Every shortcut on the site, in one place. Power-user surface; the
+ * search bar surfaces '/' itself but cook mode's arrow keys / j / k
+ * aren't documented anywhere visible.
+ */
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
+
+const site = Astro.site!;
+const description = 'Every keyboard shortcut on Foodbook — search, cook mode, navigation.';
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Keyboard shortcuts',
+  url: sectionUrl(site, 'keyboard'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'Keyboard', kind: 'keyboard' });
+
+interface Shortcut {
+  keys: string[];
+  description: string;
+}
+interface Group {
+  scope: string;
+  shortcuts: Shortcut[];
+}
+
+const groups: Group[] = [
+  {
+    scope: 'Anywhere',
+    shortcuts: [
+      { keys: ['/'], description: 'Focus the search input.' },
+    ],
+  },
+  {
+    scope: 'Cook mode (/recipes/<slug>/cook/)',
+    shortcuts: [
+      { keys: ['→', 'space', 'j'], description: 'Next step.' },
+      { keys: ['←', 'k'], description: 'Previous step.' },
+    ],
+  },
+  {
+    scope: 'Forms (any input)',
+    shortcuts: [
+      { keys: ['Enter'], description: 'Trigger search (in search box) or submit form.' },
+    ],
+  },
+];
+---
+
+<BaseLayout title="Keyboard shortcuts" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
+  <article class="keyboard container">
+    <p class="eyebrow">Reference</p>
+    <h1>Keyboard shortcuts</h1>
+    <p class="lead">
+      Every shortcut bound on this site. Cook mode is the densest — it's designed for
+      hands-busy use at the stove, so the most useful keys are duplicated (← / k, → / space / j).
+    </p>
+
+    {groups.map((g) => (
+      <section class="kb-group">
+        <h2>{g.scope}</h2>
+        <dl>
+          {g.shortcuts.map((s) => (
+            <>
+              <dt>
+                {s.keys.map((k, i) => (
+                  <>
+                    {i > 0 && <span class="kb-or">or</span>}
+                    <kbd>{k}</kbd>
+                  </>
+                ))}
+              </dt>
+              <dd>{s.description}</dd>
+            </>
+          ))}
+        </dl>
+      </section>
+    ))}
+
+    <p class="footnote">
+      Want a shortcut that isn't here? File an issue — see <a href="/about/">/about</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .keyboard { padding: 4rem 0 6rem; max-width: 720px; }
+  .keyboard .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+
+  .kb-group { margin-top: 2.5rem; }
+  .kb-group h2 {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .kb-group dl {
+    display: grid;
+    grid-template-columns: minmax(8rem, max-content) 1fr;
+    column-gap: 1.5rem;
+    row-gap: 0.7rem;
+    margin: 0;
+  }
+  .kb-group dt {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .kb-group dd { margin: 0; color: var(--ink-soft); align-self: center; }
+
+  .kb-group kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: rgba(250, 248, 244, 0.04);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .kb-or { color: var(--ink-mute); font-size: 0.78rem; }
+
+  .footnote {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-mute);
+    font-size: 0.9rem;
+  }
+  .footnote a { color: var(--paprika); }
+</style>
