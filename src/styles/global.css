@@ -448,6 +448,10 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
   }
 }
 
+/* Source-URL footer is hidden onscreen; @media print reveals it so paper
+ * readers can find the page again. */
+.print-source { display: none; }
+
 /* Print — recipes are the main use-case; dark palette burns ink and the
  * chrome (nav/search/footer/pager/AppearsIn) is paper noise. Force
  * black-on-white, hide site furniture, keep ingredients and steps
@@ -464,4 +468,14 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
   .hero-photo, .hero { display: none !important; }
   h2, h3 { break-after: avoid; page-break-after: avoid; }
   .recipe .method li, .recipe ul li, h1 { break-inside: avoid; page-break-inside: avoid; }
+  .print-source {
+    display: block;
+    max-width: none;
+    margin: 2rem auto 0;
+    padding: 1rem var(--gutter) 0;
+    border-top: 1px solid #ccc;
+    font-size: 0.85rem;
+    color: #444;
+    word-break: break-all;
+  }
 }
