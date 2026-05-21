@@ -4,6 +4,7 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
 import DishCard from '~/components/DishCard.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import SearchBar from '~/components/SearchBar.astro';
+import WikiImage from '~/components/WikiImage.astro';
 import { SCHEMA_CTX, SITE_NAME } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
@@ -35,10 +36,25 @@ const websiteLd = {
 >
   <JsonLd data={websiteLd} />
   <section class="hero">
-    {heroDish && (
-      <div
+    {heroDish?.data.heroUrl ? (
+      <WikiImage
+        url={heroDish.data.heroUrl}
+        alt=""
+        loading="eager"
+        fetchpriority="high"
+        sizes="100vw"
         class="hero-photo"
-        style={`background-image: url('${heroDish.data.heroUrl ?? `${heroDish.data.hero}-2560.jpg`}')`}
+        style={heroDish.data.heroFocal ? `object-position: ${heroDish.data.heroFocal}` : undefined}
+      />
+    ) : heroDish?.data.hero && (
+      <img
+        class="hero-photo"
+        src={`${heroDish.data.hero}-2560.jpg`}
+        alt=""
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+        style={heroDish.data.heroFocal ? `object-position: ${heroDish.data.heroFocal}` : undefined}
       />
     )}
     <div class="container">
