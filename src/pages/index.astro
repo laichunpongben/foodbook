@@ -32,6 +32,10 @@ const websiteLd = {
 <BaseLayout
   title="Foodbook"
   description="An archive of the food lifecycle — farms, gardens, kitchens, restaurants."
+  heroUrl={heroDish?.data.heroUrl}
+  hero={heroDish?.data.hero}
+  preloadHero={!!heroDish?.data.heroUrl}
+  preloadHeroSizes="100vw"
 >
   <JsonLd data={websiteLd} />
   <section class="hero">

@@ -3,6 +3,7 @@ import '@fontsource-variable/inter/index.css';
 import '@fontsource-variable/fraunces/full.css';
 import '~/styles/global.css';
 import { SITE_NAME } from '~/lib/jsonld';
+import { commonsThumbBuilder } from '~/lib/wiki-thumb';
 
 interface Props {
   title: string;
@@ -14,6 +15,14 @@ interface Props {
   hero?: string;
   /** External hero URL (e.g. Wikimedia). Takes precedence over `hero`. */
   heroUrl?: string;
+  /** When set, emits a high-priority preload for the page's LCP image
+   *  (entity banner, dish hero) so the browser fetches it without
+   *  waiting on CSS. Wikimedia URLs are widened into a preload srcset
+   *  matching what WikiImage renders. */
+  preloadHero?: boolean;
+  /** Maps to the `<img sizes>` of the page's LCP image. Default `100vw`
+   *  fits full-bleed banners; dish heroes pass their own. */
+  preloadHeroSizes?: string;
   /** OpenGraph type. 'website' for /, listings, error pages; 'article'
    *  for editorial entries (dishes/recipes/farms/restaurants/meals/garden). */
   ogType?: 'website' | 'article';
@@ -32,12 +41,25 @@ const {
   cookMode = false,
   hero,
   heroUrl,
+  preloadHero = false,
+  preloadHeroSizes = '100vw',
   ogType = 'website',
   articleTags = [],
   articlePublishedTime,
   articleModifiedTime,
   articleSection,
 } = Astro.props;
+
+// LCP preload — only fires when the caller opts in *and* provides a heroUrl.
+// Local-hero (`-1280.jpg`) preloads aren't worth the complexity right now;
+// the catalog is Wikimedia-first.
+const PRELOAD_WIDTHS = [480, 768, 1280, 1920, 2560] as const;
+const preloadBuilder = preloadHero && heroUrl ? commonsThumbBuilder(heroUrl) : null;
+const preloadSrcset = preloadBuilder
+  ? PRELOAD_WIDTHS.map((w) => `${preloadBuilder(w)} ${w}w`).join(', ')
+  : null;
+// Caller passed a non-Wikimedia heroUrl — still preload, just without srcset.
+const preloadHrefFallback = preloadHero && heroUrl && !preloadBuilder ? heroUrl : null;
 // astro.config.mjs sets `site`; if a future reorganization drops it we want
 // the build to fail loudly rather than silently emit a wrong-domain canonical.
 if (!Astro.site) {
@@ -70,6 +92,18 @@ const currentYear = new Date().getFullYear();
     {description && <meta name="description" content={description} />}
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="application/rss+xml" title="Foodbook" href="/rss.xml" />
+    {preloadSrcset && (
+      <link
+        rel="preload"
+        as="image"
+        imagesrcset={preloadSrcset}
+        imagesizes={preloadHeroSizes}
+        fetchpriority="high"
+      />
+    )}
+    {preloadHrefFallback && (
+      <link rel="preload" as="image" href={preloadHrefFallback} fetchpriority="high" />
+    )}
     {unlisted && <meta name="robots" content="noindex,nofollow" />}
 
     <meta property="og:site_name" content={SITE_NAME} />
