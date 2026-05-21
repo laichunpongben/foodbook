@@ -39,7 +39,7 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
         )}
         {tags.length > 0 && (
           <ul class="tag-chips dish-hero-tags" aria-label="Tags">
-            {tags.map((t) => <li>{t}</li>)}
+            {tags.map((t) => <li><a href={`/tags/${t}/`}>{t}</a></li>)}
           </ul>
         )}
       </div>

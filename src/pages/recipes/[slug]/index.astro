@@ -159,7 +159,7 @@ const breadcrumbLd = breadcrumb(
 
     {recipe.data.tags.length > 0 && (
       <ul class="tag-chips" aria-label="Tags">
-        {recipe.data.tags.map((t) => <li>{t}</li>)}
+        {recipe.data.tags.map((t) => <li><a href={`/tags/${t}/`}>{t}</a></li>)}
       </ul>
     )}
 

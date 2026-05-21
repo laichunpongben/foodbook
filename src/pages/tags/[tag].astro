@@ -1,0 +1,109 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
+import { bare, bareSlug } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+interface TagEntry {
+  href: string;
+  name: string;
+  meta: string;
+  kind: 'Dish' | 'Recipe' | 'Restaurant' | 'Meal';
+}
+
+export async function getStaticPaths() {
+  const [dishes, recipes, restaurants, meals] = await Promise.all([
+    getCollection('dishes').then(publicOnly),
+    getCollection('recipes').then(publicOnly),
+    getCollection('restaurants').then(publicOnly),
+    getCollection('meals').then(publicOnly),
+  ]);
+  const byTag = new Map<string, TagEntry[]>();
+  const push = (tag: string, entry: TagEntry) => {
+    const list = byTag.get(tag) ?? [];
+    list.push(entry);
+    byTag.set(tag, list);
+  };
+  for (const d of dishes) {
+    for (const t of d.data.tags) push(t, {
+      href: `/dishes/${bareSlug(d.id)}/`,
+      name: d.data.shortTitle,
+      meta: d.data.tagline ?? '',
+      kind: 'Dish',
+    });
+  }
+  for (const r of recipes) {
+    for (const t of r.data.tags) push(t, {
+      href: `/recipes/${bare(r.id)}/`,
+      name: r.data.title,
+      meta: [r.data.yield, r.data.timeCook].filter(Boolean).join(' · '),
+      kind: 'Recipe',
+    });
+  }
+  for (const r of restaurants) {
+    for (const t of r.data.tags) push(t, {
+      href: `/restaurants/${bare(r.id)}/`,
+      name: r.data.name,
+      meta: [r.data.cuisine, r.data.city].filter(Boolean).join(' · '),
+      kind: 'Restaurant',
+    });
+  }
+  for (const m of meals) {
+    for (const t of m.data.tags) push(t, {
+      href: `/meals/${bare(m.id)}/`,
+      name: m.data.title,
+      meta: m.data.date,
+      kind: 'Meal',
+    });
+  }
+  return [...byTag.entries()].map(([tag, entries]) => ({
+    params: { tag },
+    props: { tag, entries },
+  }));
+}
+
+const { tag, entries: rawEntries } = Astro.props;
+const entries = [...rawEntries].sort(
+  (a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name),
+);
+
+const site = Astro.site!;
+const tagUrl = entryUrl(site, 'tags', tag);
+const description = `${entries.length} entries tagged ${tag}.`;
+const items = entries.map((e) => ({
+  name: e.name,
+  url: new URL(e.href, site).toString(),
+  ...(e.meta && { description: e.meta }),
+}));
+const ld = collectionPage(
+  site,
+  { label: `Tag · ${tag}`, kind: `tags/${tag}`, description },
+  items,
+);
+const crumb = breadcrumb(site, { label: 'Tags', kind: 'tags' }, { label: tag, url: tagUrl });
+---
+
+<BaseLayout title={`Tag: ${tag}`} description={description}>
+  <JsonLd data={ld} />
+  <JsonLd data={crumb} />
+  <section class="container index-page">
+    <p class="eyebrow">Tag</p>
+    <h1>{tag}</h1>
+    <p class="lead">{entries.length} {entries.length === 1 ? 'entry' : 'entries'} tagged <strong>{tag}</strong>.</p>
+
+    <ul class="index-list divided">
+      {entries.map((e) => (
+        <li>
+          <a href={e.href}>{e.name}</a>
+          <span class="meta">{e.kind}{e.meta && ` · ${e.meta}`}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .index-list a { font-size: 1.1rem; }
+</style>
