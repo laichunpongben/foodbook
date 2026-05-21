@@ -1,0 +1,137 @@
+---
+/**
+ * /recipes/<slug>/shopping — printable shopping list.
+ *
+ * Strips the recipe down to its ingredient list, grouped by the
+ * authored `group:` field, with a checkbox per row. Optimised for
+ * printing (single-page when possible) or reading on a phone in the
+ * supermarket. Excluded from search/index via meta robots noindex
+ * since it's a derivative view, not editorial content.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
+
+export async function getStaticPaths() {
+  const recipes = await getCollection('recipes');
+  return recipes.map((recipe) => ({
+    params: { slug: bare(recipe.id) },
+    props: { recipe },
+  }));
+}
+
+const { recipe } = Astro.props;
+const slug = bare(recipe.id);
+
+type Ingredient = (typeof recipe.data.ingredients)[number];
+
+// Group ingredients preserving authored order.
+const groups = new Map<string, Ingredient[]>();
+for (const ing of recipe.data.ingredients) {
+  const k = ing.group ?? '';
+  if (!groups.has(k)) groups.set(k, []);
+  groups.get(k)!.push(ing);
+}
+---
+
+<BaseLayout
+  title={`Shopping list · ${recipe.data.title}`}
+  description={`Ingredients for ${recipe.data.title} — ${recipe.data.yield}.`}
+  unlisted={true}
+>
+  <section class="container shopping">
+    <p class="eyebrow">Shopping list</p>
+    <h1>{recipe.data.title}</h1>
+    <p class="lead">
+      {recipe.data.yield}
+      {' · '}
+      <a href={`/recipes/${slug}/`}>← back to recipe</a>
+      {' · '}
+      <button type="button" class="print-btn" onclick="window.print()">Print</button>
+    </p>
+
+    {[...groups.entries()].map(([groupName, items]) => (
+      <div class="shopping-group">
+        {groupName && <h2>{groupName}</h2>}
+        <ul class="shopping-list">
+          {items.map((ing) => (
+            <li>
+              <label>
+                <input type="checkbox" class="shopping-tick" />
+                <span class="shopping-text">{ing.text}</span>
+                {ing.from && <span class="shopping-from">from {ing.from}</span>}
+              </label>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .shopping { padding: 4rem 0 6rem; max-width: 640px; }
+  .shopping h1 { margin-bottom: 0.5rem; }
+  .shopping .lead { color: var(--ink-soft); margin: 0 0 2rem; }
+  .shopping .lead a { color: var(--paprika); }
+  .print-btn {
+    appearance: none;
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--paprika);
+    cursor: pointer;
+    padding: 0.2rem 0.6rem;
+    font: inherit;
+    font-size: 0.85rem;
+  }
+  .print-btn:hover { border-color: var(--paprika); }
+
+  .shopping-group { margin-top: 2rem; }
+  .shopping-group h2 {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .shopping-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+  .shopping-list label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .shopping-tick {
+    flex: 0 0 auto;
+    margin: 0.2rem 0 0;
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--paprika);
+  }
+  .shopping-text { flex: 1 1 auto; }
+  .shopping-tick:checked ~ .shopping-text {
+    text-decoration: line-through;
+    color: var(--ink-mute);
+  }
+  .shopping-from {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--ink-mute);
+    margin-top: 0.15rem;
+  }
+
+  @media print {
+    .print-btn, .lead a { display: none; }
+    .shopping { padding: 0; max-width: none; color: #000; }
+    .shopping h1 { color: #000; }
+    .shopping-list label { color: #000; }
+    .shopping-tick { accent-color: #000; }
+    .shopping-group h2 { color: #333; border-color: #999; }
+    .shopping-from { color: #555; }
+  }
+</style>
