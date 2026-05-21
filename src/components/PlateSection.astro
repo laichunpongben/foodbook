@@ -8,21 +8,38 @@
  */
 
 import type { JourneyDish } from '~/lib/journey';
+import WikiImage from './WikiImage.astro';
 
 interface Props {
   dish: JourneyDish;
 }
 
 const { dish } = Astro.props;
-const photoUrl = dish.heroUrl ?? (dish.hero ? `${dish.hero}-3840.jpg` : '');
-const heroStyle = [
-  photoUrl ? `--plate-hero: url('${photoUrl}')` : '',
-  dish.heroFocal ? `--plate-hero-pos: ${dish.heroFocal}` : '',
-].filter(Boolean).join('; ') || undefined;
+const localPhoto = dish.hero ? `${dish.hero}-2560.jpg` : '';
+const focalStyle = dish.heroFocal ? `object-position: ${dish.heroFocal}` : undefined;
 ---
 
-<section id="plate" class="journey-section section-plate" style={heroStyle}>
-  <div class="plate-backdrop"></div>
+<section id="plate" class="journey-section section-plate">
+  {dish.heroUrl ? (
+    <WikiImage
+      url={dish.heroUrl}
+      alt=""
+      sizes="100vw"
+      class="plate-backdrop"
+      style={focalStyle}
+    />
+  ) : localPhoto ? (
+    <img
+      class="plate-backdrop"
+      src={localPhoto}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      style={focalStyle}
+    />
+  ) : (
+    <div class="plate-backdrop plate-backdrop--empty" aria-hidden="true"></div>
+  )}
   <div class="plate-scrim"></div>
   <div class="container plate-content">
     <p class="stage-eyebrow">4 · Plate</p>
@@ -45,9 +62,10 @@ const heroStyle = [
   .plate-backdrop {
     position: absolute;
     inset: 0;
-    background-image: var(--plate-hero);
-    background-size: cover;
-    background-position: var(--plate-hero-pos, center);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     background-color: #0a0d11;
     z-index: 0;
   }
