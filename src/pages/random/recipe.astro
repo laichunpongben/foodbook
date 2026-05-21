@@ -1,0 +1,59 @@
+---
+/**
+ * /random/recipe — pick a random recipe and redirect.
+ *
+ * Sibling to /random (which picks a dish). For when you're staring at
+ * the recipes index thinking 'what should I cook tonight'.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const recipes = publicOnly(await getCollection('recipes'));
+const slugs = recipes.map((r) => bare(r.id));
+---
+
+<BaseLayout
+  title="Random recipe"
+  description="Open a random recipe from the archive."
+  unlisted={true}
+>
+  <section class="container random">
+    <p class="eyebrow">Cook something</p>
+    <h1>Picking a recipe…</h1>
+    <p class="lead">
+      Picking one of {recipes.length} recipes at random. If your browser has JS off,
+      pick one from the list below.
+    </p>
+
+    <noscript>
+      <ul class="random-fallback">
+        {recipes.map((r) => (
+          <li><a href={`/recipes/${bare(r.id)}/`}>{r.data.title}</a></li>
+        ))}
+      </ul>
+    </noscript>
+  </section>
+</BaseLayout>
+
+<script define:vars={{ slugs }}>
+  if (slugs.length > 0) {
+    const pick = slugs[Math.floor(Math.random() * slugs.length)];
+    window.location.replace(`/recipes/${pick}/`);
+  }
+</script>
+
+<style>
+  .random { padding: 6rem 0; text-align: center; max-width: 36rem; margin: 0 auto; }
+  .random .lead { color: var(--ink-soft); }
+  .random-fallback {
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0 0;
+    columns: 2;
+    column-gap: 1.5rem;
+    text-align: left;
+  }
+  .random-fallback li { padding: 0.3rem 0; break-inside: avoid; }
+</style>
