@@ -38,6 +38,7 @@ const section = { label: 'Farms & producers', kind: 'farms' };
 const items = farms.map((f) => ({
   name: f.data.name,
   url: entryUrl(Astro.site!, 'farms', bare(f.id)),
+  description: `${f.data.kind} · ${f.data.location}`,
 }));
 const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);

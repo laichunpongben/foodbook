@@ -21,17 +21,20 @@ export function sectionUrl(site: URL, kind: string): string {
 
 /** CollectionPage: a listing page like /dishes/ or /recipes/. `items`
  *  becomes the ItemList's `itemListElement[]` so search engines can
- *  discover entries without spidering every page. */
+ *  discover entries without spidering every page. Per-item
+ *  `description` is optional — surfaces as SERP context where
+ *  supported. */
 export function collectionPage(
   site: URL,
   section: { label: string; kind: string; description: string },
-  items: { name: string; url: string }[],
+  items: { name: string; url: string; description?: string }[],
 ): Record<string, unknown> {
   const itemListElement = items.map((it, i) => ({
     "@type": "ListItem",
     position: i + 1,
     name: it.name,
     url: it.url,
+    ...(it.description && { description: it.description }),
   }));
   return {
     "@context": SCHEMA_CTX,

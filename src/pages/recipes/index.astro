@@ -11,10 +11,14 @@ const recipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
 );
 const description = `${recipes.length} recipes in the archive.`;
 const section = { label: 'Recipes', kind: 'recipes' };
-const items = recipes.map((r) => ({
-  name: r.data.title,
-  url: entryUrl(Astro.site!, 'recipes', bare(r.id)),
-}));
+const items = recipes.map((r) => {
+  const meta = [r.data.yield, r.data.timeCook && `cook ${r.data.timeCook}`].filter(Boolean).join(' · ');
+  return {
+    name: r.data.title,
+    url: entryUrl(Astro.site!, 'recipes', bare(r.id)),
+    ...(meta && { description: meta }),
+  };
+});
 const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);
 ---

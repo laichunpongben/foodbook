@@ -24,6 +24,7 @@ const section = { label: 'Restaurants', kind: 'restaurants' };
 const items = restaurants.map((r) => ({
   name: r.data.name,
   url: entryUrl(Astro.site!, 'restaurants', bare(r.id)),
+  description: `${r.data.cuisine ?? 'Restaurant'} in ${r.data.city}`,
 }));
 const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);

@@ -86,4 +86,26 @@ describe("collectionPage", () => {
       itemListElement: [],
     });
   });
+
+  it("includes per-item description when provided, omits when absent", () => {
+    const mixed = collectionPage(SITE, { label: "Recipes", kind: "recipes", description: "" }, [
+      { name: "A", url: `${BASE}/recipes/a/`, description: "4 servings" },
+      { name: "B", url: `${BASE}/recipes/b/` },
+    ]);
+    const list = (mixed.mainEntity as { itemListElement: Record<string, unknown>[] })
+      .itemListElement;
+    expect(list[0]).toEqual({
+      "@type": "ListItem",
+      position: 1,
+      name: "A",
+      url: `${BASE}/recipes/a/`,
+      description: "4 servings",
+    });
+    expect(list[1]).toEqual({
+      "@type": "ListItem",
+      position: 2,
+      name: "B",
+      url: `${BASE}/recipes/b/`,
+    });
+  });
 });
