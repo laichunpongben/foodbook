@@ -10,23 +10,27 @@ import PlateSection from '~/components/PlateSection.astro';
 import EatSection from '~/components/EatSection.astro';
 import Pager from '~/components/Pager.astro';
 import { getJourney } from '~/lib/journey';
+import { relatedByTags } from '~/lib/related';
 import { siblingsOf } from '~/lib/siblings';
 import { bareSlug } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const dishes = await getCollection('dishes');
+  const allPublic = publicOnly(dishes);
   return dishes.map((dish) => ({
     params: { slug: bareSlug(dish.id) },
-    props: { dish },
+    props: { dish, allPublic },
   }));
 }
 
-const { dish } = Astro.props;
+const { dish, allPublic } = Astro.props;
 const slug = bareSlug(dish.id);
 const { Content } = await render(dish);
 const journey = await getJourney(dish);
 
 const { prev, next } = await siblingsOf('dishes', dish.id, (d) => d.data.shortTitle);
+const related = relatedByTags(allPublic, dish, (d) => d.data.shortTitle);
 
 const hasIngredients = journey.ingredients.length > 0;
 const hasRecipes = journey.cook.length > 0;
@@ -85,6 +89,20 @@ const breadcrumbLd = breadcrumb(
           </section>
         )}
 
+        {related.length > 0 && (
+          <section class="related" aria-labelledby="related-heading">
+            <p class="eyebrow" id="related-heading">More like this</p>
+            <ul>
+              {related.map((r) => (
+                <li>
+                  <a href={`/dishes/${bareSlug(r.id)}/`} set:html={r.data.title} />
+                  {r.data.tagline && <span class="meta">{r.data.tagline}</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <Pager
           ariaLabel="Other dishes"
           prev={prev ? { href: `/dishes/${bareSlug(prev.id)}/`, title: prev.data.title } : null}
@@ -130,4 +148,26 @@ const breadcrumbLd = breadcrumb(
   .dish-prose .finale h2 {
     margin-bottom: 0.6rem;
   }
+
+  .dish-prose .related {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+  .dish-prose .related ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .dish-prose .related a {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .dish-prose .related a:hover { color: var(--paprika); }
+  .dish-prose .related .meta { color: var(--ink-mute); font-size: 0.85rem; margin-left: 0.5rem; }
 </style>
