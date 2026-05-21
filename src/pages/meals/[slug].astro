@@ -82,6 +82,12 @@ const breadcrumbLd = breadcrumb(site, { label: 'Meals', kind: 'meals' }, { label
       {d.companionCount !== undefined && d.companionCount > 0 && <>{' · '}{d.companionCount} at the table</>}
     </p>
 
+    {d.tags.length > 0 && (
+      <ul class="tag-chips entity-tags" aria-label="Tags">
+        {d.tags.map((t) => <li>{t}</li>)}
+      </ul>
+    )}
+
     <Content />
 
     {d.dishes.length > 0 && (
@@ -105,4 +111,5 @@ const breadcrumbLd = breadcrumb(site, { label: 'Meals', kind: 'meals' }, { label
 
 <style>
   section { margin-top: 2.5rem; }
+  .entity-tags { margin-top: 1.2rem; }
 </style>

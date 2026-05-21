@@ -88,6 +88,12 @@ const breadcrumbLd = breadcrumb(
       <span class="price">{d.priceBand}</span>
     </p>
 
+    {d.tags.length > 0 && (
+      <ul class="tag-chips entity-tags" aria-label="Tags">
+        {d.tags.map((t) => <li>{t}</li>)}
+      </ul>
+    )}
+
     {discovered?.signature && (
       <p class="signature">
         <strong>Signature:</strong> {discovered.signature}
@@ -130,6 +136,7 @@ const breadcrumbLd = breadcrumb(
 </BaseLayout>
 
 <style>
+  .entity-tags { margin-top: 1.2rem; }
   .signature { margin-top: 1.2rem; color: var(--ink-soft); }
   .cite { font-size: 0.88rem; color: var(--paprika); }
   .price { color: var(--olive); }
