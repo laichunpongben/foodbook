@@ -10,15 +10,42 @@ const restaurants = publicOnly(await getCollection('restaurants')).sort((a, b) =
   a.data.name.localeCompare(b.data.name),
 );
 
-// Pre-sorted by name above; Map preserves insertion order, so each
-// city group inherits alphabetical order without a second sort.
-const byCity = new Map<string, typeof restaurants>();
+// ISO-2 → display name. Only countries that have entries today; new codes
+// fall through to the raw code so a new entry stops the page from breaking.
+const COUNTRY_NAME: Record<string, string> = {
+  HK: 'Hong Kong',
+  IT: 'Italy',
+  US: 'United States',
+  JP: 'Japan',
+  FR: 'France',
+  ES: 'Spain',
+  CN: 'China',
+  TH: 'Thailand',
+  VN: 'Vietnam',
+  IN: 'India',
+  KR: 'South Korea',
+  MX: 'Mexico',
+};
+const countryName = (code?: string): string => {
+  if (!code) return 'Elsewhere';
+  return COUNTRY_NAME[code] ?? code;
+};
+
+// Group by country first, then by city inside each country. Both groups
+// preserve the alphabetical-by-name sort from above.
+const byCountry = new Map<string, Map<string, typeof restaurants>>();
 for (const r of restaurants) {
-  const list = byCity.get(r.data.city) ?? [];
+  const country = r.data.country ?? '';
+  const cities = byCountry.get(country) ?? new Map();
+  const list = cities.get(r.data.city) ?? [];
   list.push(r);
-  byCity.set(r.data.city, list);
+  cities.set(r.data.city, list);
+  byCountry.set(country, cities);
 }
-const cities = [...byCity.entries()].sort(([a], [b]) => a.localeCompare(b));
+const countries = [...byCountry.entries()].sort(([a], [b]) =>
+  countryName(a).localeCompare(countryName(b)),
+);
+
 const description = `${restaurants.length} restaurants in the archive.`;
 const section = { label: 'Restaurants', kind: 'restaurants' };
 const items = restaurants.map((r) => ({
@@ -41,25 +68,48 @@ const crumb = breadcrumb(Astro.site!, section);
       dish worth tracing. See also: <a href="/world/">the map</a>.
     </p>
 
-    {cities.map(([city, list]) => (
-      <div class="index-group">
-        <h2>{city}</h2>
-        <ul class="index-list">
-          {list.map((r) => (
-            <li>
-              <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
-              <span class="meta">
-                {[r.data.cuisine, r.data.priceBand].filter(Boolean).join(' · ')}
-              </span>
-            </li>
+    {countries.map(([code, cityMap]) => {
+      const cities = [...cityMap.entries()].sort(([a], [b]) => a.localeCompare(b));
+      return (
+        <div class="country-group">
+          <h2>{countryName(code)}</h2>
+          {cities.map(([city, list]) => (
+            <div class="index-group">
+              <h3>{city}</h3>
+              <ul class="index-list">
+                {list.map((r) => (
+                  <li>
+                    <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
+                    <span class="meta">
+                      {[r.data.cuisine, r.data.priceBand].filter(Boolean).join(' · ')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
-      </div>
-    ))}
+        </div>
+      );
+    })}
   </section>
 </BaseLayout>
 
 <style>
-  .index-list { gap: 0.6rem; margin-top: 0.8rem; }
+  .country-group { margin-bottom: 2.5rem; }
+  .country-group > h2 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    margin: 0 0 1rem;
+  }
+  .index-group { margin-left: 0; }
+  .index-group > h3 {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 1.2rem 0 0.5rem;
+  }
+  .index-list { gap: 0.6rem; margin-top: 0.4rem; }
   .index-list a { font-size: 1.1rem; }
 </style>
