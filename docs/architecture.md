@@ -74,6 +74,7 @@ foodbook/
 │   ├── _headers                       ← HSTS + CSP + frame-ancestors + Permissions-Policy + immutable assets
 │   ├── _redirects                     ← /* → /404.html  404  catch-all
 │   ├── robots.txt                     ← Allow: / ; sitemap pointer (Disallow handled per-entry by `unlisted`)
+│   ├── site.webmanifest               ← installable PWA descriptor (name / icons / theme color)
 │   ├── favicons (svg / ico / png / apple-touch)
 │   └── og-default.svg                 ← fallback social card
 │
@@ -122,7 +123,7 @@ foodbook/
     │   ├── SeasonalWheel.astro        ← SVG circular calendar on /seasons
     │   ├── WikiImage.astro            ← <img> wrapper with srcset + loading=lazy + heroFocal honoring
     │   ├── SearchBar.astro            ← Pagefind UI
-    │   └── JsonLd.astro               ← schema.org emitter (Article / Recipe / Restaurant / Place / Breadcrumb / WebSite / CollectionPage)
+    │   └── JsonLd.astro               ← schema.org emitter (Article / Recipe / Restaurant / LocalBusiness / FoodEvent / Place / Breadcrumb / WebSite / CollectionPage with itemized ItemList)
     │
     ├── lib/
     │   ├── dom.ts                     ← byId, requireById, prefersReducedMotion, WakeLock types
@@ -137,7 +138,7 @@ foodbook/
     │       └── food.ts                ← Leaflet bootstrap + farm/restaurant/garden layers, CARTO Dark Matter tiles
     │
     ├── styles/
-    │   ├── global.css                 ← dark editorial base, focus-visible, skip link, immutable asset cache
+    │   ├── global.css                 ← dark editorial base, focus-visible, skip link, .tag-chips, @media print + .print-source footer
     │   └── cook-mode.css              ← light "kitchen mode" override scoped to /recipes/<slug>/cook
     │
     └── pages/
