@@ -2,10 +2,13 @@
 /**
  * WikiImage — responsive <img> for Wikimedia Commons URLs.
  *
- * Commons exposes `?width=N` on Special:FilePath as the public thumbnail
- * contract. For non-Wikimedia URLs the renderer emits a single <img>
- * without srcset — the caller picks the right pre-sized URL.
+ * Builds a width-keyed `srcset` so cards/heroes request a sensibly-sized
+ * thumbnail rather than the raw multi-megapixel source. URL-shape logic
+ * lives in `~/lib/wiki-thumb` (tested there). For non-Commons URLs the
+ * renderer emits a single <img> without srcset.
  */
+
+import { commonsThumbBuilder } from '~/lib/wiki-thumb';
 
 interface Props {
   url: string;
@@ -30,22 +33,13 @@ const {
   style,
 } = Astro.props;
 
-let srcset: string | undefined;
-let baseSrc = url;
-try {
-  const parsed = new URL(url);
-  if (parsed.hostname === 'commons.wikimedia.org' && parsed.pathname.startsWith('/wiki/Special:FilePath/')) {
-    parsed.searchParams.delete('width');
-    const base = parsed.toString();
-    const sep = base.includes('?') ? '&' : '?';
-    const at = (w: number) => `${base}${sep}width=${w} ${w}w`;
-    srcset = [480, 768, 1280, 1920].map(at).join(', ');
-    // Mobile-first base so phones don't ship the 1920w fallback if srcset is ignored.
-    baseSrc = `${base}${sep}width=768`;
-  }
-} catch {
-  // Relative URL or unparseable — fall through to a plain <img src={url}>.
-}
+const WIDTHS = [480, 768, 1280, 1920, 2560] as const;
+/** Mobile-first base width — keeps phones from grabbing the largest fallback. */
+const BASE_WIDTH = 768;
+
+const builder = commonsThumbBuilder(url);
+const srcset = builder ? WIDTHS.map((w) => `${builder(w)} ${w}w`).join(', ') : undefined;
+const baseSrc = builder ? builder(BASE_WIDTH) : url;
 ---
 
 <img
