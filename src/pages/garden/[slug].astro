@@ -48,6 +48,9 @@ const breadcrumbLd = breadcrumb(site, { label: 'Garden', kind: 'garden' }, { lab
   unlisted={d.visibility === 'unlisted'}
   heroUrl={d.heroUrl}
   ogType="article"
+  articlePublishedTime={d.planted}
+  articleModifiedTime={d.harvested}
+  articleSection="Garden"
 >
   <JsonLd data={gardenLd} />
   <JsonLd data={breadcrumbLd} />
