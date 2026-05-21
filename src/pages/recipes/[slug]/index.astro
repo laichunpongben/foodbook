@@ -6,6 +6,7 @@ import JsonLd from '~/components/JsonLd.astro';
 import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
+import { resolveProducer } from '~/lib/producers';
 import { relatedByTags } from '~/lib/related';
 import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
@@ -29,18 +30,8 @@ const { prev, next } = await siblingsOf('recipes', recipe.id, (r) => r.data.titl
 
 const related = relatedByTags(allPublic, recipe, (r) => r.data.title);
 
-// Resolve an ingredient's `from` slug to its farm or garden entry.
-// Returns the right href and display name, or null if the slug doesn't
-// resolve — the renderer then falls back to plain text.
 const farms = await getCollection('farms');
 const gardens = await getCollection('garden');
-function findProducer(s: string): { href: string; label: string } | null {
-  const farm = farms.find((f) => bare(f.id) === s);
-  if (farm) return { href: `/farms/${bare(farm.id)}/`, label: farm.data.name };
-  const garden = gardens.find((g) => bare(g.id) === s);
-  if (garden) return { href: `/garden/${bare(garden.id)}/`, label: garden.data.plant };
-  return null;
-}
 
 // Group ingredients by `group` field, preserving order of first occurrence.
 const groups = new Map<string, typeof recipe.data.ingredients>();
@@ -180,7 +171,7 @@ const breadcrumbLd = breadcrumb(
         {groupName && <h3 class="group-heading">{groupName}</h3>}
         <ul>
           {items.map((ing) => {
-            const producer = ing.from ? findProducer(ing.from) : null;
+            const producer = ing.from ? resolveProducer(ing.from, { farms, gardens }) : null;
             return (
               <li>
                 {ing.text}
