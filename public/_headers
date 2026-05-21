@@ -43,3 +43,6 @@
   Cache-Control: public, max-age=86400
 /og-default.svg
   Cache-Control: public, max-age=86400
+/site.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: public, max-age=86400
