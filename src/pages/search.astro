@@ -1,0 +1,49 @@
+---
+/**
+ * /search?q=<query> — landing page for OpenSearch / external search.
+ *
+ * Browsers register OpenSearch providers using a URL template. Pagefind
+ * runs client-side and has no URL-driven flow, so this page hosts the
+ * existing SearchBar with the `q` param pre-filled, then dispatches an
+ * `input` event so the existing widget runs its debounce + render.
+ */
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import SearchBar from '~/components/SearchBar.astro';
+
+const url = new URL(Astro.request.url);
+const query = url.searchParams.get('q') ?? '';
+const description = query
+  ? `Search results for "${query}" across Foodbook.`
+  : 'Search Foodbook — dishes, recipes, farms, restaurants.';
+---
+
+<BaseLayout title={query ? `Search · ${query}` : 'Search'} description={description}>
+  <section class="container search-page">
+    <p class="eyebrow">Search</p>
+    <h1>{query ? `Results for "${query}"` : 'Search Foodbook'}</h1>
+    <p class="lead">
+      Powered by Pagefind — a static, client-side index built at the end of every deploy.
+      Type at least two characters; results appear inline.
+    </p>
+    <SearchBar />
+  </section>
+</BaseLayout>
+
+<script define:vars={{ initialQuery: query }}>
+  // OpenSearch / direct-link entry: pre-fill the input from ?q= and trigger
+  // the widget's own input handler so results render without a focus action.
+  if (initialQuery) {
+    const input = document.getElementById('site-search-input');
+    if (input instanceof HTMLInputElement) {
+      input.value = initialQuery;
+      input.focus();
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+</script>
+
+<style>
+  .search-page { padding: 4rem 0 6rem; max-width: 720px; }
+  .search-page h1 { margin-bottom: 1rem; }
+  .search-page .lead { color: var(--ink-soft); margin: 0 0 2rem; }
+</style>
