@@ -69,6 +69,26 @@ const entries = [...rawEntries].sort(
   (a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name),
 );
 
+// Group by kind so a /tags/<tag> with mixed content reads as sections
+// rather than a flat list with repeated 'Dish · …' / 'Recipe · …' prefixes
+// in the meta. Kinds appear in fixed order; missing ones are skipped.
+const KIND_ORDER: Array<TagEntry['kind']> = ['Dish', 'Recipe', 'Restaurant', 'Meal'];
+const KIND_LABEL: Record<TagEntry['kind'], string> = {
+  Dish: 'Dishes',
+  Recipe: 'Recipes',
+  Restaurant: 'Restaurants',
+  Meal: 'Meals',
+};
+const byKind = new Map<TagEntry['kind'], TagEntry[]>();
+for (const e of entries) {
+  const list = byKind.get(e.kind) ?? [];
+  list.push(e);
+  byKind.set(e.kind, list);
+}
+const groups = KIND_ORDER
+  .map((kind) => ({ kind, label: KIND_LABEL[kind], list: byKind.get(kind) ?? [] }))
+  .filter((g) => g.list.length > 0);
+
 const site = Astro.site!;
 const tagUrl = entryUrl(site, 'tags', tag);
 const description = `${entries.length} entries tagged ${tag}.`;
@@ -93,17 +113,23 @@ const crumb = breadcrumb(site, { label: 'Tags', kind: 'tags' }, { label: tag, ur
     <h1>{tag}</h1>
     <p class="lead">{entries.length} {entries.length === 1 ? 'entry' : 'entries'} tagged <strong>{tag}</strong>.</p>
 
-    <ul class="index-list divided">
-      {entries.map((e) => (
-        <li>
-          <a href={e.href}>{e.name}</a>
-          <span class="meta">{e.kind}{e.meta && ` · ${e.meta}`}</span>
-        </li>
-      ))}
-    </ul>
+    {groups.map((g) => (
+      <div class="index-group">
+        <h2>{g.label} <span class="muted">· {g.list.length}</span></h2>
+        <ul class="index-list divided">
+          {g.list.map((e) => (
+            <li>
+              <a href={e.href}>{e.name}</a>
+              {e.meta && <span class="meta">{e.meta}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
   </section>
 </BaseLayout>
 
 <style>
   .index-list a { font-size: 1.1rem; }
+  .muted { color: var(--ink-mute); font-weight: 400; font-size: 0.85rem; }
 </style>
