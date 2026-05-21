@@ -44,8 +44,38 @@ if (!Astro.site) {
   throw new Error('Astro.site must be set in astro.config.mjs');
 }
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+
+// Open Graph recommends a 1200×630 image. Our heroUrls are typically
+// multi-megapixel Commons originals; shipping that raw to FB/Twitter
+// crawlers is wasteful and slows social-card hydration. For Commons
+// URLs we rewrite to the 1200px-wide thumbnail; for non-Commons we
+// pass through unchanged.
+function ogImageFor(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'commons.wikimedia.org' && parsed.pathname.startsWith('/wiki/Special:FilePath/')) {
+      parsed.searchParams.set('width', '1200');
+      return parsed.toString();
+    }
+    if (parsed.hostname === 'upload.wikimedia.org' && parsed.pathname.includes('/thumb/')) {
+      const segs = parsed.pathname.split('/');
+      const last = segs[segs.length - 1];
+      const m = last && /^\d+px-(.+)$/.exec(last);
+      if (m) {
+        segs[segs.length - 1] = `1200px-${m[1]}`;
+        parsed.pathname = segs.join('/');
+        return parsed.toString();
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  return url;
+}
+
 const ogImage =
-  heroUrl ??
+  ogImageFor(heroUrl) ??
   (hero ? new URL(`${hero}-1280.jpg`, Astro.site).toString() : null) ??
   new URL('/og-default.svg', Astro.site).toString();
 // Doubled-brand title bug: when title equals the site name (or is empty),
