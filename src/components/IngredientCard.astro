@@ -9,6 +9,7 @@
  */
 
 import type { JourneyIngredient } from '~/lib/journey';
+import WikiImage from './WikiImage.astro';
 
 interface Props {
   ingredient: JourneyIngredient;
@@ -20,14 +21,22 @@ const i = ingredient;
 const originHref = i.origin
   ? `/${i.origin.kind === 'farm' ? 'farms' : 'garden'}/${i.origin.slug}/`
   : null;
+
+// Ingredient grid runs 2–3 across the dish-page Plant rail.
+const sizes = '(min-width: 1100px) 33vw, (min-width: 720px) 50vw, 100vw';
 ---
 
 <article class="ingredient">
-  <div
-    class="ingredient-image"
-    style={i.heroUrl ? `background-image: url('${i.heroUrl}')` : undefined}
-    aria-hidden={i.heroUrl ? undefined : 'true'}
-  />
+  {i.heroUrl ? (
+    <WikiImage
+      url={i.heroUrl}
+      alt=""
+      sizes={sizes}
+      class="ingredient-image"
+    />
+  ) : (
+    <div class="ingredient-image ingredient-image--empty" aria-hidden="true" />
+  )}
   <div class="ingredient-body">
     <span class="ingredient-kind">Ingredient</span>
     <h3 class="ingredient-name">{i.name}</h3>
@@ -68,14 +77,16 @@ const originHref = i.origin
   }
 
   .ingredient-image {
+    width: 100%;
     aspect-ratio: 4 / 3;
-    background-size: cover;
-    background-position: center;
+    object-fit: cover;
+    object-position: center;
     background-color: #11151a;
     border-bottom: 1px solid var(--rule);
+    display: block;
   }
   /* Fallback for ingredients without a hero — subtle green gradient. */
-  .ingredient-image[aria-hidden="true"] {
+  .ingredient-image--empty {
     background: linear-gradient(135deg, rgba(40, 60, 40, 0.7), rgba(20, 28, 18, 0.95));
   }
 

@@ -17,6 +17,8 @@
  * + hover-highlight logic. Cards used outside the graph omit it.
  */
 
+import WikiImage from './WikiImage.astro';
+
 interface Props {
   href: string;
   imageUrl?: string;
@@ -39,6 +41,9 @@ const {
   variant = 'default',
   nodeId,
 } = Astro.props;
+
+// Cards live in 2-/3-/4-column rails inside a ~1180px container.
+const sizes = '(min-width: 1100px) 25vw, (min-width: 720px) 33vw, 50vw';
 ---
 
 <a
@@ -46,10 +51,16 @@ const {
   href={href}
   data-node-id={nodeId}
 >
-  <div
-    class="card-image"
-    style={imageUrl ? `background-image: url('${imageUrl}')` : undefined}
-  />
+  {imageUrl ? (
+    <WikiImage
+      url={imageUrl}
+      alt=""
+      sizes={sizes}
+      class="card-image"
+    />
+  ) : (
+    <div class="card-image card-image--empty" aria-hidden="true" />
+  )}
   <div class="card-body">
     <span class="card-kind">{kindLabel}</span>
     <span class="card-label" set:html={label} />
@@ -92,11 +103,13 @@ const {
    *  Image block
    * ============================================================ */
   .card-image {
+    width: 100%;
     aspect-ratio: 4 / 3;
-    background-size: cover;
-    background-position: center;
+    object-fit: cover;
+    object-position: center;
     background-color: #0a0d11;
     border-bottom: 1px solid var(--rule);
+    display: block;
   }
 
   /* ============================================================
