@@ -1,0 +1,68 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+
+const pantry = await getEntry('pantry', 'pantry');
+const items = pantry?.data.items ?? [];
+const updated = pantry?.data.updated;
+
+const farms = await getCollection('farms');
+const farmBySlug = new Map(farms.map((f) => [bare(f.id), f]));
+
+const site = Astro.site!;
+const description = `Pantry snapshot — ${items.length} items in stock${updated ? ` as of ${updated}` : ''}.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Pantry',
+  url: sectionUrl(site, 'pantry'),
+  description,
+  inLanguage: 'en',
+  ...(updated && { dateModified: updated }),
+};
+const crumb = breadcrumb(site, { label: 'Pantry', kind: 'pantry' });
+---
+
+<BaseLayout title="Pantry" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
+  <section class="container index-page">
+    <p class="eyebrow">Stock</p>
+    <h1>Pantry</h1>
+    <p class="lead">
+      {items.length} {items.length === 1 ? 'item' : 'items'} on hand
+      {updated && <> · refreshed {updated}</>}.
+      The provenance link points to the farm or producer when known.
+    </p>
+
+    {items.length === 0 ? (
+      <p class="muted">The pantry is empty right now.</p>
+    ) : (
+      <ul class="index-list divided">
+        {items.map((item) => {
+          const farm = item.from ? farmBySlug.get(item.from) : undefined;
+          return (
+            <li>
+              <span class="label">{item.label}</span>
+              <span class="meta">
+                {item.quantity}
+                {item.quantity && farm && ' · '}
+                {farm && <a href={`/farms/${bare(farm.id)}/`}>{farm.data.name}</a>}
+                {item.from && !farm && <span> · {item.from}</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .divided li { padding-bottom: 0.8rem; border-bottom: 1px solid var(--rule); }
+  .label { font-family: var(--font-display); font-size: 1.05rem; }
+  .muted { color: var(--ink-mute); }
+</style>
