@@ -1,0 +1,140 @@
+---
+/**
+ * /recent — unified reverse-chronological view across every dated entry.
+ *
+ * Aggregates dishes (firstMade), recipes (latest revision date), and garden
+ * beds (planted) into a single timeline. Restaurants and farms carry no
+ * authored date in the schema so they're omitted here — the world map and
+ * /restaurants / /farms indexes are their canonical entry points.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+interface RecentEntry {
+  date: string; // YYYY-MM-DD
+  kind: 'Dish' | 'Recipe' | 'Garden bed';
+  title: string;
+  href: string;
+  meta?: string;
+}
+
+const [dishes, recipes, garden] = await Promise.all([
+  getCollection('dishes').then(publicOnly),
+  getCollection('recipes').then(publicOnly),
+  getCollection('garden').then(publicOnly),
+]);
+
+const items: RecentEntry[] = [];
+for (const d of dishes) {
+  if (!d.data.firstMade) continue;
+  items.push({
+    date: d.data.firstMade,
+    kind: 'Dish',
+    title: d.data.title,
+    href: `/dishes/${bare(d.id)}/`,
+    meta: d.data.tagline,
+  });
+}
+for (const r of recipes) {
+  const latest = r.data.revisions[r.data.revisions.length - 1];
+  if (!latest) continue;
+  items.push({
+    date: latest.date,
+    kind: 'Recipe',
+    title: r.data.title,
+    href: `/recipes/${bare(r.id)}/`,
+    meta: [r.data.yield, r.data.timeCook].filter(Boolean).join(' · '),
+  });
+}
+for (const g of garden) {
+  items.push({
+    date: g.data.planted,
+    kind: 'Garden bed',
+    title: g.data.plant,
+    href: `/garden/${bare(g.id)}/`,
+    meta: `${g.data.bed}${g.data.harvested ? ` · harvested ${g.data.harvested}` : ''}`,
+  });
+}
+
+items.sort((a, b) => b.date.localeCompare(a.date));
+
+// Group by month for human scanning. Iso "2026-05" sorts the same as the date
+// strings so the bucket order matches `items`.
+const groups = new Map<string, RecentEntry[]>();
+for (const it of items) {
+  const month = it.date.slice(0, 7);
+  if (!groups.has(month)) groups.set(month, []);
+  groups.get(month)!.push(it);
+}
+const orderedGroups = [...groups.entries()];
+
+const monthLabel = (iso: string): string => {
+  const [y, m] = iso.split('-').map(Number);
+  return new Date(y, m - 1).toLocaleDateString('en', { month: 'long', year: 'numeric' });
+};
+
+const site = Astro.site!;
+const description = `${items.length} dated entries — dishes, recipes, and garden beds — in reverse chronological order.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Recent',
+  url: sectionUrl(site, 'recent'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'Recent', kind: 'recent' });
+---
+
+<BaseLayout title="Recent" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
+  <section class="container index-page">
+    <p class="eyebrow">Timeline</p>
+    <h1>Recent</h1>
+    <p class="lead">
+      {items.length} dated entries — dishes by first-made date, recipes by latest revision,
+      garden beds by planting. Newest first.
+    </p>
+
+    {items.length === 0 && (
+      <p class="muted">Nothing dated yet.</p>
+    )}
+
+    {orderedGroups.map(([month, list]) => (
+      <div class="recent-month">
+        <h2>{monthLabel(month)}</h2>
+        <ul class="index-list divided">
+          {list.map((it) => (
+            <li>
+              <a href={it.href} set:html={it.title} />
+              <span class="meta">
+                {it.date} · {it.kind}
+                {it.meta && <> · {it.meta}</>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .recent-month { margin-top: 2.5rem; }
+  .recent-month > h2 {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .muted { color: var(--ink-mute); }
+</style>
