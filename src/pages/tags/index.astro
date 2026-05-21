@@ -25,6 +25,19 @@ const tags = [...counts.entries()]
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([name, count]) => ({ name, count }));
 
+// Map a tag's count to a font-size in rem. Cube-root scaling keeps the
+// dominant tags from overwhelming the cloud — common in tag-cloud
+// visualisations because raw count distributions are typically long-tailed.
+const minCount = Math.min(...tags.map((t) => t.count));
+const maxCount = Math.max(...tags.map((t) => t.count));
+const MIN_REM = 0.85;
+const MAX_REM = 1.5;
+const scale = (count: number): number => {
+  if (maxCount === minCount) return (MIN_REM + MAX_REM) / 2;
+  const t = (Math.cbrt(count) - Math.cbrt(minCount)) / (Math.cbrt(maxCount) - Math.cbrt(minCount));
+  return MIN_REM + t * (MAX_REM - MIN_REM);
+};
+
 const site = Astro.site!;
 const section = { label: 'Tags', kind: 'tags' };
 const description = `${tags.length} tags across the archive.`;
@@ -43,12 +56,14 @@ const crumb = breadcrumb(site, section);
   <section class="container index-page">
     <p class="eyebrow">Index</p>
     <h1>Tags</h1>
-    <p class="lead">{tags.length} tags in the archive, alphabetical. Each opens a list of every dish, recipe, restaurant, and meal carrying it.</p>
+    <p class="lead">{tags.length} tags in the archive, alphabetical. Chip size reflects how many entries carry the tag — bigger means more.</p>
 
     <ul class="tag-cloud">
       {tags.map((t) => (
         <li>
-          <a href={`/tags/${t.name}/`}>{t.name}<span class="count">{t.count}</span></a>
+          <a href={`/tags/${t.name}/`} style={`font-size: ${scale(t.count).toFixed(2)}rem`}>
+            {t.name}<span class="count">{t.count}</span>
+          </a>
         </li>
       ))}
     </ul>
@@ -56,18 +71,18 @@ const crumb = breadcrumb(site, section);
 </BaseLayout>
 
 <style>
-  .tag-cloud { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag-cloud { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 0.6rem; align-items: baseline; }
   .tag-cloud a {
     display: inline-flex;
     align-items: baseline;
     gap: 0.5rem;
-    padding: 0.35rem 0.85rem;
+    padding: 0.3rem 0.85rem;
     border: 1px solid var(--rule);
     border-radius: 999px;
     color: var(--ink-soft);
     text-decoration: none;
-    font-size: 0.95rem;
     transition: color 0.15s ease, border-color 0.15s ease;
+    line-height: 1.4;
   }
   .tag-cloud a:hover { border-color: var(--paprika); color: var(--paprika); }
   .tag-cloud .count { color: var(--ink-mute); font-size: 0.78rem; }
