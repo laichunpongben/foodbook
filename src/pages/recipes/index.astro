@@ -9,6 +9,33 @@ import { publicOnly } from '~/lib/visibility';
 const recipes = publicOnly(await getCollection('recipes')).sort((a, b) =>
   a.data.title.localeCompare(b.data.title),
 );
+
+// Group by intent — "what am I cooking?" Order matters: each recipe lands
+// in the first matching bucket (breakfast beats lunch beats dinner, etc.)
+// so we never duplicate a single recipe across sections. Anything without
+// a meal-type tag falls into "Other".
+const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'] as const;
+type MealKey = (typeof MEAL_ORDER)[number] | 'other';
+const MEAL_LABEL: Record<MealKey, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snacks',
+  dessert: 'Desserts',
+  drink: 'Drinks',
+  other: 'Other',
+};
+const buckets = new Map<MealKey, typeof recipes>();
+for (const key of [...MEAL_ORDER, 'other'] as MealKey[]) buckets.set(key, []);
+for (const r of recipes) {
+  const tags = new Set(r.data.tags);
+  const bucket = MEAL_ORDER.find((m) => tags.has(m)) ?? 'other';
+  buckets.get(bucket)!.push(r);
+}
+const groups = ([...MEAL_ORDER, 'other'] as MealKey[])
+  .map((key) => ({ key, label: MEAL_LABEL[key], list: buckets.get(key)! }))
+  .filter((g) => g.list.length > 0);
+
 const description = `${recipes.length} recipes in the archive.`;
 const section = { label: 'Recipes', kind: 'recipes' };
 const items = recipes.map((r) => {
@@ -34,15 +61,24 @@ const crumb = breadcrumb(Astro.site!, section);
       Each opens in <em>cook mode</em> for kitchen use.
     </p>
 
-    <ul class="index-list divided">
-      {recipes.map((r) => (
-        <li>
-          <a href={`/recipes/${bare(r.id)}/`}>{r.data.title}</a>
-          <span class="meta">
-            {[r.data.yield, r.data.timeCook].filter(Boolean).join(' · ')}
-          </span>
-        </li>
-      ))}
-    </ul>
+    {groups.map((g) => (
+      <div class="index-group" id={`meal-${g.key}`}>
+        <h2>{g.label} <span class="muted">· {g.list.length}</span></h2>
+        <ul class="index-list divided">
+          {g.list.map((r) => (
+            <li>
+              <a href={`/recipes/${bare(r.id)}/`}>{r.data.title}</a>
+              <span class="meta">
+                {[r.data.yield, r.data.timeCook].filter(Boolean).join(' · ')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
   </section>
 </BaseLayout>
+
+<style>
+  .muted { color: var(--ink-mute); font-weight: 400; font-size: 0.85rem; }
+</style>
