@@ -1,5 +1,22 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const [dishes, recipes, farms, restaurants, garden] = await Promise.all([
+  getCollection('dishes').then(publicOnly),
+  getCollection('recipes').then(publicOnly),
+  getCollection('farms').then(publicOnly),
+  getCollection('restaurants').then(publicOnly),
+  getCollection('garden').then(publicOnly),
+]);
+const stats = [
+  { label: 'Dishes', count: dishes.length, href: '/dishes/' },
+  { label: 'Recipes', count: recipes.length, href: '/recipes/' },
+  { label: 'Farms & producers', count: farms.length, href: '/farms/' },
+  { label: 'Restaurants', count: restaurants.length, href: '/restaurants/' },
+  { label: 'Garden beds', count: garden.length, href: '/garden/' },
+].filter((s) => s.count > 0);
 ---
 
 <BaseLayout
@@ -15,6 +32,16 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
       the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
       the meal where it landed. Each <a href="/dishes/">dish entry</a> weaves them together.
     </p>
+
+    <h2>By the numbers</h2>
+    <dl class="about-stats">
+      {stats.map((s) => (
+        <div class="about-stat">
+          <dt><a href={s.href}>{s.label}</a></dt>
+          <dd>{s.count}</dd>
+        </div>
+      ))}
+    </dl>
 
     <h2 id="ai">AI-assisted authoring</h2>
 
@@ -62,4 +89,36 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
   .about h2 { margin-top: 3rem; }
   .about p { color: var(--ink-soft); }
   .about a { color: var(--paprika); }
+
+  .about-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+  .about-stat {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1rem 1.1rem;
+    background: rgba(250, 248, 244, 0.02);
+  }
+  .about-stat dt {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .about-stat dt a { color: var(--ink-mute); text-decoration: none; }
+  .about-stat dt a:hover { color: var(--paprika); }
+  .about-stat dd {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--ink);
+    margin: 0.4rem 0 0;
+    line-height: 1;
+    font-feature-settings: 'tnum';
+  }
 </style>
