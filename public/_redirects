@@ -1,6 +1,13 @@
 # /sitemap.xml is the de-facto path; we emit /sitemap-index.xml via @astrojs/sitemap.
 /sitemap.xml  /sitemap-index.xml  301
 
+# /atom.xml is a common feed path readers try; bounce to /rss.xml.
+/atom.xml  /rss.xml  301
+
+# /feed is a common feed path readers try; bounce to /rss.xml (or /feed.json — RSS is the canonical text/XML feed).
+/feed  /rss.xml  301
+/feed.xml  /rss.xml  301
+
 # Catch-all so Cloudflare Pages returns HTTP 404 on unknown paths instead
 # of the SPA fallback (which serves /index.html with 200 — a soft-404).
 /*  /404.html  404
