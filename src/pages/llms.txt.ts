@@ -10,7 +10,7 @@
 import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import type { APIRoute } from "astro";
-import { entryUrl } from "~/lib/jsonld";
+import { entryUrl, sectionUrl } from "~/lib/jsonld";
 import { bare } from "~/lib/slug";
 import { publicOnly } from "~/lib/visibility";
 
@@ -42,6 +42,12 @@ export const GET: APIRoute = async ({ site }) => {
     "# Foodbook",
     "",
     "> An archive of the food lifecycle — farms, gardens, kitchens, restaurants. Authored prose, AI-assisted authoring (see /about#ai).",
+    "",
+    "## Hubs",
+    "",
+    `- [World map](${sectionUrl(site, "world")}): farm/producer/restaurant pins on one map.`,
+    `- [Seasons](${sectionUrl(site, "seasons")}): wheel of products in season this month, drawn from farm windows.`,
+    `- [Pantry](${sectionUrl(site, "pantry")}): current inventory snapshot with provenance links.`,
     "",
     ...section<CollectionEntry<"dishes">>(
       "Dishes",
