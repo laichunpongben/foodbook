@@ -15,6 +15,7 @@ const section = { label: 'Dishes', kind: 'dishes' };
 const items = dishes.map((d) => ({
   name: d.data.shortTitle,
   url: entryUrl(Astro.site!, 'dishes', bare(d.id)),
+  ...(d.data.tagline && { description: d.data.tagline }),
 }));
 const ld = collectionPage(Astro.site!, { ...section, description }, items);
 const crumb = breadcrumb(Astro.site!, section);
