@@ -13,9 +13,14 @@ import { publicOnly } from '~/lib/visibility';
 
 const farms = publicOnly(await getCollection('farms'));
 const month = new Date().getMonth() + 1; // 1-12
+const nextMonth = (month % 12) + 1;
 
 const products = collectProducts(farms);
 const inSeasonNow = products.filter((p) => inSeason(p.from, p.to, month));
+// "Coming soon" — newly entering season next month (not already in season now).
+const comingSoon = products.filter(
+  (p) => !inSeason(p.from, p.to, month) && inSeason(p.from, p.to, nextMonth),
+);
 
 const site = Astro.site!;
 const description = `What's in season this ${MONTH_NAMES_LONG[month - 1]} — ${inSeasonNow.length} products drawn from farm + producer windows.`;
@@ -59,6 +64,21 @@ const crumb = breadcrumb(site, { label: 'Seasons', kind: 'seasons' });
         </ul>
       )}
     </div>
+
+    {comingSoon.length > 0 && (
+      <div class="legend coming-soon">
+        <h2>Coming in {MONTH_NAMES_LONG[nextMonth - 1]}</h2>
+        <p class="muted">Newly entering season next month — plan ahead.</p>
+        <ul>
+          {comingSoon.map((p) => (
+            <li>
+              <strong>{p.product}</strong>
+              <span class="muted"> — {p.farms.map((f) => f.name).join(', ')}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
   </section>
 </BaseLayout>
 
