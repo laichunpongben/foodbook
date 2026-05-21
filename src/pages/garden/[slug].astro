@@ -3,8 +3,10 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import AppearsIn from '~/components/AppearsIn.astro';
 import EntityBanner from '~/components/EntityBanner.astro';
+import JsonLd from '~/components/JsonLd.astro';
 import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
+import { SCHEMA_CTX, breadcrumb, entryUrl } from '~/lib/jsonld';
 import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
 
@@ -23,6 +25,21 @@ const dishes = await dishesReferencing('garden', slug);
 const d = bed.data;
 
 const { prev, next } = await siblingsOf('garden', bed.id, (g) => g.data.planted, 'desc');
+
+const site = Astro.site!;
+const gardenUrl = entryUrl(site, 'garden', slug);
+const gardenLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'Article',
+  headline: `${d.plant} · ${d.bed}`,
+  url: gardenUrl,
+  inLanguage: 'en',
+  about: d.plant,
+  datePublished: d.planted,
+  ...(d.harvested && { dateModified: d.harvested }),
+  ...(d.heroUrl && { image: d.heroUrl }),
+};
+const breadcrumbLd = breadcrumb(site, { label: 'Garden', kind: 'garden' }, { label: d.plant, url: gardenUrl });
 ---
 
 <BaseLayout
@@ -32,6 +49,8 @@ const { prev, next } = await siblingsOf('garden', bed.id, (g) => g.data.planted,
   heroUrl={d.heroUrl}
   ogType="article"
 >
+  <JsonLd data={gardenLd} />
+  <JsonLd data={breadcrumbLd} />
   {d.heroUrl && <EntityBanner url={d.heroUrl} alt={`${d.plant} in ${d.bed}`} />}
   <article class="entity container">
     <a class="back" href="/garden/">← Garden</a>
