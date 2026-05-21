@@ -1,0 +1,163 @@
+---
+/**
+ * /lifecycle — explainer page for the four-stage model.
+ *
+ * /about covers what Foodbook is editorially; this page is dedicated
+ * to the lifecycle concept that organises every dish entry. Each stage
+ * gets a definition, an example dish whose stage is well-covered, and
+ * a "browse by stage coverage" exit.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+type StageKey = 'source' | 'grow' | 'cook' | 'eat';
+
+const dishes = publicOnly(await getCollection('dishes'));
+
+// For each stage, find the first dish (alphabetical) that has both a `note`
+// and at least one ref — i.e. an entry where that stage is genuinely
+// authored, not just stubbed. Use that as the exemplar.
+const stageIsCovered = (dish: typeof dishes[number], key: StageKey): boolean => {
+  const s = dish.data.stages?.[key];
+  if (!s) return false;
+  const hasNote = Boolean(s.note && s.note.trim().length > 0);
+  const hasRef =
+    s.farms.length + s.garden.length + s.recipes.length + s.meals.length + s.restaurants.length > 0;
+  return hasNote && hasRef;
+};
+
+const sortedDishes = [...dishes].sort((a, b) =>
+  a.data.shortTitle.localeCompare(b.data.shortTitle),
+);
+const exemplar = (key: StageKey) => sortedDishes.find((d) => stageIsCovered(d, key));
+
+interface StageDef {
+  key: StageKey;
+  label: string;
+  blurb: string;
+  exemplar?: typeof dishes[number];
+}
+
+const stages: StageDef[] = [
+  {
+    key: 'source',
+    label: 'Source',
+    blurb:
+      'Where the raw ingredients come from — farms, producers, mills, dairies, salt pans, fisheries. The terroir half of the story.',
+    exemplar: exemplar('source'),
+  },
+  {
+    key: 'grow',
+    label: 'Grow',
+    blurb:
+      'The garden side: what was planted in pots / beds at home, when, and what came of it. Smaller surface than Source because not every dish has a hand-grown ingredient.',
+    exemplar: exemplar('grow'),
+  },
+  {
+    key: 'cook',
+    label: 'Cook',
+    blurb:
+      'The recipe(s) used to prepare the dish — yield, time, ingredients (with provenance when known), method steps, revisions.',
+    exemplar: exemplar('cook'),
+  },
+  {
+    key: 'eat',
+    label: 'Eat',
+    blurb:
+      'Where the dish landed — a meal event at home, or a restaurant where it was discovered or visited. The terminus of the lifecycle.',
+    exemplar: exemplar('eat'),
+  },
+];
+
+const site = Astro.site!;
+const description = 'The four-stage lifecycle that organises every dish entry: Source · Grow · Cook · Eat.';
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'The lifecycle',
+  url: sectionUrl(site, 'lifecycle'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'Lifecycle', kind: 'lifecycle' });
+---
+
+<BaseLayout title="The lifecycle" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
+  <article class="lifecycle container">
+    <p class="eyebrow">Concept</p>
+    <h1>The lifecycle</h1>
+    <p class="lead">
+      Every dish entry weaves up to four stages — <strong>Source</strong>, <strong>Grow</strong>,
+      <strong>Cook</strong>, <strong>Eat</strong>. A complete dish covers all four; many cover
+      two or three. The renderer greys out empty stages and the
+      <a href="/dishes/">dish header</a> shows coverage at a glance via four dots.
+    </p>
+
+    <ol class="lifecycle-list">
+      {stages.map((stage, i) => (
+        <li class="lifecycle-step">
+          <div class="lifecycle-eyebrow">Stage {i + 1}</div>
+          <h2>{stage.label}</h2>
+          <p class="stage-blurb">{stage.blurb}</p>
+          {stage.exemplar && (
+            <p class="stage-exemplar">
+              See for instance{' '}
+              <a href={`/dishes/${bare(stage.exemplar.id)}/`}>{stage.exemplar.data.shortTitle}</a>,
+              whose <strong>{stage.label.toLowerCase()}</strong> stage is fully authored.
+            </p>
+          )}
+        </li>
+      ))}
+    </ol>
+
+    <p class="footnote">
+      The schema lives in <code>src/content.config.ts</code>. The lifecycle dots on every dish
+      header come from <code>src/components/DishHero.astro</code>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .lifecycle { padding: 4rem 0 6rem; max-width: 720px; }
+  .lifecycle .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+  .lifecycle .lead a { color: var(--paprika); }
+  .lifecycle-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: stage;
+  }
+  .lifecycle-step {
+    padding: 1.8rem 0;
+    border-top: 1px solid var(--rule);
+  }
+  .lifecycle-step:last-child { border-bottom: 1px solid var(--rule); }
+  .lifecycle-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paprika);
+  }
+  .lifecycle-step h2 { font-size: 1.8rem; margin: 0.4rem 0 0.8rem; }
+  .stage-blurb { color: var(--ink-soft); margin: 0 0 1rem; line-height: 1.6; }
+  .stage-exemplar { color: var(--ink-soft); margin: 0; font-size: 0.95rem; }
+  .stage-exemplar a { color: var(--paprika); }
+  .footnote {
+    margin-top: 3rem;
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+  }
+  .footnote code {
+    color: var(--ink-soft);
+    background: rgba(250, 248, 244, 0.04);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+  }
+</style>
