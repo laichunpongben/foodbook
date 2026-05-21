@@ -447,3 +447,21 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
     animation-duration: 0.001ms !important;
   }
 }
+
+/* Print — recipes are the main use-case; dark palette burns ink and the
+ * chrome (nav/search/footer/pager/AppearsIn) is paper noise. Force
+ * black-on-white, hide site furniture, keep ingredients and steps
+ * intact across page breaks. */
+@media print {
+  :root { --bg: #fff; --ink: #000; --ink-soft: #222; --ink-mute: #444; --rule: #ccc; }
+  html { font-size: 100%; }
+  body { background: #fff; color: #000; }
+  a, em, i { color: #000; }
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.3rem; }
+  .site-header, .site-footer, .skip-link, .nav-toggle, .search-bar,
+  .pager, .entity .back, .cook-link, .appears-in, .entity-banner,
+  .hero-photo, .hero { display: none !important; }
+  h2, h3 { break-after: avoid; page-break-after: avoid; }
+  .recipe .method li, .recipe ul li, h1 { break-inside: avoid; page-break-inside: avoid; }
+}
