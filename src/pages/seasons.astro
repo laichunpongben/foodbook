@@ -1,7 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
 import SeasonalWheel from '~/components/SeasonalWheel.astro';
+import { SCHEMA_CTX, breadcrumb, sectionUrl } from '~/lib/jsonld';
 import {
   collectProducts,
   inSeason,
@@ -14,12 +16,23 @@ const month = new Date().getMonth() + 1; // 1-12
 
 const products = collectProducts(farms);
 const inSeasonNow = products.filter((p) => inSeason(p.from, p.to, month));
+
+const site = Astro.site!;
+const description = `What's in season this ${MONTH_NAMES_LONG[month - 1]} — ${inSeasonNow.length} products drawn from farm + producer windows.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Seasons',
+  url: sectionUrl(site, 'seasons'),
+  description,
+  inLanguage: 'en',
+};
+const crumb = breadcrumb(site, { label: 'Seasons', kind: 'seasons' });
 ---
 
-<BaseLayout
-  title="Seasons"
-  description="A wheel of what's in season right now — drawn from farm + producer windows."
->
+<BaseLayout title="Seasons" description={description}>
+  <JsonLd data={webPageLd} />
+  <JsonLd data={crumb} />
   <section class="container" style="padding: 4rem 0;">
     <p class="eyebrow">{MONTH_NAMES_LONG[month - 1]}</p>
     <h1>In season now</h1>
