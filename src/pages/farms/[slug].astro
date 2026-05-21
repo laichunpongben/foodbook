@@ -9,22 +9,36 @@ import Pager from '~/components/Pager.astro';
 import { dishesReferencing } from '~/lib/back-refs';
 import { siblingsOf } from '~/lib/siblings';
 import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
 
 export async function getStaticPaths() {
   const farms = await getCollection('farms');
+  const allPublic = publicOnly(farms);
   return farms.map((f) => ({
     params: { slug: bare(f.id) },
-    props: { farm: f },
+    props: { farm: f, allPublic },
   }));
 }
 
-const { farm } = Astro.props;
+const { farm, allPublic } = Astro.props;
 const slug = bare(farm.id);
 const { Content } = await render(farm);
 const dishes = await dishesReferencing('farm', slug);
 const d = farm.data;
 
 const { prev, next } = await siblingsOf('farms', farm.id, (f) => f.data.name);
+
+// "More like this" for producers — farms don't carry tags, so neighbours come
+// from a two-tier match: same country first, then same kind to top up. Up to 4.
+const RELATED_LIMIT = 4;
+const others = allPublic.filter((f) => f.id !== farm.id);
+const sameCountry = d.country
+  ? others.filter((f) => f.data.country && f.data.country === d.country)
+  : [];
+const sameKind = others.filter((f) => f.data.kind === d.kind && !sameCountry.includes(f));
+const related = [...sameCountry, ...sameKind]
+  .sort((a, b) => a.data.name.localeCompare(b.data.name))
+  .slice(0, RELATED_LIMIT);
 
 const monthName = (m: number) =>
   ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1] ?? String(m);
@@ -108,6 +122,23 @@ const breadcrumbLd = breadcrumb(
     )}
 
     <AppearsIn dishes={dishes} label="Used in" />
+
+    {related.length > 0 && (
+      <section class="related-rail" aria-labelledby="related-heading">
+        <p class="eyebrow" id="related-heading">More like this</p>
+        <ul>
+          {related.map((r) => (
+            <li>
+              <a href={`/farms/${bare(r.id)}/`}>{r.data.name}</a>
+              <span class="meta">
+                {r.data.kind}
+                {r.data.location && <> · {r.data.location}</>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     <Pager
       ariaLabel="Other farms"
