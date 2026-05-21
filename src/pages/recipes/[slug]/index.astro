@@ -146,6 +146,10 @@ const breadcrumbLd = breadcrumb(
   hero={recipe.data.hero}
   heroUrl={recipe.data.heroUrl}
   ogType="article"
+  articleTags={recipe.data.tags}
+  articlePublishedTime={datePublished}
+  articleModifiedTime={dateModified !== datePublished ? dateModified : undefined}
+  articleSection="Recipes"
 >
   <JsonLd data={recipeLd} />
   <JsonLd data={breadcrumbLd} />

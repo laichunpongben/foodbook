@@ -68,6 +68,9 @@ const breadcrumbLd = breadcrumb(site, { label: 'Meals', kind: 'meals' }, { label
   unlisted={d.visibility === 'unlisted'}
   heroUrl={d.heroUrl}
   ogType="article"
+  articleTags={d.tags}
+  articlePublishedTime={d.date}
+  articleSection="Meals"
 >
   <JsonLd data={mealLd} />
   <JsonLd data={breadcrumbLd} />

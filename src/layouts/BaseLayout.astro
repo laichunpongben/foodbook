@@ -17,6 +17,11 @@ interface Props {
   /** OpenGraph type. 'website' for /, listings, error pages; 'article'
    *  for editorial entries (dishes/recipes/farms/restaurants/meals/garden). */
   ogType?: 'website' | 'article';
+  /** Open Graph article meta — only emitted when `ogType === 'article'`. */
+  articleTags?: readonly string[];
+  articlePublishedTime?: string;
+  articleModifiedTime?: string;
+  articleSection?: string;
 }
 
 const SITE_TAGLINE = 'An archive of the food lifecycle';
@@ -28,6 +33,10 @@ const {
   hero,
   heroUrl,
   ogType = 'website',
+  articleTags = [],
+  articlePublishedTime,
+  articleModifiedTime,
+  articleSection,
 } = Astro.props;
 // astro.config.mjs sets `site`; if a future reorganization drops it we want
 // the build to fail loudly rather than silently emit a wrong-domain canonical.
@@ -77,6 +86,10 @@ const currentYear = new Date().getFullYear();
     {description && <meta name="twitter:description" content={description} />}
     <meta name="twitter:image" content={ogImage} />
     <meta name="twitter:image:alt" content={description ?? fullTitle} />
+    {ogType === 'article' && articleSection && <meta property="article:section" content={articleSection} />}
+    {ogType === 'article' && articlePublishedTime && <meta property="article:published_time" content={articlePublishedTime} />}
+    {ogType === 'article' && articleModifiedTime && <meta property="article:modified_time" content={articleModifiedTime} />}
+    {ogType === 'article' && articleTags.map((t) => <meta property="article:tag" content={t} />)}
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to main content</a>
