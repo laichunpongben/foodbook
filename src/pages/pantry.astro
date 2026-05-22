@@ -33,10 +33,13 @@ const crumb = breadcrumb(site, { label: 'Pantry', kind: 'pantry' });
     <p class="eyebrow">Stock</p>
     <h1>Pantry</h1>
     <p class="lead">
-      {items.length} {items.length === 1 ? 'item' : 'items'} on hand
-      {updated && <> · refreshed {updated}</>}.
-      The provenance link points to the farm or producer when known.
+      What's currently on hand. The provenance link points to the farm or producer when known.
     </p>
+    <ul class="pantry-stats" aria-label="Pantry scope">
+      <li><strong>{items.length}</strong>{items.length === 1 ? 'item' : 'items'}</li>
+      <li><strong>{items.filter((i) => i.from).length}</strong>with provenance</li>
+      {updated && <li class="pantry-stats-when"><span class="when-label">Updated</span><strong>{updated}</strong></li>}
+    </ul>
 
     {items.length === 0 ? (
       <p class="muted">The pantry is empty right now.</p>
@@ -68,4 +71,32 @@ const crumb = breadcrumb(site, { label: 'Pantry', kind: 'pantry' });
 <style>
   .label { font-family: var(--font-display); font-size: 1.05rem; }
   .muted { color: var(--ink-mute); }
+  .pantry-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .pantry-stats li { padding: 0; max-width: none; display: flex; gap: 0.4rem; align-items: baseline; }
+  .pantry-stats strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    font-weight: 500;
+  }
+  .pantry-stats-when .when-label {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .pantry-stats-when strong {
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
 </style>
