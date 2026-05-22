@@ -67,7 +67,8 @@ const crumb = breadcrumb(site, section);
     color: var(--ink-soft);
     text-decoration: none;
     font-size: 0.95rem;
-    transition: color 0.15s ease, border-color 0.15s ease;
+    /* ADR-0011: chip hover adopts --motion-fast + --ease-out. */
+    transition: color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
   }
   .tag-cloud a:hover { border-color: var(--paprika); color: var(--paprika); }
   .tag-cloud .count { color: var(--ink-mute); font-size: 0.78rem; }
