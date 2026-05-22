@@ -1,0 +1,189 @@
+---
+/**
+ * /shop — a printable shopping list of this week's seasonal ingredients
+ * + their source farms. Practical utility surface — the only foodbook
+ * page meant to be printed and taken to the market.
+ *
+ * Picks 6 in-season products deterministically by ISO week so the list
+ * changes weekly without authoring.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { collectProducts, inSeason, MONTH_NAMES_LONG } from '~/lib/seasons';
+import { publicOnly } from '~/lib/visibility';
+import { bare } from '~/lib/slug';
+
+const farms = publicOnly(await getCollection('farms'));
+const month = new Date().getUTCMonth() + 1;
+const products = collectProducts(farms);
+const allInSeason = products
+  .filter((p) => inSeason(p.from, p.to, month))
+  .sort((a, b) => a.product.localeCompare(b.product));
+
+// Pick 6 distinct items deterministically by week, so the list rotates
+// without showing the same products twice in a single list.
+const now = new Date();
+const isoWeek = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 1)) / 604_800_000,
+);
+const list = (() => {
+  if (allInSeason.length === 0) return [];
+  const picks: typeof allInSeason = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < allInSeason.length && picks.length < 6; i++) {
+    const idx = (isoWeek + i * 3) % allInSeason.length;
+    const p = allInSeason[idx];
+    if (seen.has(p.key)) continue;
+    seen.add(p.key);
+    picks.push(p);
+  }
+  return picks;
+})();
+
+const site = Astro.site!;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Shopping list',
+  url: new URL('/shop/', site).toString(),
+  description: 'This week\'s seasonal shopping list — six ingredients to pick up.',
+};
+---
+
+<BaseLayout title="Shopping list" description="This week's seasonal shopping list.">
+  <JsonLd data={webPageLd} />
+  <article class="shop container">
+    <header class="shop-head">
+      <p class="eyebrow">For the market</p>
+      <h1>This week's list</h1>
+      <p class="lead">
+        Six ingredients in season this {MONTH_NAMES_LONG[month - 1]} — with the
+        farm or producer beside each. Printable: hit <kbd>⌘</kbd>+<kbd>P</kbd>.
+      </p>
+    </header>
+
+    {list.length === 0 ? (
+      <p class="muted">No seasonal products covering {MONTH_NAMES_LONG[month - 1]} yet.</p>
+    ) : (
+      <ol class="shop-list">
+        {list.map((p, i) => (
+          <li class="shop-item">
+            <span class="shop-num">{i + 1}</span>
+            <div class="shop-text">
+              <h2 class="shop-product">{p.product}</h2>
+              {p.farms.length > 0 && (
+                <p class="shop-source">
+                  From {p.farms.slice(0, 2).map((f, idx) => (
+                    <>
+                      {idx > 0 && ' or '}
+                      <a href={`/farms/${bare(f.slug)}/`}>{f.name}</a>
+                    </>
+                  ))}
+                  {p.farms.length > 2 && <> + {p.farms.length - 2} more</>}
+                </p>
+              )}
+            </div>
+            <input type="checkbox" class="shop-check" aria-label={`Mark ${p.product} as gathered`} />
+          </li>
+        ))}
+      </ol>
+    )}
+
+    <p class="shop-footnote">
+      The list rotates weekly. Also see <a href="/seasons/">the full season wheel</a> for everything in-season this month.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .shop { padding: 4rem 0 6rem; max-width: 760px; }
+  .shop-head { margin-bottom: 3rem; }
+  .shop-head h1 { margin: 0.4rem 0 0.8rem; }
+  .shop-head .lead { color: var(--ink-soft); margin: 0; }
+  .shop-head kbd {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    padding: 0.1rem 0.4rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--ink);
+  }
+
+  .shop-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .shop-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.2rem;
+    align-items: center;
+    padding: 1.2rem 1.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    max-width: none;
+  }
+  .shop-num {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--paprika);
+    line-height: 1;
+    min-width: 1.6em;
+  }
+  .shop-product {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--ink);
+  }
+  .shop-source {
+    margin: 0.4rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+  .shop-source a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .shop-source a:hover { color: var(--ink); border-color: var(--ink); }
+  .shop-check {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--paprika);
+    cursor: pointer;
+  }
+
+  .shop-footnote {
+    margin-top: 2.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .shop-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .shop-footnote a:hover { color: var(--ink); border-color: var(--ink); }
+
+  /* Print mode: strip site chrome (already handled in global), clean up
+   * the list so it prints as a tidy market sheet. */
+  @media print {
+    .shop-item { border: 1px solid #999; break-inside: avoid; }
+    .shop-num { color: #000; }
+    .shop-product { color: #000; }
+    .shop-source { color: #444; }
+    .shop-source a { color: #000; }
+    .shop-footnote { color: #444; }
+    .shop-check { accent-color: #000; }
+  }
+</style>
