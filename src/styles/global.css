@@ -509,13 +509,23 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
   html { font-size: 100%; }
   body { background: #fff; color: #000; }
   a, em, i { color: #000; }
+  /* Show URLs after external links so paper readers can find them. Skip
+   * internal anchors (relative or fragment) — those would clutter the
+   * page with /pantry/, /about/, etc. */
+  a[href^="http"]:after { content: ' (' attr(href) ')'; font-size: 0.85em; color: #555; word-break: break-all; }
   h1 { font-size: 1.8rem; }
   h2 { font-size: 1.3rem; }
   .site-header, .site-footer, .skip-link, .nav-toggle, .search-bar,
   .pager, .entity .back, .cook-link, .appears-in, .entity-banner,
-  .hero-photo, .hero { display: none !important; }
-  h2, h3 { break-after: avoid; page-break-after: avoid; }
-  .recipe .method li, .recipe ul li, h1 { break-inside: avoid; page-break-inside: avoid; }
+  .hero-photo, .hero, .reading-progress, .home-scroll-indicator,
+  .recently-viewed, .lifecycle-explainer, .explore-rail, .magazine-feature,
+  .farm-spotlight, .hero-vocab, .hero-cta-secondary { display: none !important; }
+  /* Avoid orphan headings + broken list items across pages. */
+  h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+  .recipe .method li, .recipe ul li, .recipe ol li, h1 { break-inside: avoid; page-break-inside: avoid; }
+  /* Tighter line-height for paper, wider measure (no chrome competing). */
+  body { line-height: 1.5; }
+  p, li { max-width: none; }
   .print-source {
     display: block;
     max-width: none;
