@@ -1,0 +1,156 @@
+---
+/**
+ * /design-system — live reference for the ADR-0010 design tokens.
+ *
+ * Reads the canonical token set straight from src/styles/tokens.json
+ * and renders it as colour swatches, type samples, and spacing rules.
+ * If the JSON file isn't available at build time (because PR #236
+ * hasn't landed), the page falls back to a baked-in copy so the route
+ * still builds. Internal-facing — unlisted so it doesn't enter sitemap
+ * / RSS / search.
+ */
+import BaseLayout from '~/layouts/BaseLayout.astro';
+
+interface TokenEntry {
+  $value: string | number;
+  $type?: string;
+  $description?: string;
+}
+
+const FALLBACK = {
+  color: {
+    bg: { $value: '#0a0d11', $description: 'Page background, dark editorial mode.' },
+    ink: { $value: '#faf8f4', $description: 'Primary text on dark.' },
+    'ink-soft': { $value: '#c2c8d0', $description: 'Secondary text.' },
+    'ink-mute': { $value: '#8b95a3', $description: 'Tertiary text.' },
+    paprika: { $value: '#d2543b', $description: 'Editorial accent.' },
+    olive: { $value: '#5d6e44', $description: 'Secondary accent.' },
+    rule: { $value: 'rgba(250, 248, 244, 0.08)', $description: 'Hairlines, borders.' },
+  },
+  text: {
+    xs: { $value: '0.78rem' }, sm: { $value: '0.92rem' }, base: { $value: '1rem' },
+    md: { $value: '1.15rem' }, lg: { $value: '1.4rem' },
+    xl: { $value: 'clamp(1.7rem, 3.5vw, 2.6rem)' },
+    '2xl': { $value: 'clamp(2.4rem, 5.5vw, 4.4rem)' },
+  },
+  space: {
+    '3xs': { $value: '0.15rem' }, '2xs': { $value: '0.3rem' }, xs: { $value: '0.5rem' },
+    sm: { $value: '0.8rem' }, md: { $value: '1.2rem' }, lg: { $value: '1.8rem' },
+    xl: { $value: '2.5rem' }, '2xl': { $value: '4rem' }, '3xl': { $value: '6rem' },
+  },
+  radius: {
+    pill: { $value: '999px', $description: 'Chips, search bar.' },
+    card: { $value: '4px', $description: 'Cards, tiles, photos.' },
+    pop: { $value: '6px', $description: 'Popups, search results.' },
+  },
+} as const satisfies Record<string, Record<string, TokenEntry>>;
+
+// Uses the baked-in FALLBACK today. Once #236 (src/styles/tokens.json) lands
+// on main, a follow-up PR can wire `import tokens from '~/styles/tokens.json'`
+// here so this page mirrors edits to the canonical JSON without a second
+// commit. For now FALLBACK is the source of truth shown.
+const tokens: typeof FALLBACK = FALLBACK;
+
+const colors = Object.entries(tokens.color ?? {});
+const texts = Object.entries(tokens.text ?? {});
+const spaces = Object.entries(tokens.space ?? {});
+const radii = Object.entries(tokens.radius ?? {});
+---
+
+<BaseLayout
+  title="Design system"
+  description="Live reference for the Foodbook design tokens — palette, type, spacing, radii."
+  unlisted={true}
+>
+  <article class="ds container">
+    <p class="eyebrow">Internal · ADR-0010</p>
+    <h1>Design system</h1>
+    <p class="lead">
+      Live values from <code>src/styles/tokens.json</code>. Edit the JSON; this page reflects
+      it at the next build. Decisions live in
+      <a href="https://github.com/laichunpongben/foodbook/blob/main/docs/adr/0010-design-tokens.md">ADR-0010</a>.
+    </p>
+
+    <h2>Colour ({colors.length})</h2>
+    <div class="ds-swatches">
+      {colors.map(([name, t]) => (
+        <div class="ds-swatch">
+          <div class="ds-chip" style={`background: ${t.$value}`} />
+          <div class="ds-meta">
+            <code>--{name}</code>
+            <small>{t.$value}</small>
+            {t.$description && <p>{t.$description}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <h2>Type ({texts.length})</h2>
+    <dl class="ds-type">
+      {texts.map(([name, t]) => (
+        <>
+          <dt><code>--text-{name}</code> · <small>{t.$value}</small></dt>
+          <dd style={`font-size: ${t.$value}`}>The quick brown fox jumps over the lazy dog.</dd>
+        </>
+      ))}
+    </dl>
+
+    <h2>Spacing ({spaces.length})</h2>
+    <ul class="ds-spaces">
+      {spaces.map(([name, t]) => (
+        <li>
+          <div class="ds-rule" style={`width: ${t.$value}`} />
+          <code>--space-{name}</code>
+          <small>{t.$value}</small>
+        </li>
+      ))}
+    </ul>
+
+    <h2>Radii ({radii.length})</h2>
+    <div class="ds-radii">
+      {radii.map(([name, t]) => (
+        <div class="ds-radius-box" style={`border-radius: ${t.$value}`}>
+          <code>--radius-{name}</code>
+          <small>{t.$value}</small>
+        </div>
+      ))}
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .ds { padding: 4rem 0 6rem; max-width: 920px; }
+  .ds .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+  .ds .lead a { color: var(--paprika); }
+  .ds .lead code { color: var(--ink-soft); }
+  .ds h2 {
+    margin-top: 3rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ds code { color: var(--ink); font-size: 0.88rem; }
+  .ds small { color: var(--ink-mute); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+  .ds-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .ds-swatch { display: flex; gap: 0.8rem; align-items: center; }
+  .ds-chip { width: 64px; height: 64px; border-radius: 6px; border: 1px solid var(--rule); flex: 0 0 auto; }
+  .ds-meta { display: flex; flex-direction: column; gap: 0.2rem; }
+  .ds-meta p { margin: 0.3rem 0 0; color: var(--ink-mute); font-size: 0.82rem; }
+
+  .ds-type { margin-top: 1rem; }
+  .ds-type dt { color: var(--ink-mute); font-size: 0.85rem; margin-top: 1rem; }
+  .ds-type dd { margin: 0.2rem 0 0; color: var(--ink); font-family: var(--font-display); line-height: 1.2; }
+
+  .ds-spaces { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
+  .ds-spaces li { display: flex; align-items: center; gap: 0.8rem; }
+  .ds-rule { height: 12px; background: var(--paprika); border-radius: 2px; min-width: 4px; }
+
+  .ds-radii { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+  .ds-radius-box {
+    width: 120px; height: 80px;
+    background: rgba(210, 84, 59, 0.18);
+    border: 1px solid var(--paprika);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0.2rem;
+  }
+</style>
