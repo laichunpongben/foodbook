@@ -343,6 +343,19 @@ main:focus { outline: none; }
   background-position: center;
   background-color: #0a0d11;
   z-index: -2;
+  /* Slow drift on first load — gentle Ken Burns gives the hero a sense
+   * of life without becoming distracting. Animation runs once, ~14s,
+   * then stops. Disabled under prefers-reduced-motion. */
+  animation: hero-photo-drift 14s ease-out 1 both;
+}
+
+@keyframes hero-photo-drift {
+  from { transform: scale(1.06); }
+  to   { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero .hero-photo { animation: none; }
 }
 
 .hero::after {
