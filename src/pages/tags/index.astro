@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import JsonLd from '~/components/JsonLd.astro';
 import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
+import { countTags } from '~/lib/tag-counts';
 import { publicOnly } from '~/lib/visibility';
 
 const [dishes, recipes, restaurants, meals] = await Promise.all([
@@ -12,16 +13,7 @@ const [dishes, recipes, restaurants, meals] = await Promise.all([
   getCollection('meals').then(publicOnly),
 ]);
 
-const counts = new Map<string, number>();
-const bump = (tags: readonly string[]) => {
-  for (const t of tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-};
-for (const d of dishes) bump(d.data.tags);
-for (const r of recipes) bump(r.data.tags);
-for (const r of restaurants) bump(r.data.tags);
-for (const m of meals) bump(m.data.tags);
-
-const tags = [...counts.entries()]
+const tags = [...countTags([...dishes, ...recipes, ...restaurants, ...meals]).entries()]
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([name, count]) => ({ name, count }));
 
