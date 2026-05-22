@@ -49,10 +49,12 @@
   margin-bottom: 0.4rem;
 }
 
+/* ADR-0010 stage-2: gap matched --space-sm. margin 2rem is off-scale
+ * (between --space-lg 1.8 and --space-xl 2.5); kept literal. */
 :root[data-mode="cook"] .cook-controls {
   display: flex;
-  gap: 0.8rem;
-  margin: 2rem 0;
+  gap: var(--space-sm);
+  margin: 2rem 0;                   /* off-scale: between --space-lg (1.8) and --space-xl (2.5) */
 }
 
 :root[data-mode="cook"] .cook-controls button {
