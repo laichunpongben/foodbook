@@ -152,9 +152,23 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
 
   .dish-hero-prologue-prose {
     margin: 0;
-    font-size: 1.05rem;
-    line-height: 1.75;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.7;
     color: var(--ink-soft);
+    font-variation-settings: 'opsz' 14, 'SOFT' 50, 'WONK' 0;
+  }
+
+  /* Drop cap on the prologue's first letter — magazine convention. */
+  .dish-hero-prologue-prose::first-letter {
+    font-family: var(--font-display);
+    font-size: 3.6em;
+    line-height: 0.9;
+    float: left;
+    margin: 0.1em 0.1em 0 -0.05em;
+    color: var(--paprika);
+    font-weight: 600;
+    font-variation-settings: 'opsz' 72, 'SOFT' 60, 'WONK' 1;
   }
 
   .dish-hero-scroll {
