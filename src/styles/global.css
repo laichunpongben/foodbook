@@ -383,8 +383,8 @@ main:focus { outline: none; }
 
 footer.site-footer {
   border-top: 1px solid var(--rule);
-  padding: 2.5rem var(--gutter);
-  margin-top: 6rem;
+  padding: 3rem var(--gutter) 2.5rem;
+  margin-top: 7rem;
   color: var(--ink-mute);
   font-size: 0.88rem;
 }
