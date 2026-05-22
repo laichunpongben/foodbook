@@ -3,6 +3,21 @@ import '@fontsource-variable/inter/index.css';
 import '@fontsource-variable/fraunces/full.css';
 import '~/styles/global.css';
 import { SITE_NAME } from '~/lib/jsonld';
+import { getCollection } from 'astro:content';
+import { publicOnly } from '~/lib/visibility';
+
+// Footer "by the numbers" — small archive-scope signal on every page.
+// Build-time aggregation; near-zero runtime cost.
+const [_dishes, _recipes, _farms, _restaurants] = await Promise.all([
+  getCollection('dishes').then(publicOnly),
+  getCollection('recipes').then(publicOnly),
+  getCollection('farms').then(publicOnly),
+  getCollection('restaurants').then(publicOnly),
+]);
+const totalDishes = _dishes.length;
+const totalRecipes = _recipes.length;
+const totalFarms = _farms.length;
+const totalRestaurants = _restaurants.length;
 
 interface Props {
   title: string;
@@ -126,6 +141,12 @@ const currentYear = new Date().getFullYear();
 
     <footer class="site-footer">
       <div class="container">
+        <p class="footer-numbers" aria-label="Archive scope">
+          <span class="fn-cell"><strong>{totalDishes}</strong> dishes</span>
+          <span class="fn-cell"><strong>{totalRecipes}</strong> recipes</span>
+          <span class="fn-cell"><strong>{totalFarms}</strong> farms</span>
+          <span class="fn-cell"><strong>{totalRestaurants}</strong> restaurants</span>
+        </p>
         <p>
           Foodbook — a static-site archive of the food lifecycle. Authored prose, AI-assisted
           authoring (<a href="/about#ai">how</a>).
