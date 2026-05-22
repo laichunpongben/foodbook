@@ -156,6 +156,11 @@
     background: rgba(17, 22, 28, 0.85);
     border: 1px solid var(--rule);
     border-radius: 999px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .search-bar:focus-within {
+    border-color: var(--paprika);
+    background: rgba(17, 22, 28, 0.95);
   }
   .search-bar input {
     flex: 1 1 auto;
