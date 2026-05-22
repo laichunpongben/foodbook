@@ -14,9 +14,11 @@ interface Props {
   hero?: string;
   heroUrl?: string;
   heroFocal?: string;
+  /** When true, image loads eager + fetchpriority=high. Use on above-the-fold cards (first 3-4 on grid). */
+  priority?: boolean;
 }
 
-const { slug, title, tagline, hero, heroUrl, heroFocal } = Astro.props;
+const { slug, title, tagline, hero, heroUrl, heroFocal, priority = false } = Astro.props;
 const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
 // alt left empty: the surrounding `aria-label` on the <a> already
 // names the link, so the image is decorative for AT.
@@ -28,8 +30,9 @@ const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
       class="photo"
       src={photoUrl}
       alt=""
-      loading="lazy"
+      loading={priority ? 'eager' : 'lazy'}
       decoding="async"
+      fetchpriority={priority ? 'high' : 'auto'}
       style={heroFocal ? `object-position: ${heroFocal}` : undefined}
     />
   )}
