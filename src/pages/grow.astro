@@ -1,0 +1,201 @@
+---
+/**
+ * /grow — the garden + grow-stage view.
+ *
+ * Surfaces the garden collection (home growing, bed logs) alongside any
+ * dish whose grow stage carries a note. The grow stage is the most
+ * under-traced of the four lifecycle stages; this page makes the gap
+ * visible AND surfaces what content exists.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const gardenEntries = publicOnly(await getCollection('garden'))
+  .sort((a, b) => (b.data.planted ?? '').localeCompare(a.data.planted ?? ''));
+
+const dishes = publicOnly(await getCollection('dishes'));
+const dishesWithGrowNote = dishes.filter((d) => {
+  const note = d.data.stages?.grow?.note;
+  return typeof note === 'string' && note.trim().length > 0;
+});
+const dishesWithGardenRef = dishes.filter((d) => (d.data.stages?.grow?.garden ?? []).length > 0);
+
+const site = Astro.site!;
+const description = `${gardenEntries.length} garden entries; ${dishesWithGrowNote.length + dishesWithGardenRef.length} dishes with grow-stage content.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Grow',
+  url: new URL('/grow/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Grow" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="grow container">
+    <header class="grow-head">
+      <p class="eyebrow">Stage 2 of 4</p>
+      <h1>Grow</h1>
+      <p class="lead">
+        The garden + grow-stage view. Home-grown ingredients, balcony pots, foraged greens —
+        the stage between farm and kitchen.
+      </p>
+      <ul class="grow-stats" aria-label="Grow-stage scope">
+        <li><strong>{gardenEntries.length}</strong>garden entries</li>
+        <li><strong>{dishesWithGrowNote.length}</strong>dishes with grow notes</li>
+        <li><strong>{dishesWithGardenRef.length}</strong>dishes linking to garden</li>
+      </ul>
+    </header>
+
+    {gardenEntries.length > 0 && (
+      <section class="grow-section">
+        <h2>Garden</h2>
+        <ul class="grow-list">
+          {gardenEntries.map((g) => (
+            <li class="grow-item">
+              {g.data.heroUrl && (
+                <a class="grow-thumb" href={`/garden/${bare(g.id)}/`} aria-hidden="true" tabindex="-1">
+                  <img src={g.data.heroUrl} alt="" loading="lazy" decoding="async" />
+                </a>
+              )}
+              <div class="grow-text">
+                <a href={`/garden/${bare(g.id)}/`}>{g.data.plant}</a>
+                <span class="grow-meta">
+                  {g.data.bed}
+                  {g.data.planted && <> · planted {g.data.planted}</>}
+                  {g.data.harvested && <> · harvested {g.data.harvested}</>}
+                </span>
+                {g.data.yieldNote && <span class="grow-note">{g.data.yieldNote}</span>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {dishesWithGrowNote.length > 0 && (
+      <section class="grow-section">
+        <h2>Dishes with grow-stage notes</h2>
+        <ul class="grow-list">
+          {dishesWithGrowNote.map((d) => (
+            <li class="grow-item">
+              {d.data.heroUrl && (
+                <a class="grow-thumb" href={`/dishes/${bare(d.id)}/`} aria-hidden="true" tabindex="-1">
+                  <img src={d.data.heroUrl} alt="" loading="lazy" decoding="async" />
+                </a>
+              )}
+              <div class="grow-text">
+                <a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} />
+                <span class="grow-note">{d.data.stages.grow.note}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {gardenEntries.length === 0 && dishesWithGrowNote.length === 0 && (
+      <p class="muted">
+        Grow stage is the most under-traced in the archive — most dishes skip from source straight
+        to cook. Add a <a href="/garden/">garden entry</a> or a <code>stages.grow.note</code> to a dish
+        to populate this view.
+      </p>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .grow { padding: 4rem 0 6rem; max-width: 880px; }
+  .grow-head { margin-bottom: 3rem; max-width: 60ch; }
+  .grow-head h1 { margin: 0.4rem 0 0.8rem; }
+  .grow-head .lead { color: var(--ink-soft); margin: 0 0 1.5rem; }
+  .grow-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .grow-stats li { padding: 0; max-width: none; }
+  .grow-stats strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    font-weight: 500;
+    margin-right: 0.25rem;
+  }
+
+  .grow-section { margin-bottom: 3rem; }
+  .grow-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .grow-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .grow-item {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 1.2rem;
+    align-items: start;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--rule);
+    max-width: none;
+  }
+  .grow-thumb {
+    display: block;
+    width: 88px;
+    height: 88px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #11161c;
+  }
+  .grow-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .grow-item:hover .grow-thumb img { transform: scale(1.05); }
+  .grow-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .grow-text a {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .grow-text a:hover { color: var(--paprika); }
+  .grow-meta {
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+  }
+  .grow-note {
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-top: 0.2rem;
+  }
+  .muted { color: var(--ink-mute); }
+  .muted a { color: var(--paprika); }
+</style>
