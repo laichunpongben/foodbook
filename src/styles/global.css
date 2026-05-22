@@ -430,8 +430,13 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
   font-size: 1.15rem;
   text-decoration: none;
   color: var(--ink);
+  display: inline-block;
+  transition: color 0.15s ease, transform 0.2s ease;
 }
-.index-list a:hover { color: var(--paprika); }
+.index-list a:hover {
+  color: var(--paprika);
+  transform: translateX(3px);
+}
 .index-list .meta { color: var(--ink-mute); font-size: 0.88rem; }
 .index-list .tagline { color: var(--ink-mute); font-size: 0.92rem; }
 /* Modifier — adds a hairline between rows. */
