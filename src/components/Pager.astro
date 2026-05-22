@@ -28,13 +28,13 @@ const { prev, next, ariaLabel = 'Pagination' } = Astro.props;
   <nav class="pager" aria-label={ariaLabel}>
     {prev && (
       <a class="pager-link prev" href={prev.href} rel="prev">
-        <span class="pager-eyebrow">Previous</span>
+        <span class="pager-eyebrow">← Earlier</span>
         <span class="pager-title" set:html={prev.title} />
       </a>
     )}
     {next && (
       <a class="pager-link next" href={next.href} rel="next">
-        <span class="pager-eyebrow">Next</span>
+        <span class="pager-eyebrow">Next up →</span>
         <span class="pager-title" set:html={next.title} />
       </a>
     )}
