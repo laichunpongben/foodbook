@@ -1,0 +1,41 @@
+name: Audit · photos
+
+# Runs audit-hero-photos.mjs on every push/PR. The script scores dish
+# heroes on cheap visual signals (resolution, blank/uniform-color frames,
+# missing-photo refs). Advisory — never fails CI today.
+#
+# Pulled into its own workflow rather than the main CI so:
+#   1. Photo audits can run on PRs that don't touch code.
+#   2. The script makes throttled HTTP fetches to Wikimedia, which the
+#      main-CI runner doesn't need to stall on.
+#   3. Failures here don't block the build pipeline.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "src/content/dishes/**/*.mdx"
+      - "src/components/WikiImage.astro"
+      - "src/components/DishHero.astro"
+      - "scripts/audit-hero-photos.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  photos:
+    runs-on: ubicloud-standard-2
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: audit-hero-photos (advisory)
+        continue-on-error: true
+        run: npm run audit:photos
