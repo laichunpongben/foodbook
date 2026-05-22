@@ -5,10 +5,32 @@
       <stop offset="0%" stop-color="#0a0d11"/>
       <stop offset="100%" stop-color="#1a1f26"/>
     </linearGradient>
+    <radialGradient id="paprika-glow" cx="0.85" cy="0.15" r="0.6">
+      <stop offset="0%" stop-color="#d2543b" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#d2543b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.04 0"/>
+    </filter>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <text x="80" y="160" font-family="Fraunces, Georgia, serif" font-size="56" font-weight="500" fill="#d18054" letter-spacing="0.04em">FOODBOOK</text>
+  <rect width="1200" height="630" fill="url(#paprika-glow)"/>
+  <rect width="1200" height="630" filter="url(#grain)" opacity="0.5"/>
+
+  <!-- Hand-drawn paprika underline beneath FOODBOOK -->
+  <path d="M80 180 Q 180 168, 280 178 T 480 174 T 560 180" stroke="#d2543b" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+
+  <text x="80" y="160" font-family="Fraunces, Georgia, serif" font-size="56" font-weight="500" fill="#d2543b" letter-spacing="0.04em">FOODBOOK</text>
   <text x="80" y="340" font-family="Fraunces, Georgia, serif" font-size="92" font-weight="600" fill="#f4f0ea">An archive of the</text>
   <text x="80" y="440" font-family="Fraunces, Georgia, serif" font-size="92" font-weight="600" fill="#f4f0ea">food lifecycle.</text>
   <text x="80" y="555" font-family="Inter, system-ui, sans-serif" font-size="32" fill="#9aa3ad" letter-spacing="0.05em">Farms · Gardens · Kitchens · Restaurants</text>
+
+  <!-- Lifecycle dots in lower-right -->
+  <g transform="translate(1060, 555)">
+    <circle cx="0" cy="0" r="6" fill="#d2543b"/>
+    <circle cx="22" cy="0" r="6" fill="#d2543b"/>
+    <circle cx="44" cy="0" r="6" fill="#d2543b"/>
+    <circle cx="66" cy="0" r="6" fill="#d2543b"/>
+  </g>
 </svg>
