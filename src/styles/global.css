@@ -409,36 +409,39 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
 .entity .back:hover { color: var(--paprika); }
 
 /* Collection index pages — /dishes, /farms, /recipes, /restaurants, /garden, /meals.
- * Per-page overrides (e.g. font-size, gap, dividers) sit in the page's own <style> block. */
-.index-page { padding: 4rem 0 6rem; max-width: 720px; }
-.index-page .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+ * Per-page overrides (e.g. font-size, gap, dividers) sit in the page's own <style> block.
+ * ADR-0010 stage-2: every literal that matches the token scale exactly is
+ * swapped to var(); the four off-scale meta/tagline font-sizes and the
+ * .index-group h2 size carry the off-scale: marker. */
+.index-page { padding: var(--space-2xl) 0 var(--space-3xl); max-width: 720px; }
+.index-page .lead { color: var(--ink-soft); margin-bottom: var(--space-xl); }
 .index-list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: var(--space-sm);
 }
 .index-list li {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: var(--space-3xs);
 }
 .index-list a {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: var(--text-md);
   text-decoration: none;
   color: var(--ink);
 }
 .index-list a:hover { color: var(--paprika); }
-.index-list .meta { color: var(--ink-mute); font-size: 0.88rem; }
-.index-list .tagline { color: var(--ink-mute); font-size: 0.92rem; }
+.index-list .meta { color: var(--ink-mute); font-size: 0.88rem; }     /* off-scale: between --text-xs and --text-sm */
+.index-list .tagline { color: var(--ink-mute); font-size: var(--text-sm); }
 /* Modifier — adds a hairline between rows. */
-.divided li { padding-bottom: 0.8rem; border-bottom: 1px solid var(--rule); }
-.index-page .index-group { margin-bottom: 2.5rem; }
+.divided li { padding-bottom: var(--space-sm); border-bottom: 1px solid var(--rule); }
+.index-page .index-group { margin-bottom: var(--space-xl); }
 .index-page .index-group > h2 {
-  font-size: 1.1rem;
+  font-size: 1.1rem;                                                    /* off-scale: between --text-sm (0.92) and --text-md (1.15) */
   color: var(--ink-mute);
   letter-spacing: 0.04em;
 }
