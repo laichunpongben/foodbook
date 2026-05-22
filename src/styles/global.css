@@ -265,12 +265,14 @@ main:focus { outline: none; }
 
 .lifecycle-stepper .dot.empty { opacity: 0.4; pointer-events: none; }
 
-/* Dish card on landing. */
+/* Dish card on landing. ADR-0010 stage-2: .dish-card border-radius
+ * matched --radius-pop; .dish-grid margin-bottom 4rem matched --space-2xl.
+ * gap 1.5rem and margin-top 2rem are off-scale and flagged. */
 .dish-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin: 2rem 0 4rem;
+  gap: 1.5rem;                       /* off-scale: between --space-md (1.2) and --space-lg (1.8) */
+  margin: 2rem 0 var(--space-2xl);   /* margin-top 2rem off-scale, between --space-lg (1.8) and --space-xl (2.5) */
 }
 
 .dish-card {
@@ -278,7 +280,7 @@ main:focus { outline: none; }
   display: block;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: var(--radius-pop);
   text-decoration: none;
   background: #11161c;
   transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
