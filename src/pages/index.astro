@@ -57,6 +57,15 @@ const websiteLd = {
   </section>
 
   <section class="container">
+    {(() => {
+      const latestMade = dishes.find((d) => d.data.firstMade)?.data.firstMade;
+      const formatted = latestMade
+        ? new Date(latestMade).toLocaleDateString('en', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+        : null;
+      return formatted ? (
+        <p class="last-touched">Last new dish landed <strong>{formatted}</strong>.</p>
+      ) : null;
+    })()}
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
       <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
@@ -75,3 +84,16 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .last-touched {
+    margin: 0 0 0.6rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+    letter-spacing: 0.04em;
+  }
+  .last-touched strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+</style>
