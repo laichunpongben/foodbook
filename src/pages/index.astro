@@ -38,7 +38,7 @@ const websiteLd = {
     {heroDish && (
       <div
         class="hero-photo"
-        style={`background-image: url('${heroDish.data.heroUrl ?? `${heroDish.data.hero}-2560.jpg`}')`}
+        style={`background-image: url('${heroDish.data.heroUrl ?? `${heroDish.data.hero}-2560.jpg`}'); background-position: ${heroDish.data.heroFocal ?? 'center'};`}
       />
     )}
     <div class="container">
