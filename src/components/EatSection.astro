@@ -63,9 +63,12 @@ const variant = (n: JourneyEatNode): 'default' | 'visited' | 'discovered' => {
 </section>
 
 <style>
+  /* ADR-0010 stage-2 migration. Top padding matched --space-3xl (6rem);
+   * bottom padding (8rem) is genuinely off-scale and intentional — extra
+   * room for the dish-page finale that follows. */
   .section-eat {
     position: relative;
-    padding: 6rem 0 8rem;
+    padding: var(--space-3xl) 0 8rem; /* off-scale: 8rem bottom — above --space-3xl (6) */
     background: linear-gradient(180deg, rgba(10, 13, 17, 1) 0%, rgba(18, 18, 22, 1) 100%);
   }
 
@@ -75,7 +78,7 @@ const variant = (n: JourneyEatNode): 'default' | 'visited' | 'discovered' => {
     margin: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
+    gap: 1rem;                        /* off-scale: between --space-sm (0.8) and --space-md (1.2) */
   }
   .eats-grid li { display: flex; }
 
