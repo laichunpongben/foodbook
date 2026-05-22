@@ -172,6 +172,15 @@ main:focus { outline: none; }
   font-weight: 600;
 }
 
+/* "Today" gets a small visual lift — it's the daily-rotating anchor
+ * and earns nav attention. Subtle paprika underline on rest. */
+.site-header nav a.nav-today {
+  color: var(--ink);
+  border-bottom: 2px solid var(--paprika);
+  padding-bottom: calc(0.5rem - 2px);
+}
+.site-header nav a.nav-today:hover { color: var(--paprika); }
+
 /* Hamburger toggle (desktop hidden; appears under 640px). */
 .nav-toggle {
   display: none;
