@@ -1,6 +1,7 @@
 /* Foodbook — kitchen mode.
  * Only loaded on /recipes/<slug>/cook. Light parchment palette, oversized
- * type, single-step focus. See ADR-0003.
+ * type, single-step focus. See ADR-0003 (mode), ADR-0010 (visual tokens),
+ * ADR-0011 (motion tokens), ADR-0013 (a11y commitments).
  */
 
 :root[data-mode="cook"] {
