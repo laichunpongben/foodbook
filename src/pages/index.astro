@@ -7,6 +7,7 @@ import SearchBar from '~/components/SearchBar.astro';
 import { SCHEMA_CTX, SITE_NAME } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
+import { collectProducts, inSeason, MONTH_NAMES_LONG } from '~/lib/seasons';
 
 const allDishes = await getCollection('dishes');
 const dishes = publicOnly(allDishes).sort((a, b) => {
@@ -17,6 +18,18 @@ const dishes = publicOnly(allDishes).sort((a, b) => {
 
 // Pick a hero dish — the most recent, with a hero photo.
 const heroDish = dishes[0];
+
+// "In season this month" strip — surfaces farm produce currently in
+// season, so the homepage has a temporally-fresh signal even when
+// no new dishes have been added. Pulls from the same data the
+// /seasons wheel uses. Caps at 8 products.
+const allFarms = await getCollection('farms');
+const month = new Date().getUTCMonth() + 1;
+const inSeasonNow = collectProducts(allFarms)
+  .filter((p) => inSeason(p.from, p.to, month))
+  .sort((a, b) => a.product.localeCompare(b.product))
+  .slice(0, 8);
+const currentMonthName = MONTH_NAMES_LONG[month - 1];
 
 const site = Astro.site!;
 const websiteLd = {
@@ -56,6 +69,23 @@ const websiteLd = {
     </div>
   </section>
 
+  {inSeasonNow.length > 0 && (
+    <section class="container in-season-strip" aria-labelledby="in-season-heading">
+      <p class="eyebrow"><span id="in-season-heading">In season this month</span> · {currentMonthName}</p>
+      <ul class="in-season-list">
+        {inSeasonNow.map((p) => (
+          <li>
+            <span class="in-season-product">{p.product}</span>
+            {p.farms.length > 0 && (
+              <span class="in-season-farms"> · from {p.farms.slice(0, 2).map((f) => f.name).join(', ')}{p.farms.length > 2 && ` +${p.farms.length - 2}`}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p class="in-season-cta"><a href="/seasons/">See the full seasonal wheel →</a></p>
+    </section>
+  )}
+
   <section class="container">
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
@@ -75,3 +105,45 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .in-season-strip {
+    margin: 2.5rem auto;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .in-season-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.8rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+  .in-season-list li {
+    max-width: none;
+    font-size: 0.98rem;
+    line-height: 1.4;
+  }
+  .in-season-product {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .in-season-farms {
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+  }
+  .in-season-cta {
+    margin: 1rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+  .in-season-cta a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .in-season-cta a:hover { color: var(--ink); border-color: var(--ink); }
+</style>
