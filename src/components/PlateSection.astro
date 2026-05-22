@@ -66,17 +66,21 @@ const heroStyle = [
     z-index: 2;
   }
 
+  /* ADR-0010 stage-2 migration. border-radius (999px → --radius-pill)
+   * and margin (0.8rem → --space-sm) matched the canon. font-size
+   * 0.74rem, padding 0.32rem/0.7rem are off-scale and intentional —
+   * eyebrow-pill specifics tuned for the hero plate context. */
   .origin-pill {
     display: inline-block;
     font-family: var(--font-body);
-    font-size: 0.74rem;
+    font-size: 0.74rem;               /* off-scale: below --text-xs (0.78), pill eyebrow */
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--ink-soft);
     border: 1px solid rgba(255, 255, 255, 0.25);
-    padding: 0.32rem 0.7rem;
-    border-radius: 999px;
-    margin: 0.8rem 0;
+    padding: 0.32rem 0.7rem;          /* off-scale: between --space-2xs/--space-xs and --space-sm */
+    border-radius: var(--radius-pill);
+    margin: var(--space-sm) 0;
     backdrop-filter: blur(4px);
     background: rgba(0, 0, 0, 0.2);
   }
