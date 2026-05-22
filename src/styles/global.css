@@ -318,6 +318,10 @@ main:focus { outline: none; }
   line-height: 1.15;
   margin-bottom: 0.25rem;
   text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  /* Match the warm-display setting from h1-h4 (#332) — applied here
+   * directly because dish-card titles are <span>, not <h*>. SOFT 50
+   * rounds the serifs; WONK 1 enables the playful alternates. */
+  font-variation-settings: 'opsz' 24, 'SOFT' 50, 'WONK' 1;
 }
 
 .dish-card .meta .tagline {
