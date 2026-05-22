@@ -30,7 +30,10 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
-  line-height: 1.55;
+  /* 1.6 lands in Butterick's Practical Typography sweet spot (1.55-1.65)
+   * for body prose on dark backgrounds. Previous 1.55 was slightly tight
+   * on the dark theme — extra leading helps readers stay on-line. */
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
