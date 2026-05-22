@@ -44,13 +44,20 @@ const crumb = breadcrumb(Astro.site!, section);
     {cities.map(([city, list]) => (
       <div class="index-group">
         <h2>{city}</h2>
-        <ul class="index-list">
+        <ul class="restaurants-list">
           {list.map((r) => (
-            <li>
-              <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
-              <span class="meta">
-                {[r.data.cuisine, r.data.priceBand].filter(Boolean).join(' · ')}
-              </span>
+            <li class="restaurants-list-item">
+              {r.data.heroUrl && (
+                <a class="restaurants-list-thumb" href={`/restaurants/${bare(r.id)}/`} aria-hidden="true" tabindex="-1">
+                  <img src={r.data.heroUrl} alt="" loading="lazy" decoding="async" />
+                </a>
+              )}
+              <div class="restaurants-list-text">
+                <a href={`/restaurants/${bare(r.id)}/`}>{r.data.name}</a>
+                <span class="meta">
+                  {[r.data.cuisine, r.data.priceBand].filter(Boolean).join(' · ')}
+                </span>
+              </div>
             </li>
           ))}
         </ul>
@@ -60,6 +67,60 @@ const crumb = breadcrumb(Astro.site!, section);
 </BaseLayout>
 
 <style>
+  .restaurants-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.8rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .restaurants-list-item {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+    max-width: none;
+  }
+  .restaurants-list-thumb {
+    display: block;
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #11161c;
+  }
+  .restaurants-list-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .restaurants-list-item:hover .restaurants-list-thumb img { transform: scale(1.05); }
+  .restaurants-list-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .restaurants-list-text a {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .restaurants-list-text a:hover { color: var(--paprika); }
+  .restaurants-list-text .meta {
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+  }
+  @media (max-width: 480px) {
+    .restaurants-list-item { grid-template-columns: 56px 1fr; gap: 0.8rem; }
+    .restaurants-list-thumb { width: 56px; height: 56px; }
+  }
   .index-list { gap: 0.6rem; margin-top: 0.8rem; }
   .index-list a { font-size: 1.1rem; }
 </style>
