@@ -16,6 +16,11 @@ Snapshot of the **current** state of the system: directory layout, content model
 | Map | Leaflet + CARTO Dark Matter tiles | inherited from Travelbook ADR-0004 |
 | Visual language — primary | Dark editorial, Fraunces + Inter (self-hosted), paprika accent | [ADR-0003](adr/0003-dual-mode-editorial-and-kitchen.md) |
 | Visual language — `/recipes/<slug>/cook` | Light "kitchen mode" parchment, same fonts | [ADR-0003](adr/0003-dual-mode-editorial-and-kitchen.md) |
+| Design tokens — palette/type/spacing/radii/motion | Canonical scale in `:root` + `tokens.json` | [ADR-0010](adr/0010-design-tokens.md), [ADR-0011](adr/0011-motion-tokens.md) |
+| Editorial voice | Posture tokens + anti-pattern list + per-collection register | [ADR-0012](adr/0012-editorial-voice.md) |
+| Accessibility | WCAG 2.2 AA baseline + six-point maintainer's contract | [ADR-0013](adr/0013-accessibility-commitments.md) |
+| North star | "Walkable food archive — readable by humans, queryable by agents." | [ADR-0009](adr/0009-north-star.md) |
+| Editorial + design audits | 8 `audit:*` scripts; advisory in CI, graduating to strict per `audit-strict.yml`. | [`docs/AUDITS.md`](AUDITS.md), [`docs/PROCESS.md`](PROCESS.md) |
 | Content model | Five collections (dishes / recipes / restaurants / farms / meals) + garden + pantry | [ADR-0002](adr/0002-content-model-dishes-recipes-restaurants-farms.md) |
 | Dish page structure | `DishHero` + Plant / Cook / Plate / Eat sections | [ADR-0006](adr/0006-dish-page-journey-with-dishhero.md) |
 | Agriculture data | External sidecar (`almanac`) — not in this repo | [ADR-0007](adr/0007-external-agriculture-data-sidecar.md) (Proposed) |
