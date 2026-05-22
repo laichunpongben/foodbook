@@ -456,19 +456,22 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
 
 /* Tag chips — small rounded pills shown on dish and recipe headers.
  * Top margin is the parent's responsibility (different rhythm per context). */
+/* ADR-0010 stage-2 migration. border-radius matched --radius-pill;
+ * font-size matched --text-xs (0.78rem). Padding values stay literal
+ * with off-scale markers — chip-specific tuning. */
 .tag-chips {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.4rem;                       /* off-scale: between --space-2xs (0.3) and --space-xs (0.5) */
 }
 .tag-chips li {
-  padding: 0.25rem 0.7rem;
+  padding: 0.25rem 0.7rem;           /* off-scale: chip-specific, between --space-3xs/--space-xs */
   border: 1px solid var(--rule);
-  border-radius: 999px;
-  font-size: 0.78rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
   color: var(--ink-mute);
   text-transform: lowercase;
