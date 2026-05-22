@@ -61,6 +61,32 @@ const websiteLd = {
     {dishes.length === 0 && (
       <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
     )}
+    {dishes.length > 0 && (
+      <div class="magazine-feature">
+        {(() => {
+          const f = dishes[1] ?? dishes[0];
+          const slug = bare(f.id);
+          const photo = f.data.heroUrl ?? (f.data.hero ? `${f.data.hero}-2560.jpg` : null);
+          return (
+            <a class="magazine-feature-card" href={`/dishes/${slug}/`}>
+              {photo && (
+                <div
+                  class="magazine-feature-photo"
+                  style={`background-image: url('${photo}'); background-position: ${f.data.heroFocal ?? 'center'};`}
+                />
+              )}
+              <div class="magazine-feature-text">
+                <p class="magazine-feature-eyebrow">Featured</p>
+                <h3 class="magazine-feature-title" set:html={f.data.title} />
+                {f.data.tagline && <p class="magazine-feature-tagline" set:html={f.data.tagline} />}
+                {f.data.origin && <p class="magazine-feature-origin">{f.data.origin}</p>}
+                <span class="magazine-feature-cta">Read the entry →</span>
+              </div>
+            </a>
+          );
+        })()}
+      </div>
+    )}
     <div class="dish-grid">
       {dishes.map((dish) => (
         <DishCard
@@ -75,3 +101,69 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .magazine-feature { margin: 1.5rem 0 2.5rem; }
+  .magazine-feature-card {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2.5rem;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(15, 18, 24, 0.5);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .magazine-feature-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-2px);
+  }
+  .magazine-feature-photo {
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .magazine-feature-text { padding: 2rem 2rem 2rem 0; display: flex; flex-direction: column; justify-content: center; }
+  .magazine-feature-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0 0 0.8rem;
+  }
+  .magazine-feature-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0;
+    color: var(--ink);
+  }
+  .magazine-feature-tagline {
+    margin: 1rem 0 0;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    line-height: 1.55;
+  }
+  .magazine-feature-origin {
+    margin: 0.8rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .magazine-feature-cta {
+    margin-top: 1.2rem;
+    color: var(--paprika);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+  }
+  @media (max-width: 720px) {
+    .magazine-feature-card { grid-template-columns: 1fr; }
+    .magazine-feature-text { padding: 1.4rem; }
+  }
+</style>
