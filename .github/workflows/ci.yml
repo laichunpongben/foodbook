@@ -33,6 +33,12 @@ jobs:
       - name: Secret-leak scan
         run: npm run check:leaks
 
+      - name: Doc-link rot check
+        # Validates every relative [label](path) in docs/*.md, README.md,
+        # CONTRIBUTING.md. Pure-anchor + external URLs are skipped.
+        # See scripts/check-doc-links.mjs (#322).
+        run: npm run check:doc-links
+
       - name: Tests
         run: npm test
 
