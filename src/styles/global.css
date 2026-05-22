@@ -284,7 +284,23 @@ main:focus { outline: none; }
   transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.dish-card:hover { transform: translateY(-3px); }
+/* Hand-laid rotation pattern - alternating cards tilt 0.3-0.5deg in
+ * different directions, like polaroids tossed on a board. Per 2026
+ * "imperfect by design" trend (Canva, Fontfabric editorial direction). */
+.dish-grid > .dish-card:nth-child(3n+1) { transform: rotate(-0.4deg); transform-origin: top left; }
+.dish-grid > .dish-card:nth-child(3n+2) { transform: rotate(0.3deg); transform-origin: top right; }
+.dish-grid > .dish-card:nth-child(3n+3) { transform: rotate(-0.3deg); transform-origin: top center; }
+
+.dish-card:hover { transform: translateY(-3px) rotate(0); }
+.dish-grid > .dish-card:nth-child(3n+1):hover,
+.dish-grid > .dish-card:nth-child(3n+2):hover,
+.dish-grid > .dish-card:nth-child(3n+3):hover { transform: translateY(-3px) rotate(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dish-grid > .dish-card:nth-child(3n+1),
+  .dish-grid > .dish-card:nth-child(3n+2),
+  .dish-grid > .dish-card:nth-child(3n+3) { transform: none; }
+}
 
 .dish-card .photo {
   position: absolute;
