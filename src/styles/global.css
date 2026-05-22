@@ -412,6 +412,18 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
  * Per-page overrides (e.g. font-size, gap, dividers) sit in the page's own <style> block. */
 .index-page { padding: 4rem 0 6rem; max-width: 720px; }
 .index-page .lead { color: var(--ink-soft); margin-bottom: 2.5rem; }
+
+/* Hand-drawn underline on the index-page h1. Reads as editorial section
+ * marker, not just hierarchy. SVG inlined here for independence (same
+ * paprika marker-stroke used elsewhere). */
+.index-page h1 {
+  display: inline-block;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path d='M2 9 Q 40 2, 80 7 T 160 6 T 198 8' stroke='%23d2543b' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 0.32em;
+  background-position: left 95%;
+  padding-bottom: 0.18em;
+}
 .index-list {
   list-style: none;
   padding: 0;
