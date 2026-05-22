@@ -14,9 +14,11 @@ interface Props {
   hero?: string;
   heroUrl?: string;
   heroFocal?: string;
+  /** Optional cuisine label shown as a small chip in the card's upper-right. */
+  cuisine?: string;
 }
 
-const { slug, title, tagline, hero, heroUrl, heroFocal } = Astro.props;
+const { slug, title, tagline, hero, heroUrl, heroFocal, cuisine } = Astro.props;
 const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
 // alt left empty: the surrounding `aria-label` on the <a> already
 // names the link, so the image is decorative for AT.
@@ -34,8 +36,28 @@ const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
     />
   )}
   <div class="overlay" />
+  {cuisine && <span class="cuisine-pill">{cuisine}</span>}
   <div class="meta">
     <div class="title" set:html={title} />
     {tagline && <div class="tagline">{tagline}</div>}
   </div>
 </a>
+
+<style>
+  .cuisine-pill {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    z-index: 1;
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: rgba(210, 84, 59, 0.85);
+    padding: 0.18rem 0.5rem;
+    border-radius: 3px;
+    backdrop-filter: blur(2px);
+    font-weight: 600;
+  }
+</style>
