@@ -322,8 +322,8 @@ main:focus { outline: none; }
 
 .dish-card .meta .tagline {
   font-size: 0.86rem;
-  color: var(--ink-soft);
-  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  color: rgba(250, 248, 244, 0.88);
+  text-shadow: 0 1px 5px rgba(0,0,0,0.85);
 }
 
 /* Hero — landing, dish, seasons pages. */
