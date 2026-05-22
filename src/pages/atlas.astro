@@ -1,0 +1,246 @@
+---
+/**
+ * /atlas — directory of every farm + restaurant grouped by country.
+ *
+ * Distinct from /world (geographic map) and /farms (kind grouping —
+ * Farms / Producers / Dairies / etc.). /atlas reads as a "travel
+ * index" — by country, alphabetical within. Photos lazy-load.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const COUNTRY_NAMES: Record<string, string> = {
+  IT: 'Italy',
+  FR: 'France',
+  ES: 'Spain',
+  GR: 'Greece',
+  JP: 'Japan',
+  CN: 'China',
+  IN: 'India',
+  TH: 'Thailand',
+  VN: 'Vietnam',
+  KH: 'Cambodia',
+  LA: 'Laos',
+  ID: 'Indonesia',
+  PH: 'Philippines',
+  MY: 'Malaysia',
+  SG: 'Singapore',
+  KR: 'South Korea',
+  HK: 'Hong Kong',
+  TW: 'Taiwan',
+  US: 'United States',
+  MX: 'Mexico',
+  PE: 'Peru',
+  BR: 'Brazil',
+  AR: 'Argentina',
+  CO: 'Colombia',
+  GT: 'Guatemala',
+  ET: 'Ethiopia',
+  EG: 'Egypt',
+  LB: 'Lebanon',
+  TR: 'Turkey',
+  IR: 'Iran',
+  MA: 'Morocco',
+  SE: 'Sweden',
+  NO: 'Norway',
+  DK: 'Denmark',
+  GB: 'United Kingdom',
+  DE: 'Germany',
+  RU: 'Russia',
+  ZA: 'South Africa',
+  AU: 'Australia',
+  NZ: 'New Zealand',
+  CA: 'Canada',
+};
+
+interface AtlasEntry {
+  href: string;
+  name: string;
+  meta: string;
+  kind: 'farm' | 'restaurant';
+  photo: string | null;
+}
+
+const farms = publicOnly(await getCollection('farms'));
+const restaurants = publicOnly(await getCollection('restaurants'));
+
+const byCountry = new Map<string, AtlasEntry[]>();
+const push = (code: string, e: AtlasEntry) => {
+  const list = byCountry.get(code) ?? [];
+  list.push(e);
+  byCountry.set(code, list);
+};
+
+for (const f of farms) {
+  const code = f.data.country?.toUpperCase();
+  if (!code) continue;
+  push(code, {
+    href: `/farms/${bare(f.id)}/`,
+    name: f.data.name,
+    meta: f.data.location ?? f.data.kind,
+    kind: 'farm',
+    photo: f.data.heroUrl ?? null,
+  });
+}
+for (const r of restaurants) {
+  const code = r.data.country?.toUpperCase();
+  if (!code) continue;
+  push(code, {
+    href: `/restaurants/${bare(r.id)}/`,
+    name: r.data.name,
+    meta: r.data.cuisine ?? r.data.city,
+    kind: 'restaurant',
+    photo: r.data.heroUrl ?? null,
+  });
+}
+
+const groups = [...byCountry.entries()]
+  .map(([code, list]) => ({
+    code,
+    label: COUNTRY_NAMES[code] ?? code,
+    list: list.sort((a, b) => a.name.localeCompare(b.name)),
+  }))
+  .sort((a, b) => a.label.localeCompare(b.label));
+
+const totalEntries = groups.reduce((n, g) => n + g.list.length, 0);
+
+const site = Astro.site!;
+const description = `${totalEntries} farms + restaurants across ${groups.length} countries.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'CollectionPage',
+  name: 'Atlas',
+  url: new URL('/atlas/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Atlas" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="atlas container">
+    <header class="atlas-head">
+      <p class="eyebrow">Where it comes from</p>
+      <h1>Atlas</h1>
+      <p class="lead">
+        Every farm and restaurant grouped by country. {totalEntries} entries
+        across {groups.length} countries. Or see <a href="/world/">the map</a>.
+      </p>
+    </header>
+
+    {groups.map((g) => (
+      <section class="atlas-country">
+        <h2 class="atlas-country-name">{g.label}</h2>
+        <ul class="atlas-list">
+          {g.list.map((e) => (
+            <li class="atlas-item">
+              {e.photo && (
+                <a class="atlas-thumb" href={e.href} aria-hidden="true" tabindex="-1">
+                  <img src={e.photo} alt="" loading="lazy" decoding="async" />
+                </a>
+              )}
+              <div class="atlas-text">
+                <a href={e.href}>{e.name}</a>
+                <span class="atlas-meta">
+                  <span class={`atlas-kind atlas-kind--${e.kind}`}>{e.kind}</span>
+                  <span> · {e.meta}</span>
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </article>
+</BaseLayout>
+
+<style>
+  .atlas { padding: 4rem 0 6rem; max-width: 880px; }
+  .atlas-head { margin-bottom: 3rem; max-width: 60ch; }
+  .atlas-head h1 { margin: 0.4rem 0 0.8rem; }
+  .atlas-head .lead { color: var(--ink-soft); margin: 0; }
+  .atlas-head a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+
+  .atlas-country { margin-bottom: 3rem; }
+  .atlas-country-name {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    margin: 0 0 1rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.5rem;
+  }
+  .atlas-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .atlas-item {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.5rem 0;
+    max-width: none;
+  }
+  .atlas-thumb {
+    display: block;
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #11161c;
+  }
+  .atlas-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .atlas-item:hover .atlas-thumb img { transform: scale(1.06); }
+  .atlas-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .atlas-text a {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .atlas-text a:hover { color: var(--paprika); }
+  .atlas-meta {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--ink-mute);
+  }
+  .atlas-kind {
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ink-soft);
+  }
+  .atlas-kind--restaurant {
+    background: rgba(210, 84, 59, 0.12);
+    color: var(--paprika);
+  }
+  .atlas-kind--farm {
+    background: rgba(93, 110, 68, 0.18);
+    color: rgba(141, 178, 95, 0.95);
+  }
+</style>
