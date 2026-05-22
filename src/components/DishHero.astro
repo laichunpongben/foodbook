@@ -93,15 +93,21 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
     font-family: var(--font-display);
     font-size: clamp(2.4rem, 6.5vw, 4.6rem);
     line-height: 1.02;
+    letter-spacing: -0.02em;
     margin: 0;
     color: var(--ink);
     font-weight: 500;
     max-width: 14ch;
+    /* Optical size + soft + wonk at display scale - matches global #428
+     * but uses opsz 96 instead of 72 because the title is the largest
+     * heading on the page. */
+    font-variation-settings: 'opsz' 96, 'SOFT' 60, 'WONK' 1;
   }
 
   .dish-hero-title :global(em) {
     font-style: italic;
     color: var(--ink);
+    font-variation-settings: 'opsz' 96, 'SOFT' 80, 'WONK' 1;
   }
 
   .dish-hero-tagline {
