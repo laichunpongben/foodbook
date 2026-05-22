@@ -30,7 +30,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
-  line-height: 1.55;
+  line-height: var(--leading-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -58,15 +58,19 @@ h1, h2, h3, h4 {
   margin: 0;
 }
 
-h1 { font-size: clamp(2.4rem, 5.5vw, 4.4rem); line-height: 1.04; }
-h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.18; }
-h3 { font-size: 1.2rem; line-height: 1.3; }
+/* ADR-0010 stage-2: h1 / h2 match --text-2xl / --text-xl exactly;
+ * h3 is intentionally 1.2rem (between --text-md and --text-lg) for
+ * the title balance against 1.55 body line-height. Eyebrow matches
+ * --text-xs. Section-head h2 also matches --text-xl. */
+h1 { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: var(--leading-display); }  /* off-scale h2 — kept smaller than --text-xl */
+h3 { font-size: 1.2rem; line-height: var(--leading-snug); }                          /* off-scale: between --text-md (1.15) and --text-lg (1.4) */
 
 p, li { max-width: var(--measure); }
 
 .eyebrow {
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-mute);
@@ -74,16 +78,16 @@ p, li { max-width: var(--measure); }
 }
 
 /* Shared section header rhythm — used by Plant, Cook, Eat sections. */
-.section-head { max-width: 60ch; margin: 0 0 3rem; }
+.section-head { max-width: 60ch; margin: 0 0 3rem; }   /* off-scale margin 3rem — between --space-xl (2.5) and --space-2xl (4) */
 .section-head h2 {
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+  font-size: var(--text-xl);
   line-height: 1.15;
-  margin: 0.4rem 0 1rem;
+  margin: 0.4rem 0 1rem;                                /* off-scale: both literals between scale steps */
 }
 .section-lead {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
   color: var(--ink-soft);
   margin: 0;
 }
