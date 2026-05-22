@@ -281,10 +281,29 @@ main:focus { outline: none; }
   border-radius: 6px;
   text-decoration: none;
   background: #11161c;
+  /* `transform-origin` near the bottom-left so the hover lift feels like
+   * a card being plucked from a stack — the 2026 "scrapbook" gesture. */
+  transform-origin: 30% 90%;
   transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.dish-card:hover { transform: translateY(-3px); }
+/* Small per-card rest-state rotation gives the grid a hand-laid feel
+ * rather than a perfect digital grid. nth-child alternates direction
+ * by 0.5deg / -0.3deg / 0.2deg — small enough to read as "almost
+ * straight" rather than "tilted card". Per 2026 trend research. */
+.dish-card:nth-child(3n+1) { transform: rotate(-0.4deg); }
+.dish-card:nth-child(3n+2) { transform: rotate(0.3deg); }
+.dish-card:nth-child(3n+3) { transform: rotate(0.5deg); }
+
+.dish-card:hover { transform: translateY(-4px) rotate(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dish-card,
+  .dish-card:nth-child(3n+1),
+  .dish-card:nth-child(3n+2),
+  .dish-card:nth-child(3n+3) { transform: none; }
+  .dish-card:hover { transform: translateY(-2px); }
+}
 
 .dish-card .photo {
   position: absolute;
