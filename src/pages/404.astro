@@ -5,31 +5,64 @@ import SearchBar from '~/components/SearchBar.astro';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
 
-const recent = publicOnly(await getCollection('dishes'))
+const allDishes = publicOnly(await getCollection('dishes'));
+const sortedById = [...allDishes].sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+// Pick today's dish — matches /today's logic so the same dish features
+// across both surfaces. Gives the 404 page a warm anchor instead of
+// just a list of broken links.
+const now = new Date();
+const dayOfYear = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 0)) / 86_400_000,
+);
+const todaysDish = sortedById.length > 0 ? sortedById[dayOfYear % sortedById.length] : null;
+const heroPhoto = todaysDish?.data.heroUrl
+  ?? (todaysDish?.data.hero ? `${todaysDish.data.hero}-1280.jpg` : null);
+
+const recent = [...allDishes]
   .sort((a, b) => (b.data.firstMade ?? '').localeCompare(a.data.firstMade ?? ''))
   .slice(0, 6);
 ---
 
 <BaseLayout title="Not found" description="No such page in this archive.">
   <section class="not-found">
-    <p class="eyebrow">404</p>
-    <h1>Page not found</h1>
+    <p class="eyebrow">404 — lost in the kitchen</p>
+    <h1>This page isn't on the menu</h1>
     <p class="lead">
-      The page you were looking for isn't in the archive. The slug may be wrong, the entry may
-      have been removed, or the page may not exist yet. Try a search:
+      That slug isn't in the archive. Search for what you wanted, or take a detour
+      via today's pick.
     </p>
     <SearchBar />
+
+    {todaysDish && (
+      <a class="nf-today" href={`/dishes/${bare(todaysDish.id)}/`}>
+        {heroPhoto && (
+          <div
+            class="nf-today-photo"
+            style={`background-image: url('${heroPhoto}'); background-position: ${todaysDish.data.heroFocal ?? 'center'};`}
+          />
+        )}
+        <div class="nf-today-text">
+          <p class="nf-today-eyebrow">Today's pick instead?</p>
+          <h2 class="nf-today-title" set:html={todaysDish.data.title} />
+          {todaysDish.data.tagline && <p class="nf-today-tagline" set:html={todaysDish.data.tagline} />}
+        </div>
+      </a>
+    )}
+
     <ul class="not-found-nav">
       <li><a href="/">Home</a></li>
-      <li><a href="/dishes/">Dishes</a></li>
-      <li><a href="/recipes/">Recipes</a></li>
-      <li><a href="/world/">World</a></li>
+      <li><a href="/today/">Today</a></li>
+      <li><a href="/menu/">Menu</a></li>
+      <li><a href="/random/">Surprise me</a></li>
+      <li><a href="/cuisines/">Cuisines</a></li>
       <li><a href="/seasons/">Seasons</a></li>
-      <li><a href="/pantry/">Pantry</a></li>
     </ul>
+
     {recent.length > 0 && (
       <div class="recent">
-        <p class="eyebrow">Recent dishes</p>
+        <p class="eyebrow">Or one of these</p>
         <ul>
           {recent.map((d) => (
             <li>
@@ -44,10 +77,58 @@ const recent = publicOnly(await getCollection('dishes'))
 
 <style>
   .not-found {
-    max-width: 36rem;
-    margin: 6rem auto;
+    max-width: 42rem;
+    margin: 5rem auto;
     padding: 0 1.5rem;
     text-align: center;
+  }
+  .nf-today {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 1.4rem;
+    margin: 2.5rem 0 0;
+    text-align: left;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .nf-today:hover {
+    border-color: var(--paprika);
+    transform: translateY(-2px);
+  }
+  .nf-today-photo {
+    aspect-ratio: 4 / 5;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .nf-today-text { padding: 1rem 1.2rem 1rem 0; }
+  .nf-today-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    margin: 0 0 0.4rem;
+  }
+  .nf-today-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1.15;
+    margin: 0;
+  }
+  .nf-today-tagline {
+    margin: 0.5rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  @media (max-width: 540px) {
+    .nf-today { grid-template-columns: 1fr; text-align: center; }
+    .nf-today-photo { aspect-ratio: 16 / 10; }
+    .nf-today-text { padding: 1rem 1.2rem; }
   }
   .not-found .eyebrow {
     font-family: var(--font-display);
