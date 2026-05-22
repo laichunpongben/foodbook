@@ -45,9 +45,13 @@ const { recipes } = Astro.props;
 </section>
 
 <style>
+  /* ADR-0010 stage-2 migration. 1 of 2 spacing literals matched
+   * (padding: 6rem → --space-3xl). The grid gap (1rem) sits between
+   * --space-sm (0.8) and --space-md (1.2); kept as a literal with the
+   * off-scale: marker so audit-tokens.mjs sees it as pre-audited. */
   .section-cook {
     position: relative;
-    padding: 6rem 0;
+    padding: var(--space-3xl) 0;
     background: linear-gradient(180deg, rgba(10, 13, 17, 1) 0%, rgba(28, 18, 14, 1) 50%, rgba(10, 13, 17, 1) 100%);
   }
 
@@ -57,7 +61,7 @@ const { recipes } = Astro.props;
     margin: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    gap: 1rem;                       /* off-scale: between --space-sm (0.8) and --space-md (1.2) */
     max-width: 720px;
   }
   .recipes-grid li { display: flex; }
