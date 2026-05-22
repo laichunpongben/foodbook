@@ -1,0 +1,150 @@
+---
+/**
+ * /eat-out — magazine gallery view of restaurants.
+ *
+ * Distinct from /restaurants index (text list grouped by city) and
+ * /atlas (by country). /eat-out is full-bleed photography + signature
+ * dish + restaurant name as cinematic editorial.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const restaurants = publicOnly(await getCollection('restaurants'))
+  .sort((a, b) => a.data.name.localeCompare(b.data.name));
+
+const site = Astro.site!;
+const description = `${restaurants.length} restaurants as a visual gallery.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'CollectionPage',
+  name: 'Eating out',
+  url: new URL('/eat-out/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Eating out" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="eat-out">
+    <header class="eat-out-head container">
+      <p class="eyebrow">Eat</p>
+      <h1>Eating out</h1>
+      <p class="lead">
+        {restaurants.length} restaurants as a visual gallery. Each card opens the
+        full entry. Or browse <a href="/restaurants/">by city</a> or <a href="/atlas/">by country</a>.
+      </p>
+    </header>
+
+    <ul class="eat-out-grid">
+      {restaurants.map((r) => {
+        const photo = r.data.heroUrl;
+        return (
+          <li class="eat-card-li">
+            <a class="eat-card" href={`/restaurants/${bare(r.id)}/`}>
+              {photo && (
+                <div
+                  class="eat-card-photo"
+                  style={`background-image: url('${photo}');`}
+                />
+              )}
+              <div class="eat-card-overlay"></div>
+              <div class="eat-card-text">
+                <p class="eat-card-city">{r.data.city}{r.data.country && `, ${r.data.country}`}</p>
+                <h2 class="eat-card-name">{r.data.name}</h2>
+                {r.data.cuisine && <p class="eat-card-cuisine">{r.data.cuisine}</p>}
+              </div>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  </article>
+</BaseLayout>
+
+<style>
+  .eat-out { padding: 4rem 0 6rem; }
+  .eat-out-head { margin-bottom: 3rem; max-width: 60ch; }
+  .eat-out-head h1 { margin: 0.4rem 0 0.8rem; }
+  .eat-out-head .lead { color: var(--ink-soft); margin: 0; }
+  .eat-out-head a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+
+  .eat-out-grid {
+    list-style: none;
+    padding: 0 var(--gutter);
+    margin: 0 auto;
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.6rem;
+  }
+  .eat-card-li { padding: 0; max-width: none; }
+  .eat-card {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--ink);
+    background: #11161c;
+    transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.45);
+  }
+  .eat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px -10px rgba(0, 0, 0, 0.6);
+  }
+  .eat-card-photo {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .eat-card:hover .eat-card-photo { transform: scale(1.04); }
+  .eat-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.85) 100%);
+  }
+  .eat-card-text {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.4rem 1.5rem 1.6rem;
+    z-index: 1;
+  }
+  .eat-card-city {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 0.4rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  }
+  .eat-card-name {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    line-height: 1.05;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.75);
+    color: var(--ink);
+  }
+  .eat-card-cuisine {
+    margin: 0.5rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    font-style: italic;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  }
+</style>
