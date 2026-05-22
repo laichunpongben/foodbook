@@ -94,6 +94,35 @@ p, li { max-width: var(--measure); }
   padding: 0 var(--gutter);
 }
 
+/* Reading-progress bar — thin horizontal indicator fixed at the top of
+ * the viewport. Driven by --progress (0-1) set by a scroll listener in
+ * BaseLayout.astro. scaleX transform is GPU-accelerated. Subtle paprika;
+ * disappears entirely under prefers-reduced-motion. */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 100;
+  pointer-events: none;
+  background: transparent;
+  --progress: 0;
+}
+.reading-progress::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--paprika);
+  transform: scaleX(var(--progress));
+  transform-origin: left center;
+  transition: transform 0.08s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-progress { display: none; }
+}
+
 /* Skip-to-main-content link. Visually hidden until keyboard focus. */
 .skip-link {
   position: absolute;
