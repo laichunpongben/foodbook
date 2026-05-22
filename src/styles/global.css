@@ -73,6 +73,20 @@ p, li { max-width: var(--measure); }
   font-weight: 500;
 }
 
+/* Per-stage eyebrow on dish-detail sections (DishHero, PlantSection,
+ * CookSection, PlateSection, EatSection). Origin + stage-number labels.
+ * Was an unstyled latent class — gives the stage indicator first-class
+ * presence in paprika. */
+.stage-eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paprika);
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
 /* Shared section header rhythm — used by Plant, Cook, Eat sections. */
 .section-head { max-width: 60ch; margin: 0 0 3rem; }
 .section-head h2 {
