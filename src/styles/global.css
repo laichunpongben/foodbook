@@ -119,7 +119,7 @@ p, li { max-width: var(--measure); }
 :focus-visible {
   outline: 2px solid var(--paprika);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 2px;            /* off-radius: WCAG focus indicator, intentionally smaller than --radius-card */
 }
 /* Don't suppress focus styles for everyone — only mouse users want them off. */
 :focus:not(:focus-visible) { outline: none; }
