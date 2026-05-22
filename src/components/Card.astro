@@ -76,8 +76,13 @@ const {
     overflow: hidden;
     text-decoration: none;
     color: var(--ink);
-    transition: transform 0.2s ease, border-color 0.2s ease,
-                box-shadow 0.2s ease, opacity 0.25s ease;
+    /* ADR-0011: hover transitions adopt --motion-base + --ease-out.
+     * Opacity stays at 0.25s — deliberately 50ms slower than the other
+     * three so the fade trails the lift. Flagged off-motion. */
+    transition: transform var(--motion-base) var(--ease-out),
+                border-color var(--motion-base) var(--ease-out),
+                box-shadow var(--motion-base) var(--ease-out),
+                opacity 0.25s var(--ease-out); /* off-motion: opacity trails the lift by 50ms */
   }
 
   .card.faded { opacity: 0.32; }
