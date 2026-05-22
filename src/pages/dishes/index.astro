@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import SearchBar from '~/components/SearchBar.astro';
 import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
@@ -28,6 +29,8 @@ const crumb = breadcrumb(Astro.site!, section);
     <p class="eyebrow">Dishes</p>
     <h1>Dishes</h1>
     <p class="lead">Every dish in the archive — {dishes.length} entries, alphabetical.</p>
+
+    <SearchBar />
 
     <ul class="index-list dish-list">
       {dishes.map((d) => (

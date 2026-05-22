@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import JsonLd from '~/components/JsonLd.astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import SearchBar from '~/components/SearchBar.astro';
 import { breadcrumb, collectionPage, entryUrl } from '~/lib/jsonld';
 import { bare } from '~/lib/slug';
 import { publicOnly } from '~/lib/visibility';
@@ -33,6 +34,8 @@ const crumb = breadcrumb(Astro.site!, section);
       {recipes.length} cookable recipes — yields, timing, and ingredient provenance.
       Each opens in <em>cook mode</em> for kitchen use.
     </p>
+
+    <SearchBar />
 
     <ul class="index-list divided">
       {recipes.map((r) => (
