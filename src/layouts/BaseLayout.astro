@@ -69,7 +69,8 @@ const currentYear = new Date().getFullYear();
     <title>{fullTitle}</title>
     {description && <meta name="description" content={description} />}
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title="Foodbook" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="Foodbook (RSS)" href="/rss.xml" />
+    <link rel="alternate" type="application/feed+json" title="Foodbook (JSON Feed)" href="/feed.json" />
     {unlisted && <meta name="robots" content="noindex,nofollow" />}
 
     <meta property="og:site_name" content={SITE_NAME} />
