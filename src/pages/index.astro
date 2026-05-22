@@ -18,6 +18,25 @@ const dishes = publicOnly(allDishes).sort((a, b) => {
 // Pick a hero dish — the most recent, with a hero photo.
 const heroDish = dishes[0];
 
+// "Featured farm" — rotates weekly (one farm per ISO week of the year).
+// Surfaces a specific producer + their products. Same farm for everyone
+// this week; new pick next Monday UTC.
+const allFarms = await getCollection('farms');
+const visibleFarms = publicOnly(allFarms)
+  .filter((f) => f.data.heroUrl)
+  .sort((a, b) => a.id.localeCompare(b.id));
+const now = new Date();
+const isoWeek = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 1)) / 604_800_000,
+);
+const featuredFarm = visibleFarms.length > 0
+  ? visibleFarms[isoWeek % visibleFarms.length]
+  : null;
+const featuredProducts = featuredFarm
+  ? (featuredFarm.data.seasonalWindow ?? []).slice(0, 3).map((w) => w.product)
+  : [];
+
 const site = Astro.site!;
 const websiteLd = {
   '@context': SCHEMA_CTX,
@@ -56,6 +75,30 @@ const websiteLd = {
     </div>
   </section>
 
+  {featuredFarm && (
+    <section class="container farm-spotlight" aria-label="Featured farm">
+      <a class="farm-spotlight-card" href={`/farms/${bare(featuredFarm.id)}/`}>
+        <div
+          class="farm-spotlight-photo"
+          style={`background-image: url('${featuredFarm.data.heroUrl}')`}
+        />
+        <div class="farm-spotlight-text">
+          <p class="eyebrow">This week's source</p>
+          <h2 class="farm-spotlight-name">{featuredFarm.data.name}</h2>
+          {featuredFarm.data.location && (
+            <p class="farm-spotlight-location">{featuredFarm.data.location}</p>
+          )}
+          {featuredProducts.length > 0 && (
+            <p class="farm-spotlight-products">
+              Known for: {featuredProducts.join(' · ')}
+            </p>
+          )}
+          <p class="farm-spotlight-cta">Visit the entry →</p>
+        </div>
+      </a>
+    </section>
+  )}
+
   <section class="container">
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
@@ -75,3 +118,61 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .farm-spotlight { margin: 3rem auto; }
+  .farm-spotlight-card {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(15, 18, 24, 0.6);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .farm-spotlight-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-2px);
+  }
+  .farm-spotlight-photo {
+    aspect-ratio: 4 / 5;
+    background-size: cover;
+    background-position: center;
+    background-color: #11161c;
+  }
+  .farm-spotlight-text { padding: 1.6rem 1.6rem 1.6rem 0; }
+  .farm-spotlight-name {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    line-height: 1.1;
+    margin: 0.4rem 0 0;
+    color: var(--ink);
+  }
+  .farm-spotlight-location {
+    margin: 0.8rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .farm-spotlight-products {
+    margin: 1rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+  }
+  .farm-spotlight-cta {
+    margin: 1.2rem 0 0;
+    color: var(--paprika);
+    font-family: var(--font-display);
+    font-size: 1rem;
+  }
+  @media (max-width: 640px) {
+    .farm-spotlight-card { grid-template-columns: 1fr; }
+    .farm-spotlight-photo { aspect-ratio: 16 / 10; }
+    .farm-spotlight-text { padding: 1.4rem; }
+  }
+</style>
