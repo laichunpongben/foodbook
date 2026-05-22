@@ -18,6 +18,20 @@ const dishes = publicOnly(allDishes).sort((a, b) => {
 // Pick a hero dish — the most recent, with a hero photo.
 const heroDish = dishes[0];
 
+// Archive vocabulary — small counts of the most-common cuisine tags +
+// the meal-type spread. Gives the homepage hero a "what kind of archive
+// is this" signal without the user having to dig.
+const tagCounts = new Map<string, number>();
+for (const d of dishes) {
+  for (const t of d.data.tags) {
+    tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  }
+}
+const topTags: Array<[string, number]> = [...tagCounts.entries()]
+  .filter(([t, n]) => n >= 5 && !['lunch', 'dinner', 'snack', 'breakfast'].includes(t))
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 6);
+
 const site = Astro.site!;
 const websiteLd = {
   '@context': SCHEMA_CTX,
@@ -53,6 +67,15 @@ const websiteLd = {
       <p class="hero-cta">
         <a href="/dishes/">Browse all dishes →</a>
       </p>
+      {topTags.length > 0 && (
+        <ul class="hero-vocab" aria-label="Browse by cuisine or technique">
+          {topTags.map(([tag, count]) => (
+            <li>
+              <a href={`/tags/${tag}/`}>{tag}<span class="vocab-count">{count}</span></a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   </section>
 
@@ -75,3 +98,38 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .hero-vocab {
+    list-style: none;
+    padding: 0;
+    margin: 1.2rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    max-width: 56ch;
+  }
+  .hero-vocab li { padding: 0; }
+  .hero-vocab a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    background: rgba(15, 18, 24, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    backdrop-filter: blur(4px);
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .hero-vocab a:hover {
+    border-color: var(--paprika);
+    color: var(--paprika);
+  }
+  .vocab-count {
+    color: var(--ink-mute);
+    font-size: 0.78rem;
+  }
+</style>
