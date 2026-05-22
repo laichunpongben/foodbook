@@ -43,7 +43,13 @@ const websiteLd = {
     )}
     <div class="container">
       <p class="eyebrow">An archive of the food lifecycle</p>
-      <h1 set:html={heroDish?.data.title ?? 'Source. Grow. Cook. Eat.'} />
+      {heroDish ? (
+        <a class="hero-title-link" href={`/dishes/${bare(heroDish.id)}/`} aria-label={`Read about ${heroDish.data.shortTitle}`}>
+          <h1 set:html={heroDish.data.title} />
+        </a>
+      ) : (
+        <h1>Source. Grow. Cook. Eat.</h1>
+      )}
       <p class="lead">
         Foodbook follows a dish (or an ingredient) through up to four lifecycle stages —
         the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
@@ -75,3 +81,19 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .hero-title-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.15s ease;
+  }
+  .hero-title-link h1 {
+    color: var(--ink);
+    transition: color 0.15s ease;
+  }
+  .hero-title-link:hover h1 {
+    color: var(--paprika);
+  }
+</style>
