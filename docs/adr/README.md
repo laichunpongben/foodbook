@@ -22,3 +22,4 @@ Each ADR captures:
 | [0006](0006-dish-page-journey-with-dishhero.md) | Dish page = DishHero + Plant/Cook/Plate/Eat journey (replaces Sankey + SunSection) | Accepted |
 | [0007](0007-external-agriculture-data-sidecar.md) | Agriculture data is an external sidecar (`almanac`), not a Foodbook module | Proposed |
 | [0008](0008-wikimedia-image-pipeline.md) | Dish heroes from Wikimedia + `heroFocal`; supersedes the R2-variants clause of ADR-0001 | Accepted |
+| [0012](0012-editorial-voice.md) | Editorial voice — codifying the prose register (companion to ADR-0010 + ADR-0011) | Proposed |
