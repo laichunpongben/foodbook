@@ -1,0 +1,173 @@
+---
+/**
+ * /cuisines — visual overview of every cuisine tag with a representative
+ * dish per cuisine. Distinct from /tags/index (text-only weighted cloud);
+ * /cuisines is photo-first browse-by-tradition.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+// Cuisine subset of the dishTags enum. Mirrors src/content.config.ts
+// — keep in sync. Listed in approximate world-region order rather than
+// alphabetical so neighbours read together.
+const CUISINE_TAGS = [
+  'italian', 'french', 'iberian', 'nordic',
+  'levantine', 'indian',
+  'chinese', 'japanese', 'thai',
+  'mexican',
+] as const;
+
+const dishes = publicOnly(await getCollection('dishes'));
+
+interface CuisineEntry {
+  tag: string;
+  label: string;
+  count: number;
+  feature: typeof dishes[number] | null;
+}
+
+const entries: CuisineEntry[] = CUISINE_TAGS.map((tag) => {
+  const matches = dishes.filter((d) => d.data.tags.includes(tag));
+  const withPhoto = matches.find((d) => d.data.heroUrl) ?? matches[0];
+  return {
+    tag,
+    label: tag[0].toUpperCase() + tag.slice(1),
+    count: matches.length,
+    feature: withPhoto ?? null,
+  };
+}).filter((c) => c.count > 0);
+
+const site = Astro.site!;
+const description = `${entries.length} cuisines represented in the archive — browse each by its representative dish.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'CollectionPage',
+  name: 'Cuisines',
+  url: new URL('/cuisines/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Cuisines" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="cuisines container">
+    <header class="cuisines-head">
+      <p class="eyebrow">Browse</p>
+      <h1>By cuisine</h1>
+      <p class="lead">
+        {entries.length} traditions in the archive — every cuisine with at least one dish.
+        Each card opens that cuisine's full list.
+      </p>
+    </header>
+
+    <ul class="cuisines-grid">
+      {entries.map((c) => {
+        const photo = c.feature?.data.heroUrl ?? (c.feature?.data.hero ? `${c.feature.data.hero}-1280.jpg` : null);
+        return (
+          <li>
+            <a class="cuisine-card" href={`/tags/${c.tag}/`}>
+              {photo && (
+                <div
+                  class="cuisine-photo"
+                  style={`background-image: url('${photo}'); background-position: ${c.feature?.data.heroFocal ?? 'center'};`}
+                />
+              )}
+              <div class="cuisine-meta">
+                <span class="cuisine-name">{c.label}</span>
+                <span class="cuisine-count">{c.count} {c.count === 1 ? 'dish' : 'dishes'}</span>
+              </div>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+
+    <p class="cuisines-footnote">
+      Or browse the <a href="/tags/">full tag cloud</a> for techniques (fermentation, baking, grill) + meal types + seasons.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .cuisines { padding: 4rem 0 6rem; max-width: 1200px; }
+  .cuisines-head { margin-bottom: 3rem; max-width: 60ch; }
+  .cuisines-head h1 { margin: 0.4rem 0 0.8rem; }
+  .cuisines-head .lead { color: var(--ink-soft); margin: 0; }
+
+  .cuisines-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.2rem;
+  }
+  .cuisines-grid li { padding: 0; max-width: none; }
+
+  .cuisine-card {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 5;
+    border-radius: 8px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--ink);
+    background: #11161c;
+    transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .cuisine-card:hover { transform: translateY(-3px); }
+  .cuisine-photo {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .cuisine-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.78) 100%);
+  }
+  .cuisine-meta {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem 1.2rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    z-index: 1;
+  }
+  .cuisine-name {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1.1;
+    color: var(--ink);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  }
+  .cuisine-count {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  }
+
+  .cuisines-footnote {
+    margin-top: 2.5rem;
+    color: var(--ink-mute);
+    font-size: 0.95rem;
+  }
+  .cuisines-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .cuisines-footnote a:hover { color: var(--ink); border-color: var(--ink); }
+</style>
