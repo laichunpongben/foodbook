@@ -51,9 +51,13 @@ const crumb = breadcrumb(Astro.site!, section);
     <p class="eyebrow">Source</p>
     <h1>Farms & producers</h1>
     <p class="lead">
-      {farms.length} growers, dairies, mills, and markets — the upstream side of every dish.
-      See also: <a href="/world/">the map</a>.
+      The upstream side of every dish. See also: <a href="/world/">the map</a> or <a href="/atlas/">by country</a>.
     </p>
+    <ul class="index-stats" aria-label="Source scope">
+      <li><strong>{farms.length}</strong> producers</li>
+      <li><strong>{new Set(farms.map((f) => f.data.country).filter(Boolean)).size}</strong> countries</li>
+      <li><strong>{groups.length}</strong> kinds</li>
+    </ul>
 
     {groups.map(([kind, list]) => (
       <div class="index-group">
@@ -72,6 +76,24 @@ const crumb = breadcrumb(Astro.site!, section);
 </BaseLayout>
 
 <style>
+  .index-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .index-stats li { padding: 0; max-width: none; }
+  .index-stats strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    font-weight: 500;
+    margin-right: 0.25rem;
+  }
   .index-list { gap: 0.6rem; margin-top: 0.8rem; }
   .index-list a { font-size: 1.1rem; }
 </style>
