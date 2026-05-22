@@ -56,6 +56,11 @@ const websiteLd = {
     </div>
   </section>
 
+  <section class="container recently-viewed" data-recently-viewed hidden>
+    <h2>Recently viewed</h2>
+    <ul class="recently-viewed-list" data-recently-viewed-list></ul>
+  </section>
+
   <section class="container">
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
@@ -75,3 +80,58 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  // Populate the "Recently viewed" rail from localStorage. Server-rendered
+  // section is hidden by default; this script reveals it when there's at
+  // least one entry. Matches the tracker in BaseLayout.astro.
+  (function() {
+    try {
+      const KEY = 'fb:recent-dishes';
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      const list = JSON.parse(raw) as Array<{ slug: string; title: string }>;
+      if (!Array.isArray(list) || list.length === 0) return;
+      const root = document.querySelector<HTMLElement>('[data-recently-viewed]');
+      const ul = document.querySelector<HTMLUListElement>('[data-recently-viewed-list]');
+      if (!root || !ul) return;
+      for (const item of list) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `/dishes/${item.slug}/`;
+        a.innerHTML = item.title; // titles may include <em>
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      root.hidden = false;
+    } catch { /* non-fatal */ }
+  })();
+</script>
+
+<style>
+  .recently-viewed { margin: 2rem auto 3rem; }
+  .recently-viewed-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .recently-viewed-list li { padding: 0; max-width: none; }
+  .recently-viewed-list a {
+    display: inline-block;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .recently-viewed-list a:hover {
+    border-color: var(--paprika);
+    color: var(--paprika);
+  }
+</style>
