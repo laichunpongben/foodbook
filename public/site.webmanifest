@@ -1,15 +1,23 @@
 {
-  "name": "Foodbook",
+  "name": "Foodbook — an archive of the food lifecycle",
   "short_name": "Foodbook",
-  "description": "An archive of the food lifecycle — farms, gardens, kitchens, restaurants.",
+  "description": "Source. Grow. Cook. Eat. — every dish traced through up to four lifecycle stages.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0a0d11",
-  "theme_color": "#0a0d11",
+  "theme_color": "#d2543b",
   "lang": "en",
+  "categories": ["food", "lifestyle", "education"],
+  "shortcuts": [
+    { "name": "Today's dish", "url": "/today/" },
+    { "name": "Today's menu", "url": "/menu/" },
+    { "name": "Surprise me", "url": "/random/" },
+    { "name": "What's live", "url": "/live/" }
+  ],
   "icons": [
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
     { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
     { "src": "/icon-32.png", "sizes": "32x32", "type": "image/png" }
   ]
