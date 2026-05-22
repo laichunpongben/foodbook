@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Sitemap: https://food.databookman.com/sitemap-index.xml
 
+# Foodbook serves an LLM-readable index at /llms.txt and a JSON Feed at /feed.json.
 # Unlisted entries emit their own noindex meta tag at the page level.
 # AI scrapers are not blocked here — opt out per-entry via visibility: unlisted.
