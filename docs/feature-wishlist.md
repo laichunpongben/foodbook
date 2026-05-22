@@ -28,6 +28,18 @@ When something here ships, move it to `architecture.md` and update the relevant 
 | ICS export for planned meals / dinner parties | medium | S | low | Travelbook has this for trip dates; could mirror. |
 | Public landing page redesign | medium | M | low | Default to Travelbook's pattern; revisit once the rest exists. |
 
+## Shipped this iteration (move to `architecture.md`)
+
+The design+purpose pivot landed (see [tracking issue #300](https://github.com/laichunpongben/foodbook/issues/300)):
+
+- **Five voice ADRs** — ADR-0009 (north star), ADR-0010 (visual tokens), ADR-0011 (motion tokens), ADR-0012 (editorial voice), ADR-0013 (a11y commitments).
+- **Token canon** — `:root` + `tokens.json` for palette / type / spacing / radii / motion.
+- **Auditors** — `audit:lineage`, `audit:tokens`, `audit:radii`, `audit:motion`, `audit:prose`, `audit:a11y`, plus operational `audit:tags`, `audit:coords`, `audit:photos`, `audit:api`, plus the graph viewer `npm run graph`.
+- **Tooling** — `audit:all` runner, advisory CI step, separate `audit-strict.yml` workflow for graduated gates.
+- **Reference docs** — `CONTRIBUTING.md`, `docs/VOICE.md`, `docs/AUDITS.md`, `docs/PROCESS.md`, `docs/README.md`.
+
+When the PRs from this iteration merge, this section moves into `architecture.md` per the standing rule above.
+
 ## Explicitly *not* on the list
 
 - Public comments, ratings, likes.
@@ -36,3 +48,6 @@ When something here ships, move it to `architecture.md` and update the relevant 
 - Social feed (Instagram exists).
 - Mobile-native app — PWA installable is enough; native app is years premature.
 - AI-generated recipes shown as if authored.
+- Algorithmic discovery / "recommended for you" carousels — see [ADR-0009 §Out of scope](adr/0009-north-star.md).
+- Multi-author editing — single-author by design per [ADR-0005](adr/0005-public-by-default-no-private-tier.md); collaboration via PRs.
+- Supply-chain traceability — [ADR-0009 §Out of scope](adr/0009-north-star.md) makes the distinction: foodbook traces lineage for *meaning*, not for compliance audit.
