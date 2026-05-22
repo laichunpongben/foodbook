@@ -56,6 +56,40 @@ const websiteLd = {
     </div>
   </section>
 
+  <section class="container lifecycle-explainer" aria-label="The four stages">
+    <p class="lifecycle-eyebrow">The four stages</p>
+    <ul class="lifecycle-stages">
+      <li>
+        <span class="stage-num">1</span>
+        <a href="/world/">
+          <span class="stage-name">Source</span>
+          <span class="stage-desc">Farm, market, fishmonger.</span>
+        </a>
+      </li>
+      <li>
+        <span class="stage-num">2</span>
+        <a href="/grow/">
+          <span class="stage-name">Grow</span>
+          <span class="stage-desc">Garden, balcony, forage.</span>
+        </a>
+      </li>
+      <li>
+        <span class="stage-num">3</span>
+        <a href="/recipes/">
+          <span class="stage-name">Cook</span>
+          <span class="stage-desc">Recipe, technique, time.</span>
+        </a>
+      </li>
+      <li>
+        <span class="stage-num">4</span>
+        <a href="/eat-out/">
+          <span class="stage-name">Eat</span>
+          <span class="stage-desc">Home meal, restaurant.</span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
   <section class="container">
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
@@ -75,3 +109,67 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .lifecycle-explainer {
+    margin: 2.5rem auto;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .lifecycle-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0 0 1rem;
+  }
+  .lifecycle-stages {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.2rem;
+  }
+  .lifecycle-stages li {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+    max-width: none;
+  }
+  .stage-num {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--paprika);
+    line-height: 1;
+    min-width: 1.6em;
+  }
+  .lifecycle-stages a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .stage-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--ink);
+    transition: color 0.15s ease;
+  }
+  .lifecycle-stages a:hover .stage-name { color: var(--paprika); }
+  .stage-desc {
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+  @media (max-width: 720px) {
+    .lifecycle-stages { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 420px) {
+    .lifecycle-stages { grid-template-columns: 1fr; }
+  }
+</style>
