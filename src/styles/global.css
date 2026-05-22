@@ -395,6 +395,31 @@ footer.site-footer .footer-meta {
 }
 footer.site-footer .footer-meta a { color: var(--ink-soft); }
 
+/* "By the numbers" stat strip — small archive-scope signal on every
+ * page footer. Paprika numerals match the section-overview stats
+ * pattern. */
+footer.site-footer .footer-numbers {
+  margin: 0 0 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.6rem;
+  color: var(--ink-mute);
+  font-size: 0.88rem;
+}
+footer.site-footer .footer-numbers .fn-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+footer.site-footer .footer-numbers strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--paprika);
+  font-weight: 500;
+}
+
 /* Entity-detail pages — /farms/<slug>, /restaurants/<slug>, /meals/<slug>,
  * /garden/<slug>. Width + the small "back to <listing>" affordance at the top. */
 .entity { padding: 3rem 0 6rem; max-width: 760px; }
