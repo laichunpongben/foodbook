@@ -2,6 +2,8 @@
 
 Append-only log of meaningful technical decisions. One file per decision. Format borrowed from [Travelbook](../../README.md) and the broader ADR convention (Michael Nygard).
 
+> See [docs/PROCESS.md](../PROCESS.md) for the loop each ADR is expected to land — canon → audit → CI → tracked follow-ups.
+
 Each ADR captures:
 
 1. **Status** — Proposed / Accepted / Superseded by NNNN.
