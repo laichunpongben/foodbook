@@ -1,0 +1,40 @@
+name: Audit · strict gates
+
+# Graduated audit scripts run with --strict so they fail CI on findings.
+# Advisory audits still run in the main CI workflow (#296). This is the
+# "promoted to gate" surface — scripts move here when their criterion in
+# the graduation tracking issue is met.
+#
+# Today only audit:coords has graduated. As others graduate, add a step.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  strict:
+    runs-on: ubicloud-standard-2
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Each step runs the script with --strict only if the script file
+      # exists. Keeps the workflow valid before each script PR lands.
+
+      - name: audit:coords --strict
+        run: |
+          if [ -f scripts/audit-coords.mjs ]; then
+            node scripts/audit-coords.mjs --strict
+          else
+            echo "audit-coords.mjs not yet on main — skipping."
+          fi
