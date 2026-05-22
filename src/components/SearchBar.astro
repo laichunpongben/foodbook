@@ -17,6 +17,7 @@
     placeholder="Search dishes, recipes, farms, restaurants…"
     autocomplete="off"
   />
+  <kbd class="search-bar__hint" aria-hidden="true">⌘K</kbd>
   <button id="site-search-submit" type="button" class="search-bar__submit" aria-label="Search">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <circle cx="11" cy="11" r="7"/>
@@ -142,6 +143,25 @@
   }
   input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); flushSearch(); } });
   document.getElementById('site-search-submit')?.addEventListener('click', flushSearch);
+
+  // Cmd/Ctrl+K — global focus shortcut. Standard convention across modern
+  // web apps; reader expectation. Ignored when an input/textarea already
+  // has focus so we don't intercept typing.
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      const t = document.activeElement;
+      const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t as HTMLElement).isContentEditable);
+      if (inField && t === input) return; // already focused
+      e.preventDefault();
+      input?.focus();
+      input?.select();
+    }
+  });
+
+  // Escape — blur the search input + clear focus state.
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') input?.blur();
+  });
 </script>
 
 <style>
@@ -169,6 +189,20 @@
     min-width: 0;
   }
   .search-bar input::placeholder { color: var(--ink-mute); }
+  .search-bar__hint {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--ink-mute);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    margin-right: 0.2rem;
+    user-select: none;
+  }
+  @media (max-width: 540px) {
+    .search-bar__hint { display: none; }
+  }
   .search-bar__submit {
     appearance: none;
     background: var(--paprika);
