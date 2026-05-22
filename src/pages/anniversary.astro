@@ -1,0 +1,211 @@
+---
+/**
+ * /anniversary — "On this day" view. Shows dishes whose firstMade date
+ * matches today's MM-DD (any year). Personal-archive vibe — like a
+ * photos-app memories surface.
+ *
+ * Falls back to "this week" when today has no anniversaries; falls back
+ * to "this month" when this week has none. Always shows something.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const dishes = publicOnly(await getCollection('dishes'));
+const dated = dishes.filter((d) => d.data.firstMade);
+
+const now = new Date();
+const todayMonth = now.getUTCMonth() + 1; // 1-12
+const todayDay = now.getUTCDate(); // 1-31
+const todayDayOfYear = (() => {
+  const start = Date.UTC(now.getUTCFullYear(), 0, 0);
+  return Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - start) / 86_400_000);
+})();
+
+function parts(iso: string): { m: number; d: number; y: number; dayOfYear: number } {
+  const [y, m, d] = iso.split('-').map(Number);
+  const start = Date.UTC(y, 0, 0);
+  const dayOfYear = Math.floor((Date.UTC(y, m - 1, d) - start) / 86_400_000);
+  return { m, d, y, dayOfYear };
+}
+
+const exactMatches = dated.filter((dish) => {
+  const p = parts(dish.data.firstMade!);
+  return p.m === todayMonth && p.d === todayDay;
+});
+
+const thisWeek = dated.filter((dish) => {
+  const p = parts(dish.data.firstMade!);
+  const diff = Math.abs(p.dayOfYear - todayDayOfYear);
+  return diff !== 0 && diff <= 3;
+});
+
+const thisMonth = dated.filter((dish) => {
+  const p = parts(dish.data.firstMade!);
+  return p.m === todayMonth && !exactMatches.includes(dish) && !thisWeek.includes(dish);
+});
+
+const todayLong = now.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+
+const site = Astro.site!;
+const description = `Dishes you cooked around this time of year. ${exactMatches.length + thisWeek.length + thisMonth.length} entries.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Anniversary',
+  url: new URL('/anniversary/', site).toString(),
+  description,
+};
+
+interface Bucket { label: string; dishes: typeof dated; }
+const buckets: Bucket[] = [];
+if (exactMatches.length > 0) buckets.push({ label: `On this day`, dishes: exactMatches });
+if (thisWeek.length > 0) buckets.push({ label: `Around this time`, dishes: thisWeek });
+if (thisMonth.length > 0) buckets.push({ label: `This month, other years`, dishes: thisMonth });
+---
+
+<BaseLayout title="On this day" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="anniv container">
+    <header class="anniv-head">
+      <p class="anniv-date">{todayLong}</p>
+      <h1>What did you cook today?</h1>
+      <p class="lead">
+        Dishes from this corner of the year. The archive's personal memory.
+      </p>
+    </header>
+
+    {buckets.length === 0 ? (
+      <p class="muted">No dated dishes for today or this month yet. Add <code>firstMade</code> to a dish's frontmatter to populate this view.</p>
+    ) : (
+      buckets.map((b) => (
+        <section class="anniv-section">
+          <h2>{b.label}</h2>
+          <ul class="anniv-list">
+            {b.dishes.map((d) => {
+              const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-640.jpg` : null);
+              const p = parts(d.data.firstMade!);
+              return (
+                <li class="anniv-item">
+                  {photo && (
+                    <a class="anniv-thumb" href={`/dishes/${bare(d.id)}/`} aria-hidden="true" tabindex="-1">
+                      <img src={photo} alt="" loading="lazy" decoding="async" />
+                    </a>
+                  )}
+                  <div class="anniv-text">
+                    <a href={`/dishes/${bare(d.id)}/`} set:html={d.data.title} />
+                    {d.data.tagline && <p class="anniv-tagline" set:html={d.data.tagline} />}
+                    <p class="anniv-when">First made {d.data.firstMade}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    )}
+
+    <p class="anniv-footnote">
+      Or see <a href="/timeline/">the full timeline</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .anniv { padding: 4rem 0 6rem; max-width: 880px; }
+  .anniv-head { margin-bottom: 3rem; }
+  .anniv-date {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .anniv-head h1 { margin: 0.4rem 0 0.8rem; }
+  .anniv-head .lead { color: var(--ink-soft); margin: 0; max-width: 60ch; }
+
+  .anniv-section { margin-bottom: 3rem; }
+  .anniv-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    margin: 0 0 1rem;
+    color: var(--paprika);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .anniv-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .anniv-item {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 1.2rem;
+    align-items: start;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--rule);
+    max-width: none;
+  }
+  .anniv-thumb {
+    display: block;
+    width: 88px;
+    height: 88px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #11161c;
+  }
+  .anniv-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .anniv-item:hover .anniv-thumb img { transform: scale(1.05); }
+  .anniv-text { display: flex; flex-direction: column; gap: 0.3rem; }
+  .anniv-text > a {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .anniv-text > a:hover { color: var(--paprika); }
+  .anniv-tagline {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .anniv-when {
+    margin: 0;
+    color: var(--ink-mute);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+  }
+  .anniv-footnote {
+    margin-top: 2rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .anniv-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .anniv-footnote a:hover { color: var(--ink); border-color: var(--ink); }
+  .muted { color: var(--ink-mute); }
+  .muted code {
+    font-size: 0.9em;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+  }
+</style>
