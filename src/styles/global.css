@@ -30,7 +30,10 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
-  line-height: 1.55;
+  /* Body leading bumped 1.55 → 1.6 — per Butterick's Practical Typography,
+   * 1.55-1.65 reads as relaxed/inviting for editorial prose. 1.55 was
+   * functional but tight on the dark background. */
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
