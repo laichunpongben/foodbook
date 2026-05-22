@@ -172,6 +172,24 @@ main:focus { outline: none; }
   font-weight: 600;
 }
 
+/* Today nav item — distinguished as the dynamic anchor in the otherwise
+ * static collection list. Paprika underline at rest. */
+.site-header nav a.nav-today {
+  color: var(--ink);
+  position: relative;
+}
+.site-header nav a.nav-today::after {
+  content: '';
+  position: absolute;
+  bottom: 0.3rem;
+  left: 0.25rem;
+  right: 0.25rem;
+  height: 1px;
+  background: var(--paprika);
+  opacity: 0.7;
+}
+.site-header nav a.nav-today:hover { color: var(--paprika); }
+
 /* Hamburger toggle (desktop hidden; appears under 640px). */
 .nav-toggle {
   display: none;
