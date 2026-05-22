@@ -1,0 +1,189 @@
+---
+/**
+ * /timeline — dishes by firstMade date in a vertical timeline view.
+ *
+ * Different from /dishes (alphabetical grid) and the homepage "Fresh"
+ * section (12 most recent). /timeline shows EVERY dish with a firstMade
+ * date, grouped by year + month, with the dish hero as a small thumb
+ * and tagline as context. Reads as a chef's diary.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const allDishes = publicOnly(await getCollection('dishes'));
+const withDate = allDishes.filter((d) => d.data.firstMade !== undefined);
+const sorted = [...withDate].sort((a, b) => (b.data.firstMade ?? '').localeCompare(a.data.firstMade ?? ''));
+
+// Group by YYYY-MM
+const byMonth = new Map<string, typeof sorted>();
+for (const d of sorted) {
+  const m = (d.data.firstMade ?? '').slice(0, 7); // YYYY-MM
+  const list = byMonth.get(m) ?? [];
+  list.push(d);
+  byMonth.set(m, list);
+}
+const months = [...byMonth.entries()];
+function monthLabel(yyyymm: string): string {
+  const [y, m] = yyyymm.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, 1));
+  return date.toLocaleDateString('en', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+const undated = allDishes.filter((d) => !d.data.firstMade).length;
+
+const site = Astro.site!;
+const description = `Every dish with a firstMade date, newest first.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'CollectionPage',
+  name: 'Timeline',
+  url: new URL('/timeline/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Timeline" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="timeline container">
+    <header class="timeline-head">
+      <p class="eyebrow">When it was cooked</p>
+      <h1>Timeline</h1>
+      <p class="lead">
+        Every dish with a date, grouped by month. {withDate.length} entries dated{undated > 0 && <>, {undated} undated</>}.
+      </p>
+    </header>
+
+    {months.map(([yyyymm, list]) => (
+      <section class="tl-month">
+        <h2 class="tl-month-label">{monthLabel(yyyymm)}</h2>
+        <ol class="tl-list">
+          {list.map((d) => {
+            const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-640.jpg` : null);
+            return (
+              <li class="tl-item">
+                <span class="tl-marker" aria-hidden="true"></span>
+                <a class="tl-card" href={`/dishes/${bare(d.id)}/`}>
+                  {photo && (
+                    <span class="tl-thumb">
+                      <img src={photo} alt="" loading="lazy" decoding="async" />
+                    </span>
+                  )}
+                  <span class="tl-text">
+                    <span class="tl-title" set:html={d.data.title} />
+                    {d.data.tagline && <span class="tl-tagline" set:html={d.data.tagline} />}
+                    <span class="tl-date">{d.data.firstMade}</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    ))}
+  </article>
+</BaseLayout>
+
+<style>
+  .timeline { padding: 4rem 0 6rem; max-width: 880px; }
+  .timeline-head { margin-bottom: 3rem; max-width: 60ch; }
+  .timeline-head h1 { margin: 0.4rem 0 0.8rem; }
+  .timeline-head .lead { color: var(--ink-soft); margin: 0; }
+
+  .tl-month { margin-bottom: 3rem; }
+  .tl-month-label {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    margin: 0 0 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+  }
+
+  .tl-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+  .tl-list::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--rule);
+  }
+  .tl-item {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 1.1rem;
+    max-width: none;
+  }
+  .tl-marker {
+    position: absolute;
+    left: 0;
+    top: 1.2rem;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--paprika);
+    box-shadow: 0 0 0 4px rgba(210, 84, 59, 0.18);
+  }
+  .tl-card {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 1rem;
+    text-decoration: none;
+    color: var(--ink);
+    padding: 0.5rem 0;
+    align-items: center;
+  }
+  .tl-thumb {
+    display: block;
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #11161c;
+  }
+  .tl-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .tl-card:hover .tl-thumb img { transform: scale(1.06); }
+  .tl-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .tl-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .tl-tagline {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+  .tl-date {
+    color: var(--ink-mute);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    margin-top: 0.2rem;
+  }
+  @media (max-width: 480px) {
+    .tl-item { padding-left: 1.6rem; }
+    .tl-card { grid-template-columns: 56px 1fr; gap: 0.8rem; }
+    .tl-thumb { width: 56px; height: 56px; }
+  }
+</style>
