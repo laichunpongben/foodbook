@@ -15,8 +15,31 @@
   --font-display: 'Fraunces Variable', Georgia, serif;
   --font-body: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 
+  /* Motion (ADR-0011) — 4 durations + 3 easings. The `ease` CSS keyword
+   * is intentionally not in the canon; components using it carry an
+   * `off-easing:` marker. */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 400ms;
+  --motion-deliberate: 2400ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-linear: linear;
+
   --measure: 68ch;
   --gutter: clamp(1rem, 4vw, 2.5rem);
+}
+
+/* Reduced-motion contract (ADR-0011): collapse every motion-token
+ * duration to negligible so any component using var(--motion-*) instantly
+ * respects user preference without a per-component @media override. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0.001ms;
+    --motion-base: 0.001ms;
+    --motion-slow: 0.001ms;
+    --motion-deliberate: 0.001ms;
+  }
 }
 
 * { box-sizing: border-box; }
