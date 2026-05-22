@@ -64,7 +64,7 @@
   font-size: 1rem;
   font-weight: 500;
   padding: 0.7rem 1.2rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   min-height: 48px;            /* touch target */
 }
@@ -146,7 +146,7 @@
   font-size: 1rem;
   font-weight: 500;
   padding: 0.65rem 1.1rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   min-height: 48px;
 }
@@ -157,7 +157,7 @@
   gap: 0.9rem;
   background: rgba(93, 110, 68, 0.1);
   border: 1.5px solid var(--olive);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.4rem 0.5rem 0.4rem 1.1rem;
 }
 
@@ -183,7 +183,7 @@
   padding: 0.7rem 1.1rem;
   background: var(--olive);
   color: #fff;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-body);
   font-weight: 500;
   font-size: 1rem;
@@ -192,9 +192,9 @@
 /* ----- ingredient peek panel ----- */
 
 :root[data-mode="cook"] .cook-ingredients {
-  margin-top: 3rem;
+  margin-top: 3rem;                 /* off-scale: between --space-xl (2.5) and --space-2xl (4) */
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius-pop);
   background: rgba(255, 255, 255, 0.4);
 }
 
