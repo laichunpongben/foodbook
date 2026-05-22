@@ -45,10 +45,15 @@ a {
 
 a:hover { color: var(--paprika); }
 
-/* No italic anywhere — see ADR-0003. */
+/* No italic anywhere — see ADR-0003. Paprika emphasis replaces the
+ * italic slant; medium weight gives the emphasis presence the same
+ * way italic visual mass would. SOFT 60 on the variable axis adds a
+ * subtle warmth without italics. */
 em, i {
   font-style: normal;
   color: var(--paprika);
+  font-weight: 500;
+  font-variation-settings: 'SOFT' 60;
 }
 
 h1, h2, h3, h4 {
