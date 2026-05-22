@@ -93,6 +93,7 @@ const currentYear = new Date().getFullYear();
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="reading-progress" role="presentation" aria-hidden="true"></div>
     <header class="site-header">
       <a class="brand" href="/">Foodbook</a>
       <button
@@ -158,6 +159,31 @@ const currentYear = new Date().getFullYear();
           toggle?.focus();
         }
       });
+
+      // Reading-progress bar. Fills horizontally as the reader scrolls
+      // the page. Hidden on short pages (where it would never move). The
+      // fill itself is a CSS scaleX transform driven by a custom property,
+      // throttled to one frame via requestAnimationFrame.
+      const progress = document.querySelector<HTMLDivElement>('.reading-progress');
+      if (progress) {
+        let ticking = false;
+        const update = (): void => {
+          const doc = document.documentElement;
+          const max = doc.scrollHeight - doc.clientHeight;
+          if (max < 200) {
+            progress.style.setProperty('--progress', '0');
+            return;
+          }
+          const pct = Math.min(1, Math.max(0, window.scrollY / max));
+          progress.style.setProperty('--progress', String(pct));
+        };
+        window.addEventListener('scroll', () => {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(() => { update(); ticking = false; });
+        }, { passive: true });
+        update();
+      }
     </script>
   </body>
 </html>
