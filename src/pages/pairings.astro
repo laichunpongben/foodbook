@@ -1,0 +1,243 @@
+---
+/**
+ * /pairings — two dishes that go together, picked weekly.
+ *
+ * For each visit, picks one "anchor" dish deterministically by week-of-year,
+ * then finds the dish with the highest tag-overlap as the partner.
+ * Surfaces lateral connections in the archive that the chronological grid
+ * can't show.
+ *
+ * Distinct from /menu (which is a 3-course meal) and /today (which is a
+ * single dish) — pairings is about kinship between two dishes.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+type DishEntry = Awaited<ReturnType<typeof getCollection<'dishes'>>>[number];
+
+const allDishes = await getCollection('dishes');
+const sorted = publicOnly(allDishes).sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+const now = new Date();
+const isoWeek = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 1)) / 604_800_000,
+);
+
+function tagOverlap(a: DishEntry, b: DishEntry): number {
+  const aTags = new Set(a.data.tags);
+  let n = 0;
+  for (const t of b.data.tags) if (aTags.has(t)) n += 1;
+  return n;
+}
+
+const anchor: DishEntry | null = sorted.length > 0 ? sorted[isoWeek % sorted.length] : null;
+let partner: DishEntry | null = null;
+let sharedTags: string[] = [];
+if (anchor) {
+  // Rank every other dish by tag overlap; take the highest. Falls back
+  // gracefully even when score is 0 (which means no shared tags — still
+  // a valid pairing for ingredient-stub dishes).
+  const candidates = sorted
+    .filter((d) => bare(d.id) !== bare(anchor.id))
+    .map((d) => ({ d, score: tagOverlap(anchor, d) }))
+    .sort((a, b) => b.score - a.score || bare(a.d.id).localeCompare(bare(b.d.id)));
+  partner = candidates.length > 0 ? candidates[0].d : null;
+  if (partner) {
+    const anchorTags = new Set(anchor.data.tags);
+    sharedTags = partner.data.tags.filter((t) => anchorTags.has(t)).slice(0, 4);
+  }
+}
+
+const dateLong = now.toLocaleDateString('en', {
+  month: 'long', day: 'numeric', timeZone: 'UTC',
+});
+
+function dishCardData(d: DishEntry) {
+  const slug = bare(d.id);
+  const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-1280.jpg` : null);
+  return {
+    href: `/dishes/${slug}/`,
+    title: d.data.title,
+    tagline: d.data.tagline,
+    origin: d.data.origin,
+    photo,
+    focal: d.data.heroFocal ?? 'center',
+  };
+}
+
+const site = Astro.site!;
+const webPageLd = anchor && partner ? {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  url: new URL('/pairings/', site).toString(),
+  name: 'This week\'s pairing',
+  description: `${anchor.data.shortTitle} + ${partner.data.shortTitle} — two dishes that go together.`,
+} : null;
+---
+
+<BaseLayout
+  title="This week's pairing"
+  description={anchor && partner ? `${anchor.data.shortTitle} + ${partner.data.shortTitle}.` : 'Two dishes that go together.'}
+>
+  {webPageLd && <JsonLd data={webPageLd} />}
+  <article class="pairings container">
+    <header class="pairings-head">
+      <p class="pairings-date">Week of {dateLong}</p>
+      <h1>This week's pairing</h1>
+      <p class="pairings-lead">
+        Two dishes that share a kinship — picked weekly by tag overlap.
+        Rotates every Monday UTC.
+      </p>
+    </header>
+
+    {anchor && partner ? (
+      <>
+        <div class="pairings-pair">
+          {[dishCardData(anchor), dishCardData(partner)].map((d, i) => (
+            <a class="pairings-card" href={d.href}>
+              <p class="pairings-side">{i === 0 ? 'One side' : 'And then'}</p>
+              {d.photo && (
+                <div
+                  class="pairings-photo"
+                  style={`background-image: url('${d.photo}'); background-position: ${d.focal};`}
+                />
+              )}
+              <div class="pairings-text">
+                <h2 class="pairings-title" set:html={d.title} />
+                {d.tagline && <p class="pairings-tagline" set:html={d.tagline} />}
+                {d.origin && <p class="pairings-origin">{d.origin}</p>}
+              </div>
+            </a>
+          ))}
+        </div>
+        {sharedTags.length > 0 && (
+          <p class="pairings-bond">
+            Bonded by:{' '}
+            {sharedTags.map((t, i) => (
+              <>
+                {i > 0 && ' · '}
+                <a href={`/tags/${t}/`} class="pairings-bond-tag">{t}</a>
+              </>
+            ))}
+          </p>
+        )}
+      </>
+    ) : (
+      <p class="muted">Not enough tagged dishes to find a pairing yet.</p>
+    )}
+
+    <p class="pairings-footnote">
+      Or see <a href="/today/">today's single dish</a>, <a href="/menu/">today's three-course menu</a>, or <a href="/dishes/">the full archive</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .pairings { padding: 4rem 0 6rem; max-width: 1000px; }
+  .pairings-head { margin-bottom: 3rem; }
+  .pairings-date {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .pairings-head h1 { margin: 0.4rem 0 0.8rem; }
+  .pairings-lead {
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    margin: 0;
+    max-width: 60ch;
+  }
+  .pairings-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .pairings-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .pairings-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-3px);
+  }
+  .pairings-side {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 1rem 1.2rem 0.6rem;
+  }
+  .pairings-photo {
+    aspect-ratio: 16 / 10;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .pairings-text { padding: 1.2rem; }
+  .pairings-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--ink);
+  }
+  .pairings-tagline {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .pairings-origin {
+    margin: 0.8rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .pairings-bond {
+    margin: 2rem 0 0;
+    color: var(--ink-soft);
+    text-align: center;
+    font-size: 0.98rem;
+  }
+  .pairings-bond-tag {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .pairings-bond-tag:hover { color: var(--ink); border-color: var(--ink); }
+  .pairings-footnote {
+    margin: 3rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+    max-width: 60ch;
+  }
+  .pairings-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .pairings-footnote a:hover { color: var(--ink); border-color: var(--ink); }
+
+  @media (max-width: 720px) {
+    .pairings-pair { grid-template-columns: 1fr; }
+  }
+</style>
