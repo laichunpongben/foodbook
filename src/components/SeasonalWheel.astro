@@ -231,7 +231,10 @@ const yearLabel = new Date().getFullYear();
     stroke: var(--olive);
     stroke-opacity: 0.5;
     stroke-width: 0.5;
-    transition: fill-opacity 0.3s ease;
+    /* ADR-0011: wheel-arc fade adopts --motion-slow + --ease-out.
+     * 0.3s ease was 100ms slower than --motion-base; --motion-slow
+     * (400ms) is closer to author intent for the cross-fade. */
+    transition: fill-opacity var(--motion-slow) var(--ease-out);
   }
 
   .arc--active {
