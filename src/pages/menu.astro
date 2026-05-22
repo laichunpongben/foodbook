@@ -1,0 +1,218 @@
+---
+/**
+ * /menu — a three-course menu of the day.
+ *
+ * Picks three dishes deterministically by day-of-year — one tagged with
+ * a savoury meal type (lunch/dinner), one with dessert, one with snack
+ * or breakfast or drink. Same trio for everyone today; rotates tomorrow.
+ *
+ * Where /today gives readers a single anchor, /menu gives them a
+ * COMPOSED picture — a hypothetical meal the maintainer could serve
+ * today. Reads as editorial curation, not algorithm.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+type DishEntry = Awaited<ReturnType<typeof getCollection<'dishes'>>>[number];
+
+const allDishes = await getCollection('dishes');
+const sorted = publicOnly(allDishes).sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+function dayOfYear(d: Date): number {
+  const start = Date.UTC(d.getUTCFullYear(), 0, 0);
+  const now = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return Math.floor((now - start) / 86_400_000);
+}
+
+function pickByTagBucket(bucket: readonly string[], offset: number): DishEntry | null {
+  const matches = sorted.filter((d) => d.data.tags.some((t) => bucket.includes(t)));
+  if (matches.length === 0) return null;
+  return matches[(dayOfYear(new Date()) + offset) % matches.length];
+}
+
+// Three buckets. Offsets keep the trio from cycling in lockstep — each
+// course rotates at its own rhythm.
+const starter = pickByTagBucket(['snack', 'breakfast', 'drink', 'raw'], 0);
+const mainCourse = pickByTagBucket(['lunch', 'dinner', 'one-pot', 'grill'], 7);
+const dessert = pickByTagBucket(['dessert', 'baking'], 13);
+
+const courses = [
+  { label: 'To begin', dish: starter },
+  { label: 'The main', dish: mainCourse },
+  { label: 'To end',   dish: dessert },
+].filter((c): c is { label: string; dish: DishEntry } => c.dish !== null);
+
+const now = new Date();
+const dateLong = now.toLocaleDateString('en', {
+  weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
+});
+
+const site = Astro.site!;
+const articleLd = courses.length > 0 ? {
+  '@context': SCHEMA_CTX,
+  '@type': 'Menu',
+  url: new URL('/menu/', site).toString(),
+  datePublished: now.toISOString(),
+  hasMenuSection: courses.map((c) => ({
+    '@type': 'MenuSection',
+    name: c.label,
+    hasMenuItem: [{ '@type': 'MenuItem', name: c.dish.data.shortTitle }],
+  })),
+} : null;
+---
+
+<BaseLayout
+  title="Menu of the day"
+  description={courses.length > 0 ? `Three courses rotated daily — today: ${courses.map((c) => c.dish.data.shortTitle).join(', ')}.` : 'Three-course menu of the day.'}
+>
+  {articleLd && <JsonLd data={articleLd} />}
+  <article class="menu container">
+    <header class="menu-head">
+      <p class="menu-date">{dateLong}</p>
+      <h1>Menu of the day</h1>
+      <p class="menu-lead">Three courses, picked from the archive — rotating daily at midnight UTC.</p>
+    </header>
+
+    {courses.length === 0 ? (
+      <p class="muted">Not enough tagged dishes to build a menu yet.</p>
+    ) : (
+      <ol class="menu-courses">
+        {courses.map((c) => {
+          const dish = c.dish;
+          const slug = bare(dish.id);
+          const photo = dish.data.heroUrl ?? (dish.data.hero ? `${dish.data.hero}-1280.jpg` : null);
+          return (
+            <li class="menu-course">
+              <p class="menu-course-label">{c.label}</p>
+              <a class="menu-course-link" href={`/dishes/${slug}/`}>
+                {photo && (
+                  <div
+                    class="menu-course-photo"
+                    style={`background-image: url('${photo}'); background-position: ${dish.data.heroFocal ?? 'center'};`}
+                  />
+                )}
+                <div class="menu-course-text">
+                  <h2 class="menu-course-title" set:html={dish.data.title} />
+                  {dish.data.tagline && <p class="menu-course-tagline" set:html={dish.data.tagline} />}
+                  {dish.data.origin && <p class="menu-course-origin">{dish.data.origin}</p>}
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+    )}
+
+    <p class="menu-footnote">
+      The menu picks deterministically by day-of-year — same three courses for everyone today; new trio tomorrow.
+      Or <a href="/today/">see today's single dish</a>, or <a href="/dishes/">browse the full archive</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .menu { padding: 4rem 0 6rem; max-width: 880px; }
+  .menu-head { margin-bottom: 3rem; }
+  .menu-date {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .menu-head h1 {
+    margin: 0.4rem 0 0.8rem;
+  }
+  .menu-lead {
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    margin: 0;
+    max-width: 60ch;
+  }
+  .menu-courses {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+  .menu-course { max-width: none; }
+  .menu-course-label {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0 0 0.6rem;
+  }
+  .menu-course-link {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1.5rem;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .menu-course-link:hover {
+    border-color: var(--paprika);
+    transform: translateX(2px);
+  }
+  .menu-course-photo {
+    aspect-ratio: 4 / 5;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .menu-course-text { padding: 1.2rem 1.4rem 1.2rem 0; }
+  .menu-course-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--ink);
+  }
+  .menu-course-tagline {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+    line-height: 1.5;
+    max-width: 50ch;
+  }
+  .menu-course-origin {
+    margin: 0.8rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .menu-footnote {
+    margin: 3rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+    max-width: 60ch;
+  }
+  .menu-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .menu-footnote a:hover { color: var(--ink); border-color: var(--ink); }
+
+  @media (max-width: 640px) {
+    .menu-course-link { grid-template-columns: 1fr; }
+    .menu-course-photo { aspect-ratio: 16 / 10; }
+    .menu-course-text { padding: 1.2rem 1.4rem; }
+  }
+</style>
