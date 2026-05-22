@@ -15,8 +15,15 @@ const dishes = publicOnly(allDishes).sort((a, b) => {
   return bd.localeCompare(ad);
 });
 
-// Pick a hero dish — the most recent, with a hero photo.
-const heroDish = dishes[0];
+// Hero = today's pick, rotated deterministically by day-of-year. Same
+// dish for everyone today; rotates at midnight UTC. Mirrors the /today
+// route logic and pulls return-visit stickiness onto the homepage —
+// per stickiness research, the homepage is where readers anchor.
+const todayDishes = publicOnly(allDishes).sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+const now = new Date();
+const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 0);
+const dayOfYear = Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - startOfYear) / 86_400_000);
+const heroDish = todayDishes.length > 0 ? todayDishes[dayOfYear % todayDishes.length] : null;
 
 const site = Astro.site!;
 const websiteLd = {
@@ -42,22 +49,33 @@ const websiteLd = {
       />
     )}
     <div class="container">
-      <p class="eyebrow">An archive of the food lifecycle</p>
-      <h1 set:html={heroDish?.data.title ?? 'Source. Grow. Cook. Eat.'} />
-      <p class="lead">
-        Foodbook follows a dish (or an ingredient) through up to four lifecycle stages —
-        the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
-        the meal where it landed. Each entry weaves them together.
-      </p>
+      <p class="eyebrow"><a href="/today/" class="today-link">Today’s pick</a> · {now.toLocaleDateString('en', { month: 'long', day: 'numeric', timeZone: 'UTC' })}</p>
+      {heroDish ? (
+        <a href={`/dishes/${bare(heroDish.id)}/`} class="hero-title-link">
+          <h1 set:html={heroDish.data.title} />
+        </a>
+      ) : (
+        <h1>Source. Grow. Cook. Eat.</h1>
+      )}
+      {heroDish?.data.tagline ? (
+        <p class="lead" set:html={heroDish.data.tagline} />
+      ) : (
+        <p class="lead">
+          Foodbook follows a dish (or an ingredient) through up to four lifecycle stages —
+          the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
+          the meal where it landed. Each entry weaves them together.
+        </p>
+      )}
       <SearchBar />
       <p class="hero-cta">
-        <a href="/dishes/">Browse all dishes →</a>
+        <a href="/dishes/">Browse all {dishes.length} dishes →</a>
       </p>
     </div>
   </section>
 
   <section class="container">
-    <h2>Recent dishes</h2>
+    <h2>Recently added</h2>
+    <p class="recently-lead">Latest dishes joining the archive — the index changes each time a new one lands. <a href="/today/">Today's pick</a> rotates every midnight UTC.</p>
     {dishes.length === 0 && (
       <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
     )}
@@ -75,3 +93,25 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .today-link {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .today-link:hover { color: var(--ink); border-color: var(--ink); }
+  .hero-title-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-block;
+  }
+  .hero-title-link h1 { transition: color 0.2s ease; }
+  .hero-title-link:hover h1 { color: var(--paprika); }
+  .recently-lead {
+    color: var(--ink-soft);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+    max-width: 60ch;
+  }
+</style>
