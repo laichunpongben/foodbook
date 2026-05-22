@@ -1,0 +1,152 @@
+---
+/**
+ * /sitemap — human-readable site index.
+ *
+ * Distinct from /sitemap-index.xml (search-engine consumption). This is
+ * a flat overview of every static route on the site, grouped by purpose.
+ * Useful for power users and for me when I forget what routes exist.
+ */
+import BaseLayout from '~/layouts/BaseLayout.astro';
+
+interface Group { label: string; routes: Array<{ href: string; name: string; desc?: string }>; }
+
+const GROUPS: Group[] = [
+  {
+    label: 'Rotating content',
+    routes: [
+      { href: '/today/', name: 'Today', desc: 'One dish, rotated daily' },
+      { href: '/menu/', name: 'Today\'s menu', desc: 'Three courses, rotated daily' },
+      { href: '/pairings/', name: 'This week\'s pairing', desc: 'Two dishes, rotated weekly' },
+      { href: '/random/', name: 'Surprise me', desc: 'Random dish picker' },
+      { href: '/this-week/', name: 'This week', desc: 'Dishes added in the last 7 days' },
+      { href: '/anniversary/', name: 'On this day', desc: 'Dishes you cooked around this time of year' },
+      { href: '/live/', name: 'All-in-one', desc: 'Every rotating surface in one page' },
+    ],
+  },
+  {
+    label: 'Browse',
+    routes: [
+      { href: '/dishes/', name: 'Dishes', desc: 'Alphabetical with A-Z jump' },
+      { href: '/recipes/', name: 'Recipes', desc: 'Cookable preparations' },
+      { href: '/farms/', name: 'Farms & producers', desc: 'Grouped by kind' },
+      { href: '/restaurants/', name: 'Restaurants', desc: 'Grouped by city' },
+      { href: '/cuisines/', name: 'By cuisine', desc: 'Photo-first, by tradition' },
+      { href: '/techniques/', name: 'By technique', desc: 'Bake, grill, ferment, raw' },
+      { href: '/atlas/', name: 'Atlas', desc: 'By country' },
+      { href: '/timeline/', name: 'Timeline', desc: 'Chronological by firstMade' },
+      { href: '/seasons/', name: 'Seasons', desc: 'In-season this month' },
+      { href: '/tags/', name: 'Tags', desc: 'Weighted cloud' },
+    ],
+  },
+  {
+    label: 'Curated',
+    routes: [
+      { href: '/signature/', name: 'Signature', desc: 'Fully-traced editorial gold' },
+      { href: '/inspire/', name: 'By mood', desc: 'Quick / Slow / Showpiece' },
+      { href: '/first-bite/', name: 'First bite', desc: '9-dish sampler' },
+      { href: '/eat-out/', name: 'Eating out', desc: 'Restaurant gallery' },
+      { href: '/grow/', name: 'Grow', desc: 'The garden + grow-stage view' },
+      { href: '/shop/', name: 'Shopping list', desc: 'This week\'s seasonal list, printable' },
+    ],
+  },
+  {
+    label: 'Meta',
+    routes: [
+      { href: '/', name: 'Home', desc: 'Hero + featured + grid' },
+      { href: '/world/', name: 'World map', desc: 'Farms + restaurants on Leaflet' },
+      { href: '/pantry/', name: 'Pantry', desc: 'Current stock' },
+      { href: '/about/', name: 'About', desc: 'What foodbook is, AI usage' },
+      { href: '/llms.txt', name: 'llms.txt', desc: 'LLM-readable corpus index' },
+      { href: '/rss.xml', name: 'RSS', desc: 'Subscribe' },
+      { href: '/sitemap-index.xml', name: 'Sitemap (XML)', desc: 'For search engines' },
+    ],
+  },
+];
+
+const totalRoutes = GROUPS.reduce((n, g) => n + g.routes.length, 0);
+---
+
+<BaseLayout title="Sitemap" description={`Human-readable index of every route — ${totalRoutes} entries.`}>
+  <article class="sitemap container">
+    <header class="sitemap-head">
+      <p class="eyebrow">Index</p>
+      <h1>Every page on foodbook</h1>
+      <p class="lead">
+        {totalRoutes} routes grouped by purpose. For machines see <a href="/sitemap-index.xml">sitemap-index.xml</a>;
+        for LLMs see <a href="/llms.txt">llms.txt</a>.
+      </p>
+    </header>
+
+    {GROUPS.map((g) => (
+      <section class="sitemap-section">
+        <h2>{g.label}</h2>
+        <ul class="sitemap-list">
+          {g.routes.map((r) => (
+            <li>
+              <a href={r.href} class="sitemap-name">{r.name}</a>
+              {r.desc && <span class="sitemap-desc"> · {r.desc}</span>}
+              <code class="sitemap-href">{r.href}</code>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </article>
+</BaseLayout>
+
+<style>
+  .sitemap { padding: 4rem 0 6rem; max-width: 880px; }
+  .sitemap-head { margin-bottom: 3rem; max-width: 60ch; }
+  .sitemap-head h1 { margin: 0.4rem 0 0.8rem; }
+  .sitemap-head .lead { color: var(--ink-soft); margin: 0; }
+  .sitemap-head a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .sitemap-section { margin-bottom: 2.5rem; }
+  .sitemap-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    margin: 0 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sitemap-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .sitemap-list li {
+    padding: 0.3rem 0;
+    max-width: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.6rem;
+  }
+  .sitemap-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .sitemap-name:hover { color: var(--paprika); }
+  .sitemap-desc {
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+  .sitemap-href {
+    color: var(--ink-mute);
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    margin-left: auto;
+  }
+  @media (max-width: 540px) {
+    .sitemap-href { margin-left: 0; flex-basis: 100%; }
+  }
+</style>
