@@ -324,6 +324,27 @@ main:focus { outline: none; }
   font-size: 0.86rem;
   color: var(--ink-soft);
   text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.3s ease, margin-top 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.dish-card:hover .meta .tagline,
+.dish-card:focus-within .meta .tagline {
+  max-height: 8em;
+  opacity: 1;
+  margin-top: 0.3rem;
+}
+
+/* Don't gate content behind hover for keyboard-only or reduced-motion users —
+ * those readers always see the tagline. */
+@media (prefers-reduced-motion: reduce) {
+  .dish-card .meta .tagline {
+    max-height: none;
+    opacity: 1;
+    transition: none;
+  }
 }
 
 /* Hero — landing, dish, seasons pages. */
