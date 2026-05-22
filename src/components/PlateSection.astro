@@ -27,7 +27,7 @@ const heroStyle = [
   <div class="container plate-content">
     <p class="stage-eyebrow">4 · Plate</p>
     {dish.origin && <p class="origin-pill">{dish.origin}</p>}
-    <h2 class="plate-title" set:html={dish.title} />
+    <h2 class="plate-title"><span class="plate-title-text" set:html={dish.title} /></h2>
     {dish.tagline && <p class="plate-tagline">{dish.tagline}</p>}
   </div>
 </section>
@@ -88,6 +88,19 @@ const heroStyle = [
     max-width: 18ch;
     margin: 0.3rem 0 0;
     text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Hand-drawn marker stroke under the dish title — the editorial moment
+   * deserves a personal mark. Same SVG technique as .hand-underline on
+   * the homepage (PR for that ships separately). Inlined here so this
+   * PR is independent. */
+  .plate-title-text {
+    display: inline;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path d='M2 9 Q 40 2, 80 7 T 160 6 T 198 8' stroke='%23d2543b' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-size: 100% 0.28em;
+    background-position: left 92%;
+    padding-bottom: 0.1em;
   }
 
   .plate-tagline {
