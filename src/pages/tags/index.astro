@@ -25,6 +25,19 @@ const tags = [...counts.entries()]
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([name, count]) => ({ name, count }));
 
+// Weighted-cloud: map count to a CSS class (w-1 smallest to w-5 largest).
+// Classic tag-cloud pattern — most-popular tags read as large, rare ones
+// stay small. Threshold tiers tuned for the current corpus distribution.
+const maxCount = Math.max(1, ...tags.map((t) => t.count));
+function weightClass(count: number): string {
+  const ratio = count / maxCount;
+  if (ratio > 0.8) return 'w-5';
+  if (ratio > 0.55) return 'w-4';
+  if (ratio > 0.3) return 'w-3';
+  if (ratio > 0.12) return 'w-2';
+  return 'w-1';
+}
+
 const site = Astro.site!;
 const section = { label: 'Tags', kind: 'tags' };
 const description = `${tags.length} tags across the archive.`;
@@ -45,9 +58,9 @@ const crumb = breadcrumb(site, section);
     <h1>Tags</h1>
     <p class="lead">{tags.length} tags in the archive, alphabetical. Each opens a list of every dish, recipe, restaurant, and meal carrying it.</p>
 
-    <ul class="tag-cloud">
+    <ul class="tag-cloud weighted">
       {tags.map((t) => (
-        <li>
+        <li class={weightClass(t.count)}>
           <a href={`/tags/${t.name}/`}>{t.name}<span class="count">{t.count}</span></a>
         </li>
       ))}
@@ -71,4 +84,16 @@ const crumb = breadcrumb(site, section);
   }
   .tag-cloud a:hover { border-color: var(--paprika); color: var(--paprika); }
   .tag-cloud .count { color: var(--ink-mute); font-size: 0.78rem; }
+
+  /* Weighted-cloud sizing — five steps from rare to popular. */
+  .tag-cloud.weighted li.w-1 a { font-size: 0.82rem; padding: 0.28rem 0.7rem; }
+  .tag-cloud.weighted li.w-2 a { font-size: 0.95rem; padding: 0.32rem 0.8rem; }
+  .tag-cloud.weighted li.w-3 a { font-size: 1.1rem;  padding: 0.36rem 0.9rem; }
+  .tag-cloud.weighted li.w-4 a { font-size: 1.3rem;  padding: 0.42rem 1rem;   color: var(--ink); }
+  .tag-cloud.weighted li.w-5 a {
+    font-size: 1.55rem; padding: 0.48rem 1.1rem; color: var(--ink);
+    border-color: rgba(210, 84, 59, 0.4);
+    font-family: var(--font-display);
+  }
+  .tag-cloud.weighted .count { font-size: 0.72rem; opacity: 0.6; }
 </style>
