@@ -478,27 +478,33 @@ footer.site-footer .footer-meta a { color: var(--ink-soft); }
 .tag-chips li:hover { border-color: var(--paprika); color: var(--paprika); }
 
 /* "More like this" rail used on recipe + dish detail pages. Top margin
- * is the parent's responsibility — different vertical rhythm per page. */
+ * is the parent's responsibility — different vertical rhythm per page.
+ * ADR-0010 stage-2: gap and margin-left matched --space-xs; other values
+ * stay literal or off-scale-flagged. */
 .related-rail {
-  padding-top: 1.5rem;
+  padding-top: 1.5rem;              /* off-scale: between --space-md (1.2) and --space-lg (1.8) */
   border-top: 1px solid var(--rule);
 }
 .related-rail ul {
   list-style: none;
   padding: 0;
-  margin: 1rem 0 0;
+  margin: 1rem 0 0;                 /* off-scale: 1rem between --space-sm (0.8) and --space-md (1.2) */
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 .related-rail a {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.05rem;               /* off-scale: between --text-base (1) and --text-md (1.15) */
   text-decoration: none;
   color: var(--ink);
 }
 .related-rail a:hover { color: var(--paprika); }
-.related-rail .meta { color: var(--ink-mute); font-size: 0.85rem; margin-left: 0.5rem; }
+.related-rail .meta {
+  color: var(--ink-mute);
+  font-size: 0.85rem;               /* off-scale: between --text-xs (0.78) and --text-sm (0.92) */
+  margin-left: var(--space-xs);
+}
 
 /* Print — recipes are the main use-case; dark palette burns ink and the
  * chrome (nav/search/footer/pager/AppearsIn) is paper noise. Force
