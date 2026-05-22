@@ -62,7 +62,7 @@ const websiteLd = {
       <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
     )}
     <div class="dish-grid">
-      {dishes.map((dish) => (
+      {dishes.map((dish, i) => (
         <DishCard
           slug={bare(dish.id)}
           title={dish.data.title}
@@ -70,6 +70,7 @@ const websiteLd = {
           hero={dish.data.hero}
           heroUrl={dish.data.heroUrl}
           heroFocal={dish.data.heroFocal}
+          priority={i < 4}
         />
       ))}
     </div>
