@@ -40,9 +40,12 @@ const { ingredients } = Astro.props;
 </section>
 
 <style>
+  /* ADR-0010 stage-2 migration. padding 6rem 0 → --space-3xl. The grid
+   * gap (1.1rem) sits between --space-sm (0.8) and --space-md (1.2);
+   * flagged off-scale per the stage-2 convention. */
   .section-plant {
     position: relative;
-    padding: 6rem 0;
+    padding: var(--space-3xl) 0;
     background: linear-gradient(180deg, rgba(10, 13, 17, 1) 0%, rgba(16, 22, 18, 1) 30%, rgba(10, 13, 17, 1) 100%);
   }
 
@@ -52,7 +55,7 @@ const { ingredients } = Astro.props;
     margin: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.1rem;
+    gap: 1.1rem;                      /* off-scale: between --space-sm (0.8) and --space-md (1.2) */
   }
   .ingredients-grid li { display: flex; }
 
