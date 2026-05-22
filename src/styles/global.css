@@ -141,7 +141,7 @@ main:focus { outline: none; }
 
 .site-header .brand {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   letter-spacing: -0.005em;
   text-decoration: none;
   color: var(--ink);
@@ -149,6 +149,12 @@ main:focus { outline: none; }
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  /* Brand wordmark gets the warmest Fraunces settings — slightly bumped
+   * SOFT to 60, full WONK on, opsz at the brand's display size. The
+   * mark is the first thing every visitor sees; earns the personality.
+   * Per ADR-0012 voice: foodbook is *confident* + *specific*; the brand
+   * mark should feel hand-set, not generic-serif. */
+  font-variation-settings: 'opsz' 20, 'SOFT' 60, 'WONK' 1, 'wght' 550;
 }
 
 .site-header nav {
