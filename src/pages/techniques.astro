@@ -1,0 +1,191 @@
+---
+/**
+ * /techniques — browse dishes by cooking technique tag.
+ *
+ * Distinct from /cuisines (by tradition) and /tags (text cloud).
+ * Surfaces the *how* dimension: fermentation, baking, grill, raw,
+ * preserved, one-pot. Each card opens that technique's tag page.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { publicOnly } from '~/lib/visibility';
+import { bare } from '~/lib/slug';
+
+const TECHNIQUES: Array<{ tag: string; label: string; description: string }> = [
+  {
+    tag: 'baking',
+    label: 'Baking',
+    description: 'Oven heat as the transformation — bread, pastries, layered casseroles.',
+  },
+  {
+    tag: 'grill',
+    label: 'Grill',
+    description: 'Direct fire, smoke, char. The oldest technique.',
+  },
+  {
+    tag: 'fermentation',
+    label: 'Fermentation',
+    description: 'Microbes doing the work. Time as ingredient.',
+  },
+  {
+    tag: 'preserved',
+    label: 'Preserved',
+    description: 'Cured, salted, pickled, dried — survival turned into flavour.',
+  },
+  {
+    tag: 'raw',
+    label: 'Raw',
+    description: 'No heat. The ingredient is the dish.',
+  },
+  {
+    tag: 'one-pot',
+    label: 'One-pot',
+    description: 'One vessel, every ingredient in. Comfort and economy.',
+  },
+];
+
+const dishes = publicOnly(await getCollection('dishes'));
+
+interface TechniqueEntry {
+  tag: string;
+  label: string;
+  description: string;
+  count: number;
+  feature: typeof dishes[number] | null;
+}
+
+const entries: TechniqueEntry[] = TECHNIQUES.map((t) => {
+  const matches = dishes.filter((d) => d.data.tags.includes(t.tag));
+  const withPhoto = matches.find((d) => d.data.heroUrl) ?? matches[0];
+  return {
+    ...t,
+    count: matches.length,
+    feature: withPhoto ?? null,
+  };
+}).filter((t) => t.count > 0);
+
+const site = Astro.site!;
+const description = `${entries.length} cooking techniques covered in the archive.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'CollectionPage',
+  name: 'Techniques',
+  url: new URL('/techniques/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Techniques" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="techniques container">
+    <header class="techniques-head">
+      <p class="eyebrow">Browse</p>
+      <h1>By technique</h1>
+      <p class="lead">
+        The how, not the what. Six methods running across cuisines —
+        each card opens that technique's full dish list.
+      </p>
+    </header>
+
+    <ul class="techniques-grid">
+      {entries.map((t) => {
+        const photo = t.feature?.data.heroUrl ?? (t.feature?.data.hero ? `${t.feature.data.hero}-1280.jpg` : null);
+        return (
+          <li>
+            <a class="tech-card" href={`/tags/${t.tag}/`}>
+              {photo && (
+                <div
+                  class="tech-photo"
+                  style={`background-image: url('${photo}'); background-position: ${t.feature?.data.heroFocal ?? 'center'};`}
+                />
+              )}
+              <div class="tech-meta">
+                <p class="tech-eyebrow">{t.count} {t.count === 1 ? 'dish' : 'dishes'}</p>
+                <h2 class="tech-name">{t.label}</h2>
+                <p class="tech-description">{t.description}</p>
+              </div>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+
+    <p class="techniques-footnote">
+      See also: <a href="/cuisines/">by cuisine</a> · <a href="/tags/">all tags</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .techniques { padding: 4rem 0 6rem; max-width: 1100px; }
+  .techniques-head { margin-bottom: 3rem; max-width: 60ch; }
+  .techniques-head h1 { margin: 0.4rem 0 0.8rem; }
+  .techniques-head .lead { color: var(--ink-soft); margin: 0; }
+
+  .techniques-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.4rem;
+  }
+  .techniques-grid li { padding: 0; max-width: none; }
+
+  .tech-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    height: 100%;
+  }
+  .tech-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-3px);
+  }
+  .tech-photo {
+    aspect-ratio: 16 / 10;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .tech-meta { padding: 1.2rem 1.4rem 1.4rem; }
+  .tech-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+  .tech-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--ink);
+  }
+  .tech-description {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .techniques-footnote {
+    margin-top: 2.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .techniques-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .techniques-footnote a:hover { color: var(--ink); border-color: var(--ink); }
+</style>
