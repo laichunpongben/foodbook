@@ -42,7 +42,15 @@ const websiteLd = {
       />
     )}
     <div class="container">
-      <p class="eyebrow">An archive of the food lifecycle</p>
+      <p class="eyebrow">
+        An archive of the food lifecycle
+        {heroDish?.data.origin && (
+          <>
+            <span class="eyebrow-sep" aria-hidden="true"> · </span>
+            <span class="eyebrow-origin">{heroDish.data.origin}</span>
+          </>
+        )}
+      </p>
       <h1 set:html={heroDish?.data.title ?? 'Source. Grow. Cook. Eat.'} />
       <p class="lead">
         Foodbook follows a dish (or an ingredient) through up to four lifecycle stages —
@@ -75,3 +83,11 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .hero .eyebrow-sep { color: var(--ink-mute); opacity: 0.5; }
+  .hero .eyebrow-origin {
+    color: var(--paprika);
+    font-weight: 600;
+  }
+</style>
