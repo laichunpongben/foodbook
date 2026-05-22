@@ -21,6 +21,7 @@
     "embeddings": "node scripts/build-embeddings.mjs",
     "check:refs": "node scripts/check-refs.mjs",
     "check:leaks": "bash scripts/check-no-leaks.sh",
+    "check:all": "npm run check:refs && npm run check:leaks && npm run check:doc-links",
     "audit:photos": "node scripts/audit-hero-photos.mjs",
     "favicons": "node scripts/gen-favicons.mjs"
   },
