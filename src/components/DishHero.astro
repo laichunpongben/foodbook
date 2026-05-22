@@ -157,6 +157,15 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
     color: var(--ink-soft);
   }
 
+  /* ADR-0011 stage-2 motion migration. Hover transition adopts
+   * --motion-slow + --ease-out (was 0.3s ease, rounded up by 100ms —
+   * imperceptible at this scale). The bob animation is the canonical
+   * --motion-deliberate (2.4s) + --ease-in-out citation; the literal
+   * was the source of the 'deliberate' tier in ADR-0011. The
+   * component-level prefers-reduced-motion block is now redundant —
+   * --motion-deliberate already collapses to 0.001ms under the
+   * canonical contract in :root (#256) — but kept for animation-name
+   * suppression (none) which the token system doesn't cover. */
   .dish-hero-scroll {
     display: block;
     width: 2.5rem;
@@ -169,8 +178,8 @@ const figureStyle = heroFocal ? `object-position: ${heroFocal}` : undefined;
     color: var(--ink-soft);
     text-decoration: none;
     font-size: 1.05rem;
-    transition: transform 0.3s ease, border-color 0.3s ease;
-    animation: dish-hero-bob 2.4s ease-in-out infinite;
+    transition: transform var(--motion-slow) var(--ease-out), border-color var(--motion-slow) var(--ease-out);
+    animation: dish-hero-bob var(--motion-deliberate) var(--ease-in-out) infinite;
   }
 
   .dish-hero-scroll:hover {
