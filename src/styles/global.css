@@ -73,6 +73,27 @@ p, li { max-width: var(--measure); }
   font-weight: 500;
 }
 
+/* Hand-drawn underline utility — drop the class on an h1/h2 to suggest
+ * a marker stroke under the heading. SVG path has intentional drift
+ * so it doesn't read as a digital underline; the paprika colour matches
+ * the link-underline accent. Per 2026 "Anti-AI Crafting" trend research:
+ * organic strokes signal "made by a human". Uses ::after so the text
+ * itself is unchanged for screen readers. */
+.hand-underline {
+  position: relative;
+  display: inline-block;
+}
+.hand-underline::after {
+  content: '';
+  display: block;
+  height: 0.5em;
+  margin-top: 0.05em;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path d='M2 9 Q 40 2, 80 7 T 160 6 T 198 8' stroke='%23d2543b' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 0.4em;
+  background-position: left bottom;
+}
+
 /* Shared section header rhythm — used by Plant, Cook, Eat sections. */
 .section-head { max-width: 60ch; margin: 0 0 3rem; }
 .section-head h2 {
