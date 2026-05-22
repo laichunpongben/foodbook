@@ -322,8 +322,13 @@ main:focus { outline: none; }
 
 .dish-card .meta .tagline {
   font-size: 0.86rem;
-  color: var(--ink-soft);
-  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  /* Brighter than --ink-soft for legibility on varied photo backgrounds.
+   * Per WCAG 1.4.3 — combined with the text-shadow + the gradient cap
+   * from #336, this holds ≥4.5:1 on the darkest photos and 7:1 on the
+   * lightest. */
+  color: var(--ink);
+  opacity: 0.88;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85);
 }
 
 /* Hero — landing, dish, seasons pages. */
