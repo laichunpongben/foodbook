@@ -22,6 +22,7 @@
     "check:refs": "node scripts/check-refs.mjs",
     "check:leaks": "bash scripts/check-no-leaks.sh",
     "audit:photos": "node scripts/audit-hero-photos.mjs",
+    "audit:a11y": "node scripts/audit-a11y.mjs",
     "favicons": "node scripts/gen-favicons.mjs"
   },
   "dependencies": {
