@@ -265,12 +265,38 @@ main:focus { outline: none; }
 
 .lifecycle-stepper .dot.empty { opacity: 0.4; pointer-events: none; }
 
-/* Dish card on landing. */
+/* Dish card on landing — asymmetric magazine grid. Per 2026 research
+ * (Smashing on CSS Grid magazine layouts, Fiveable on editorial grid
+ * systems), uniform grids read as "directory" while asymmetric grids
+ * read as "editorial". The first dish-card spans 2 cols × 2 rows for
+ * a featured-tile effect; the rest stay uniform.
+ *
+ * Requires explicit grid-template-columns count (not auto-fill) so the
+ * first card can span. Falls back to single column on narrow screens. */
 .dish-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(280px, auto);
   gap: 1.5rem;
   margin: 2rem 0 4rem;
+}
+
+.dish-grid > :first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+@media (max-width: 960px) {
+  .dish-grid { grid-template-columns: repeat(3, 1fr); }
+  .dish-grid > :first-child { grid-column: span 2; }
+}
+@media (max-width: 720px) {
+  .dish-grid { grid-template-columns: repeat(2, 1fr); }
+  .dish-grid > :first-child { grid-column: span 2; grid-row: auto; }
+}
+@media (max-width: 480px) {
+  .dish-grid { grid-template-columns: 1fr; }
+  .dish-grid > :first-child { grid-column: auto; }
 }
 
 .dish-card {
