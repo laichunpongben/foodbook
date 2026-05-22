@@ -1,5 +1,22 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import { publicOnly } from '~/lib/visibility';
+
+const [dishes, recipes, restaurants, farms] = await Promise.all([
+  getCollection('dishes').then(publicOnly),
+  getCollection('recipes').then(publicOnly),
+  getCollection('restaurants').then(publicOnly),
+  getCollection('farms').then(publicOnly),
+]);
+
+const CUISINE_TAGS = ['italian', 'french', 'iberian', 'nordic', 'levantine', 'indian', 'chinese', 'japanese', 'thai', 'mexican'];
+const cuisines = new Set<string>();
+for (const d of dishes) for (const t of d.data.tags) if (CUISINE_TAGS.includes(t)) cuisines.add(t);
+
+const countries = new Set<string>();
+for (const f of farms) if (f.data.country) countries.add(f.data.country);
+for (const r of restaurants) if (r.data.country) countries.add(r.data.country);
 ---
 
 <BaseLayout
@@ -15,6 +32,15 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
       the farm that grew it, the garden that nurtured it, the kitchen that cooked it,
       the meal where it landed. Each <a href="/dishes/">dish entry</a> weaves them together.
     </p>
+
+    <ul class="about-stats" aria-label="Archive scope">
+      <li><strong>{dishes.length}</strong>dishes</li>
+      <li><strong>{recipes.length}</strong>recipes</li>
+      <li><strong>{farms.length}</strong>farms &amp; producers</li>
+      <li><strong>{restaurants.length}</strong>restaurants</li>
+      <li><strong>{cuisines.size}</strong>cuisines</li>
+      <li><strong>{countries.size}</strong>countries</li>
+    </ul>
 
     <h2 id="ai">AI-assisted authoring</h2>
 
@@ -62,4 +88,37 @@ import BaseLayout from '~/layouts/BaseLayout.astro';
   .about h2 { margin-top: 3rem; }
   .about p { color: var(--ink-soft); }
   .about a { color: var(--paprika); }
+
+  .about-stats {
+    list-style: none;
+    padding: 1.5rem 0;
+    margin: 2rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+  }
+  .about-stats li {
+    padding: 0;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    color: var(--ink-mute);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+  }
+  .about-stats strong {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    color: var(--paprika);
+    font-weight: 500;
+    line-height: 1;
+  }
+  @media (max-width: 540px) {
+    .about-stats { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .about-stats strong { font-size: 1.8rem; }
+  }
 </style>
