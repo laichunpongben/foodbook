@@ -39,7 +39,9 @@ try {
     const base = parsed.toString();
     const sep = base.includes('?') ? '&' : '?';
     const at = (w: number) => `${base}${sep}width=${w} ${w}w`;
-    srcset = [480, 768, 1280, 1920].map(at).join(', ');
+    // Wider srcset coverage: extra 320 + 640 + 2560 steps fill the
+    // sub-mobile + Retina-display gaps the original 4-step set missed.
+    srcset = [320, 480, 640, 768, 1280, 1920, 2560].map(at).join(', ');
     // Mobile-first base so phones don't ship the 1920w fallback if srcset is ignored.
     baseSrc = `${base}${sep}width=768`;
   }
