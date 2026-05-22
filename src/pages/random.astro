@@ -1,0 +1,61 @@
+---
+/**
+ * /random — pure client-side random redirect to a dish.
+ *
+ * Static-site constraint means /random itself is a tiny shell page that
+ * picks a slug at runtime and navigates there. Server-side, every visitor
+ * gets the same HTML; client-side JS picks uniformly from the public
+ * dish list (inlined as JSON) and replaces history so the back button
+ * goes to the referrer, not /random.
+ *
+ * Stickiness lever: gives readers a "surprise me" path when they want
+ * to explore vs. when they want to plan.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const dishes = publicOnly(await getCollection('dishes'));
+const slugs = dishes.map((d) => bare(d.id));
+const slugsJson = JSON.stringify(slugs);
+---
+
+<BaseLayout title="Random dish" description="Surprise me with one dish from the archive.">
+  <section class="container random-shell">
+    <p class="eyebrow">Surprise me</p>
+    <h1>Random dish</h1>
+    <p class="lead">
+      Picking one at random… <noscript>(Requires JavaScript. <a href="/dishes/">Browse all dishes</a> instead.)</noscript>
+    </p>
+    <p class="muted random-fallback">
+      Or pick yourself: <a href="/dishes/">browse all {slugs.length} dishes</a>.
+    </p>
+  </section>
+
+  <script set:html={`
+    (function() {
+      var slugs = ${slugsJson};
+      if (!slugs.length) return;
+      var pick = slugs[Math.floor(Math.random() * slugs.length)];
+      window.location.replace('/dishes/' + pick + '/');
+    })();
+  `} />
+</BaseLayout>
+
+<style>
+  .random-shell {
+    padding: 4rem 0 6rem;
+    max-width: 640px;
+  }
+  .random-fallback {
+    margin-top: 2rem;
+    color: var(--ink-mute);
+    font-size: 0.95rem;
+  }
+  .random-fallback a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+</style>
