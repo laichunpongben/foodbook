@@ -226,22 +226,24 @@ main:focus { outline: none; }
   .site-header nav a:last-child { border-bottom: 0; }
 }
 
-/* Lifecycle stepper: four dots — source / grow / cook / eat. */
+/* Lifecycle stepper: four dots — source / grow / cook / eat.
+ * ADR-0010 stage-2: padding 1.2rem → --space-md, .dot gap 0.5rem →
+ * --space-xs. Outer gap 1rem and .dot font-size 0.85rem are off-scale. */
 .lifecycle-stepper {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.2rem 0;
+  gap: 1rem;                          /* off-scale: between --space-sm (0.8) and --space-md (1.2) */
+  padding: var(--space-md) 0;
   border-block: 1px solid var(--rule);
 }
 
 .lifecycle-stepper .dot {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   text-decoration: none;
   color: var(--ink-mute);
-  font-size: 0.85rem;
+  font-size: 0.85rem;                 /* off-scale: between --text-xs (0.78) and --text-sm (0.92) */
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
