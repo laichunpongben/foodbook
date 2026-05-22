@@ -43,7 +43,12 @@ const crumb = breadcrumb(site, section);
   <section class="container index-page">
     <p class="eyebrow">Index</p>
     <h1>Tags</h1>
-    <p class="lead">{tags.length} tags in the archive, alphabetical. Each opens a list of every dish, recipe, restaurant, and meal carrying it.</p>
+    <p class="lead">Every tag in the archive. Each opens a list of every dish, recipe, restaurant, and meal carrying it.</p>
+    <ul class="tags-stats" aria-label="Tag scope">
+      <li><strong>{tags.length}</strong> tags</li>
+      <li><strong>{[...counts.values()].reduce((a, b) => a + b, 0)}</strong> total assignments</li>
+      <li><strong>{[...counts.entries()].filter(([_, n]) => n >= 5).length}</strong> tags with 5+ entries</li>
+    </ul>
 
     <ul class="tag-cloud">
       {tags.map((t) => (
@@ -71,4 +76,23 @@ const crumb = breadcrumb(site, section);
   }
   .tag-cloud a:hover { border-color: var(--paprika); color: var(--paprika); }
   .tag-cloud .count { color: var(--ink-mute); font-size: 0.78rem; }
+
+  .tags-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .tags-stats li { padding: 0; max-width: none; }
+  .tags-stats strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    font-weight: 500;
+    margin-right: 0.25rem;
+  }
 </style>
