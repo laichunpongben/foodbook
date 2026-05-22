@@ -1,0 +1,48 @@
+---
+title: "Example meal — unlisted template"
+date: "2026-05-22"
+location: "home"
+occasion: "weeknight"
+dishes: []
+photos: []
+tags: []
+visibility: "unlisted"
+companionCount: 0
+---
+
+This file is a copy-paste template for authoring a meal entry. It carries
+`visibility: "unlisted"` so it's excluded from listing pages, sitemap, and
+RSS, and emits `noindex`.
+
+The body should land on a remembered moment — one specific observation
+from the meal — rather than a play-by-play summary. See
+[ADR-0012 (#277)](https://github.com/laichunpongben/foodbook/pull/277)
+`--tone-anecdotal` for the editorial register.
+
+**Schema cheat-sheet** (defined in `src/content.config.ts`):
+
+- `title` — short editorial title
+- `date` — ISO YYYY-MM-DD
+- `location` — restaurant slug or the literal `"home"`
+- `occasion?` — `"Easter"`, `"weeknight"`, `"tasting menu"`, etc
+- `dishes[]` — dish slugs referenced
+- `photos[]` — path stems for photos (own kitchen / restaurant shots)
+- `heroUrl?` — absolute URL (e.g. Wikimedia) when no local photo
+- `tags[]` — from the `dishTags` enum
+- `visibility` — `"public"` (default) or `"unlisted"`
+- `companionCount?` — integer, no names; per
+  [ADR-0005 §visibility](../../../docs/adr/0005-public-by-default-no-private-tier.md)
+  names of other people never enter the repo
+
+When authoring a real meal:
+
+1. Copy this file to `src/content/meals/YYYY-MM-DD-short-slug.mdx`.
+2. Flip `visibility` to `"public"`.
+3. Fill in `title`, `date`, `location` (a real restaurant slug or `"home"`).
+4. List the dish slugs you actually ate in `dishes[]`.
+5. Write 2–3 sentences of body prose landing on one remembered moment.
+6. Add at least one tag from the `dishTags` enum.
+
+Per [issue #317](https://github.com/laichunpongben/foodbook/issues/317), this template
+silences the `[WARN] [glob-loader] No files found matching "meals/*.mdx"`
+build warning without committing to editorial content.
