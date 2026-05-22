@@ -251,7 +251,7 @@ main:focus { outline: none; }
   display: inline-block;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 50%;             /* off-radius: geometric circle — not on the card/pill/pop scale */
   background: var(--ink-mute);
   opacity: 0.5;
 }
