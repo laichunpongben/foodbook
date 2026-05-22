@@ -281,7 +281,8 @@ main:focus { outline: none; }
   border-radius: 6px;
   text-decoration: none;
   background: #11161c;
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* ADR-0011: card lift uses --motion-slow + --ease-out (was 0.4s cubic-bezier). */
+  transition: transform var(--motion-slow) var(--ease-out);
 }
 
 .dish-card:hover { transform: translateY(-3px); }
@@ -292,7 +293,10 @@ main:focus { outline: none; }
   object-fit: cover;
   object-position: center;
   display: block;
-  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Photo zoom is 50% slower than the card lift — a deliberate
+   * staggered reveal. 0.6s falls between --motion-slow (400ms) and
+   * --motion-deliberate (2400ms); flag off-motion and keep literal. */
+  transition: transform 0.6s var(--ease-out); /* off-motion: between --motion-slow and --motion-deliberate */
 }
 
 .dish-card:hover .photo { transform: scale(1.04); }
