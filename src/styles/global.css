@@ -300,7 +300,11 @@ main:focus { outline: none; }
 .dish-card .overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%);
+  /* Gradient lightened: starts later (50% vs 40%) and ends softer
+   * (0.72 vs 0.85) so the dish photo reads through more of the
+   * card. Title + tagline still hold ≥4.5:1 contrast at the
+   * bottom because the text-shadow underneath them remains. */
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.72) 100%);
 }
 
 .dish-card .meta {
