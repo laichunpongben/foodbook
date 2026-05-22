@@ -389,11 +389,21 @@ footer.site-footer {
   font-size: 0.88rem;
 }
 footer.site-footer .footer-meta {
-  margin-top: 0.5rem;
+  margin-top: 0.8rem;
   font-size: 0.82rem;
   color: var(--ink-mute);
+  letter-spacing: 0.04em;
 }
-footer.site-footer .footer-meta a { color: var(--ink-soft); }
+footer.site-footer .footer-meta a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.18em;
+}
+footer.site-footer .footer-meta a:hover {
+  color: var(--paprika);
+  text-decoration-color: var(--paprika);
+}
 
 /* Entity-detail pages — /farms/<slug>, /restaurants/<slug>, /meals/<slug>,
  * /garden/<slug>. Width + the small "back to <listing>" affordance at the top. */
