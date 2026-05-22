@@ -1,0 +1,193 @@
+---
+/**
+ * /this-week — what's been cooked in the last 7 days.
+ *
+ * Surfaces every dish whose firstMade falls within the last 7 days
+ * relative to today (UTC). Pure freshness anchor — returning visitors
+ * see exactly what's new since their last visit (or close to it).
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const dishes = publicOnly(await getCollection('dishes'));
+
+const now = new Date();
+const SEVEN_DAYS = 7 * 86_400_000;
+const cutoff = new Date(now.getTime() - SEVEN_DAYS);
+const cutoffISO = cutoff.toISOString().slice(0, 10);
+
+const withinWeek = dishes
+  .filter((d) => d.data.firstMade && d.data.firstMade >= cutoffISO)
+  .sort((a, b) => (b.data.firstMade ?? '').localeCompare(a.data.firstMade ?? ''));
+
+// Fallback: when the literal-7-day window is empty, show the 6 most-recent
+// dishes regardless of date so the page never feels broken.
+const fallbackRecent = withinWeek.length === 0
+  ? [...dishes]
+      .filter((d) => d.data.firstMade)
+      .sort((a, b) => (b.data.firstMade ?? '').localeCompare(a.data.firstMade ?? ''))
+      .slice(0, 6)
+  : [];
+
+const dateRange = `${cutoff.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${now.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
+
+const site = Astro.site!;
+const description = `${withinWeek.length} dishes added in the last 7 days.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'This week',
+  url: new URL('/this-week/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="This week" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="tw container">
+    <header class="tw-head">
+      <p class="tw-eyebrow">{dateRange}</p>
+      <h1>This week in foodbook</h1>
+      <p class="lead">
+        Dishes added to the archive in the last 7 days. For longer-range,
+        see <a href="/timeline/">the full timeline</a>.
+      </p>
+    </header>
+
+    {withinWeek.length > 0 ? (
+      <ul class="tw-list">
+        {withinWeek.map((d) => {
+          const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-1280.jpg` : null);
+          return (
+            <li class="tw-item">
+              <a class="tw-card" href={`/dishes/${bare(d.id)}/`}>
+                {photo && (
+                  <div
+                    class="tw-photo"
+                    style={`background-image: url('${photo}'); background-position: ${d.data.heroFocal ?? 'center'};`}
+                  />
+                )}
+                <div class="tw-text">
+                  <p class="tw-when">{d.data.firstMade}</p>
+                  <h2 class="tw-title" set:html={d.data.title} />
+                  {d.data.tagline && <p class="tw-tagline" set:html={d.data.tagline} />}
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <>
+        <p class="muted tw-empty">
+          Nothing new in the last 7 days. The archive is on a slower cadence right now —
+          here are the six most-recent additions instead:
+        </p>
+        <ul class="tw-list">
+          {fallbackRecent.map((d) => {
+            const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-1280.jpg` : null);
+            return (
+              <li class="tw-item">
+                <a class="tw-card" href={`/dishes/${bare(d.id)}/`}>
+                  {photo && (
+                    <div
+                      class="tw-photo"
+                      style={`background-image: url('${photo}'); background-position: ${d.data.heroFocal ?? 'center'};`}
+                    />
+                  )}
+                  <div class="tw-text">
+                    <p class="tw-when">{d.data.firstMade}</p>
+                    <h2 class="tw-title" set:html={d.data.title} />
+                    {d.data.tagline && <p class="tw-tagline" set:html={d.data.tagline} />}
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .tw { padding: 4rem 0 6rem; max-width: 980px; }
+  .tw-head { margin-bottom: 3rem; max-width: 60ch; }
+  .tw-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0;
+  }
+  .tw-head h1 { margin: 0.4rem 0 0.8rem; }
+  .tw-head .lead { color: var(--ink-soft); margin: 0; }
+  .tw-head a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  .tw-empty {
+    color: var(--ink-mute);
+    margin: 0 0 2rem;
+    font-style: italic;
+  }
+
+  .tw-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.4rem;
+  }
+  .tw-item { padding: 0; max-width: none; }
+
+  .tw-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    height: 100%;
+  }
+  .tw-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-3px);
+  }
+  .tw-photo {
+    aspect-ratio: 16 / 10;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .tw-text { padding: 1rem 1.2rem 1.2rem; }
+  .tw-when {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 0.4rem;
+  }
+  .tw-title {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .tw-tagline {
+    margin: 0.5rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+</style>
