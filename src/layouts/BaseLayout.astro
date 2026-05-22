@@ -158,6 +158,28 @@ const currentYear = new Date().getFullYear();
           toggle?.focus();
         }
       });
+
+      // Recently-viewed dish tracker. On any /dishes/<slug>/ page, push
+      // the slug + title onto a localStorage queue (max 5, dedup by slug).
+      // Read by the homepage's "Recently viewed" rail. Per ADR-0005 the
+      // site is public — no PII stored, just slugs.
+      (function() {
+        try {
+          const m = location.pathname.match(/^\/dishes\/([^/]+)\/?$/);
+          if (!m) return;
+          const slug = m[1];
+          const titleEl = document.querySelector<HTMLElement>('.dish-hero-title');
+          const title = titleEl?.textContent?.trim() ?? slug;
+          const KEY = 'fb:recent-dishes';
+          const raw = localStorage.getItem(KEY);
+          let list: Array<{ slug: string; title: string }> = [];
+          try { list = raw ? JSON.parse(raw) : []; } catch { list = []; }
+          list = list.filter((x) => x.slug !== slug);
+          list.unshift({ slug, title });
+          list = list.slice(0, 5);
+          localStorage.setItem(KEY, JSON.stringify(list));
+        } catch { /* localStorage unavailable; non-fatal */ }
+      })();
     </script>
   </body>
 </html>
