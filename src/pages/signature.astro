@@ -1,0 +1,221 @@
+---
+/**
+ * /signature — the fully-traced dishes. Curated by completeness, not
+ * editorial picking: dishes covering 3+ of the 4 lifecycle stages
+ * are "signature" — the editorial gold the archive offers most.
+ *
+ * Distinct from /today (rotating) and /dishes (alphabetical). /signature
+ * is "where to start if you've never used foodbook before."
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+type DishEntry = Awaited<ReturnType<typeof getCollection<'dishes'>>>[number];
+
+function stageCovered(d: DishEntry, key: 'source' | 'grow' | 'cook' | 'eat'): boolean {
+  const s = d.data.stages?.[key];
+  if (!s) return false;
+  if (typeof s.note === 'string' && s.note.trim().length > 0) return true;
+  if (s.farms && s.farms.length > 0) return true;
+  if (s.garden && s.garden.length > 0) return true;
+  if (s.recipes && s.recipes.length > 0) return true;
+  if (s.meals && s.meals.length > 0) return true;
+  if (s.restaurants && s.restaurants.length > 0) return true;
+  return false;
+}
+
+function stageCount(d: DishEntry): number {
+  return (['source', 'grow', 'cook', 'eat'] as const).filter((k) => stageCovered(d, k)).length;
+}
+
+const dishes = publicOnly(await getCollection('dishes'));
+const withCounts = dishes.map((d) => ({ d, n: stageCount(d) }));
+
+const fullyTraced = withCounts
+  .filter((x) => x.n === 4)
+  .map((x) => x.d)
+  .sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+const almostThere = withCounts
+  .filter((x) => x.n === 3)
+  .map((x) => x.d)
+  .sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+const site = Astro.site!;
+const description = `${fullyTraced.length} fully-traced dishes; ${almostThere.length} with 3 of 4 stages covered.`;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'CollectionPage',
+  name: 'Signature',
+  url: new URL('/signature/', site).toString(),
+  description,
+};
+---
+
+<BaseLayout title="Signature dishes" description={description}>
+  <JsonLd data={webPageLd} />
+  <article class="signature container">
+    <header class="sig-head">
+      <p class="eyebrow">Where to start</p>
+      <h1>Signature dishes</h1>
+      <p class="lead">
+        Dishes traced through 3 or 4 of the lifecycle stages — the editorial gold of the archive.
+        Start here if you've never used foodbook before.
+      </p>
+    </header>
+
+    {fullyTraced.length > 0 && (
+      <section class="sig-section">
+        <h2><span class="sig-badge sig-badge--gold">4 of 4</span>Fully traced</h2>
+        <ul class="sig-grid">
+          {fullyTraced.map((d) => {
+            const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-1280.jpg` : null);
+            return (
+              <li>
+                <a class="sig-card" href={`/dishes/${bare(d.id)}/`}>
+                  {photo && (
+                    <div
+                      class="sig-photo"
+                      style={`background-image: url('${photo}'); background-position: ${d.data.heroFocal ?? 'center'};`}
+                    />
+                  )}
+                  <div class="sig-text">
+                    <h3 class="sig-title" set:html={d.data.title} />
+                    {d.data.tagline && <p class="sig-tagline" set:html={d.data.tagline} />}
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )}
+
+    {almostThere.length > 0 && (
+      <section class="sig-section">
+        <h2><span class="sig-badge">3 of 4</span>Almost complete</h2>
+        <ul class="sig-grid">
+          {almostThere.slice(0, 12).map((d) => {
+            const photo = d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-1280.jpg` : null);
+            return (
+              <li>
+                <a class="sig-card sig-card--sm" href={`/dishes/${bare(d.id)}/`}>
+                  {photo && (
+                    <div
+                      class="sig-photo"
+                      style={`background-image: url('${photo}'); background-position: ${d.data.heroFocal ?? 'center'};`}
+                    />
+                  )}
+                  <div class="sig-text">
+                    <h3 class="sig-title-sm" set:html={d.data.title} />
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        {almostThere.length > 12 && (
+          <p class="sig-more">+ {almostThere.length - 12} more 3-of-4 dishes — <a href="/dishes/">browse the full archive</a>.</p>
+        )}
+      </section>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .signature { padding: 4rem 0 6rem; max-width: 1100px; }
+  .sig-head { margin-bottom: 3rem; max-width: 60ch; }
+  .sig-head h1 { margin: 0.4rem 0 0.8rem; }
+  .sig-head .lead { color: var(--ink-soft); margin: 0; }
+
+  .sig-section { margin-bottom: 3rem; }
+  .sig-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    margin: 0 0 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .sig-badge {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    background: rgba(141, 178, 95, 0.18);
+    color: rgba(141, 178, 95, 0.95);
+    font-weight: 600;
+  }
+  .sig-badge--gold {
+    background: rgba(210, 84, 59, 0.18);
+    color: var(--paprika);
+  }
+
+  .sig-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.4rem;
+  }
+  .sig-grid li { padding: 0; max-width: none; }
+
+  .sig-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    height: 100%;
+  }
+  .sig-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-3px);
+  }
+  .sig-photo {
+    aspect-ratio: 16 / 10;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .sig-text { padding: 1.1rem 1.3rem 1.3rem; }
+  .sig-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .sig-title-sm {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .sig-tagline {
+    margin: 0.5rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .sig-card--sm .sig-photo { aspect-ratio: 4 / 3; }
+  .sig-card--sm .sig-text { padding: 0.9rem 1rem 1rem; }
+
+  .sig-more {
+    margin-top: 1.2rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .sig-more a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+</style>
