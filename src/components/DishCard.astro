@@ -14,15 +14,27 @@ interface Props {
   hero?: string;
   heroUrl?: string;
   heroFocal?: string;
+  /** Optional 4-tuple flags showing which lifecycle stages are covered. */
+  stages?: { source: boolean; grow: boolean; cook: boolean; eat: boolean };
 }
 
-const { slug, title, tagline, hero, heroUrl, heroFocal } = Astro.props;
+const { slug, title, tagline, hero, heroUrl, heroFocal, stages } = Astro.props;
 const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
+const stageList = stages
+  ? [
+      { key: 'source', label: 'Source', on: stages.source },
+      { key: 'grow', label: 'Grow', on: stages.grow },
+      { key: 'cook', label: 'Cook', on: stages.cook },
+      { key: 'eat', label: 'Eat', on: stages.eat },
+    ]
+  : null;
+const stagesCovered = stages ? Object.values(stages).filter(Boolean).length : 0;
+const ariaStages = stages ? `${stagesCovered} of 4 lifecycle stages traced` : '';
 // alt left empty: the surrounding `aria-label` on the <a> already
 // names the link, so the image is decorative for AT.
 ---
 
-<a class="dish-card" href={`/dishes/${slug}/`} aria-label={title}>
+<a class="dish-card" href={`/dishes/${slug}/`} aria-label={`${title}${ariaStages ? ` — ${ariaStages}` : ''}`}>
   {photoUrl && (
     <img
       class="photo"
@@ -34,8 +46,37 @@ const photoUrl = heroUrl ?? (hero ? `${hero}-1280.jpg` : '');
     />
   )}
   <div class="overlay" />
+  {stageList && (
+    <ul class="stage-dots" aria-hidden="true">
+      {stageList.map((s) => (
+        <li class={`stage-dot ${s.on ? 'on' : 'off'}`} title={s.label} />
+      ))}
+    </ul>
+  )}
   <div class="meta">
     <div class="title" set:html={title} />
     {tagline && <div class="tagline">{tagline}</div>}
   </div>
 </a>
+
+<style>
+  .stage-dots {
+    position: absolute;
+    bottom: 0.6rem;
+    right: 0.7rem;
+    z-index: 1;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 4px;
+  }
+  .stage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    transition: background 0.15s ease;
+  }
+  .stage-dot.on { background: var(--paprika); box-shadow: 0 0 0 1.5px rgba(210, 84, 59, 0.25); }
+</style>

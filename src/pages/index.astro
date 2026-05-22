@@ -62,16 +62,37 @@ const websiteLd = {
       <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
     )}
     <div class="dish-grid">
-      {dishes.map((dish) => (
-        <DishCard
-          slug={bare(dish.id)}
-          title={dish.data.title}
-          tagline={dish.data.tagline}
-          hero={dish.data.hero}
-          heroUrl={dish.data.heroUrl}
-          heroFocal={dish.data.heroFocal}
-        />
-      ))}
+      {dishes.map((dish) => {
+        const s = dish.data.stages;
+        const stageCovered = (key: 'source' | 'grow' | 'cook' | 'eat'): boolean => {
+          const stage = s?.[key];
+          if (!stage) return false;
+          if (typeof stage.note === 'string' && stage.note.trim().length > 0) return true;
+          if (stage.farms?.length) return true;
+          if (stage.garden?.length) return true;
+          if (stage.recipes?.length) return true;
+          if (stage.meals?.length) return true;
+          if (stage.restaurants?.length) return true;
+          return false;
+        };
+        const stages = {
+          source: stageCovered('source'),
+          grow: stageCovered('grow'),
+          cook: stageCovered('cook'),
+          eat: stageCovered('eat'),
+        };
+        return (
+          <DishCard
+            slug={bare(dish.id)}
+            title={dish.data.title}
+            tagline={dish.data.tagline}
+            hero={dish.data.hero}
+            heroUrl={dish.data.heroUrl}
+            heroFocal={dish.data.heroFocal}
+            stages={stages}
+          />
+        );
+      })}
     </div>
   </section>
 </BaseLayout>
