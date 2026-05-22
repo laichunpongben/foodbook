@@ -56,6 +56,18 @@ const websiteLd = {
     </div>
   </section>
 
+  <section class="container explore-rail" aria-label="More ways to explore">
+    <p class="explore-eyebrow">More ways in</p>
+    <ul class="explore-list">
+      <li><a href="/cuisines/"><span class="explore-name">By cuisine</span><span class="explore-desc">10 traditions, photo cards</span></a></li>
+      <li><a href="/techniques/"><span class="explore-name">By technique</span><span class="explore-desc">Bake, grill, ferment, raw</span></a></li>
+      <li><a href="/timeline/"><span class="explore-name">By date</span><span class="explore-desc">Cooked-on timeline</span></a></li>
+      <li><a href="/signature/"><span class="explore-name">Signature</span><span class="explore-desc">Fully-traced gold</span></a></li>
+      <li><a href="/first-bite/"><span class="explore-name">First bite</span><span class="explore-desc">9-dish sampler</span></a></li>
+      <li><a href="/atlas/"><span class="explore-name">Atlas</span><span class="explore-desc">By country</span></a></li>
+    </ul>
+  </section>
+
   <section class="container">
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
@@ -75,3 +87,58 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .explore-rail {
+    margin: 2.5rem auto;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .explore-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0 0 1rem;
+  }
+  .explore-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem 1.4rem;
+  }
+  .explore-list li { padding: 0; max-width: none; }
+  .explore-list a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    text-decoration: none;
+    color: var(--ink);
+    padding: 0.5rem 0.7rem;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+  }
+  .explore-list a:hover { background: rgba(210, 84, 59, 0.07); }
+  .explore-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--ink);
+    transition: color 0.15s ease;
+  }
+  .explore-list a:hover .explore-name { color: var(--paprika); }
+  .explore-desc {
+    color: var(--ink-mute);
+    font-size: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .explore-list { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .explore-list { grid-template-columns: 1fr; }
+  }
+</style>
