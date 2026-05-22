@@ -22,6 +22,12 @@ SOURCE  →  GROW  →  COOK  →  EAT
 
 | File | What's in it |
 |---|---|
+| [`docs/README.md`](docs/README.md) | Start here — reading orders per use case. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | What makes a dish entry on-mission, the visual + structural conventions, PR rules. |
+| [`docs/PROCESS.md`](docs/PROCESS.md) | The ADR → canon → audit → CI → issue loop the project uses to land each decision. |
+| [`docs/VOICE.md`](docs/VOICE.md) | Quick-reference card — editorial voice tokens. |
+| [`docs/AUDITS.md`](docs/AUDITS.md) | Quick-reference card — the `audit:*` script family. |
+| [`docs/HISTORY.md`](docs/HISTORY.md) | Append-only log of major iterations. |
 | [`docs/brainstorm.md`](docs/brainstorm.md) | Idea space — concepts, references, what to build, what *not* to build. |
 | [`docs/architecture.md`](docs/architecture.md) | Current state — directory layout, content model, dev workflow, deploy flow. |
 | [`docs/ai-first.md`](docs/ai-first.md) | Where AI lives in the product (authoring assist, reader assist, cook mode) and where it doesn't. |
