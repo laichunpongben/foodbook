@@ -395,6 +395,41 @@ footer.site-footer .footer-meta {
 }
 footer.site-footer .footer-meta a { color: var(--ink-soft); }
 
+/* Footer wander blocks — "Rotating:" and "Browse:" — surface the
+ * dynamic + discovery routes from every page bottom. */
+footer.site-footer .footer-wander {
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  align-items: baseline;
+}
+footer.site-footer .footer-wander + .footer-wander {
+  margin-top: -0.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0.9rem;
+}
+footer.site-footer .footer-wander a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--paprika);
+}
+footer.site-footer .footer-wander a:hover { color: var(--paprika); }
+footer.site-footer .footer-wander-label {
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+footer.site-footer .footer-wander span[aria-hidden] {
+  color: var(--ink-mute);
+  opacity: 0.6;
+}
+
 /* Entity-detail pages — /farms/<slug>, /restaurants/<slug>, /meals/<slug>,
  * /garden/<slug>. Width + the small "back to <listing>" affordance at the top. */
 .entity { padding: 3rem 0 6rem; max-width: 760px; }
