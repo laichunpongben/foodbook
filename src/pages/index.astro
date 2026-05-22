@@ -53,6 +53,13 @@ const websiteLd = {
       <p class="hero-cta">
         <a href="/dishes/">Browse all dishes →</a>
       </p>
+      <p class="hero-cta-secondary">
+        <a href="/random/">Surprise me</a>
+        <span aria-hidden="true">·</span>
+        <a href="/menu/">Today's menu</a>
+        <span aria-hidden="true">·</span>
+        <a href="/live/">What's live</a>
+      </p>
     </div>
   </section>
 
@@ -75,3 +82,29 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .hero-cta-secondary {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+  .hero-cta-secondary a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.25);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .hero-cta-secondary a:hover {
+    color: var(--paprika);
+    border-color: var(--paprika);
+  }
+  .hero-cta-secondary span {
+    color: var(--ink-mute);
+    opacity: 0.6;
+  }
+</style>
