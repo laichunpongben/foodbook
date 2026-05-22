@@ -1,0 +1,192 @@
+---
+/**
+ * /today — the day's dish.
+ *
+ * Picks one public dish deterministically from the catalog using
+ * the day-of-year. Same dish for everyone on the same day; rotates
+ * tomorrow. Gives readers a reason to return — there's always
+ * something new without the maintainer authoring it.
+ *
+ * Stickiness pattern documented in research: predictable cadence +
+ * one anchor per visit. See goal-research notes 2026-05-22.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+const allDishes = await getCollection('dishes');
+const dishes = publicOnly(allDishes).sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+const now = new Date();
+const start = Date.UTC(now.getUTCFullYear(), 0, 0);
+const diff = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - start;
+const dayOfYear = Math.floor(diff / 86_400_000);
+
+const todays = dishes.length > 0 ? dishes[dayOfYear % dishes.length] : null;
+const todaysHref = todays ? `/dishes/${bare(todays.id)}/` : null;
+const heroPhoto = todays
+  ? (todays.data.heroUrl ?? (todays.data.hero ? `${todays.data.hero}-2560.jpg` : null))
+  : null;
+
+const dateLong = now.toLocaleDateString('en', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+const site = Astro.site!;
+const articleLd = todays
+  ? {
+      '@context': SCHEMA_CTX,
+      '@type': 'Article',
+      headline: `Today: ${todays.data.shortTitle}`,
+      url: new URL('/today/', site).toString(),
+      datePublished: now.toISOString(),
+      about: { '@type': 'Thing', name: todays.data.shortTitle },
+    }
+  : null;
+---
+
+<BaseLayout
+  title="Today's dish"
+  description={todays ? `Today: ${todays.data.shortTitle} — a rotating daily pick from the foodbook archive.` : 'Today’s dish.'}
+>
+  {articleLd && <JsonLd data={articleLd} />}
+  <article class="today">
+    <header class="today-head container">
+      <p class="today-date">{dateLong}</p>
+      <p class="today-eyebrow">Today’s dish</p>
+    </header>
+
+    {!todays && (
+      <p class="container today-empty">No public dishes yet — check back when the archive has its first entry.</p>
+    )}
+
+    {todays && (
+      <>
+        {heroPhoto && (
+          <div
+            class="today-photo"
+            style={`background-image: url('${heroPhoto}'); background-position: ${todays.data.heroFocal ?? 'center'};`}
+          />
+        )}
+        <div class="container today-body">
+          <h1 class="today-title" set:html={todays.data.title} />
+          {todays.data.tagline && <p class="today-tagline" set:html={todays.data.tagline} />}
+          {todays.data.origin && <p class="today-origin">From {todays.data.origin}</p>}
+          <p class="today-cta">
+            <a class="today-cta-link" href={todaysHref}>Read the entry →</a>
+          </p>
+          <p class="today-meta">
+            <a href="/dishes/">Browse the full archive</a> · returns at midnight UTC with a new pick.
+          </p>
+        </div>
+      </>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .today {
+    min-height: 70vh;
+    padding: 4rem 0 6rem;
+    position: relative;
+  }
+
+  .today-head { margin-bottom: 2.5rem; }
+
+  .today-date {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+
+  .today-eyebrow {
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2.6vw, 1.7rem);
+    color: var(--paprika);
+    letter-spacing: -0.005em;
+    margin: 0.2rem 0 0;
+  }
+
+  .today-empty {
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+  }
+
+  .today-photo {
+    width: 100%;
+    height: clamp(280px, 50vh, 520px);
+    background-size: cover;
+    background-position: center;
+    background-color: #11161c;
+    margin-bottom: 3rem;
+    /* Subtle film-grain overlay using SVG noise — Polaroid feel per 2026
+     * "Imperfect by Design" trend research. Sits on top of the photo at
+     * 8% opacity so it texturises without obscuring. */
+    position: relative;
+  }
+
+  .today-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+  }
+
+  .today-body { max-width: 60ch; }
+
+  .today-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5.4vw, 4rem);
+    line-height: 1.04;
+    margin: 0;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .today-tagline {
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    margin: 1.2rem 0 0;
+    max-width: 50ch;
+  }
+
+  .today-origin {
+    margin: 1.2rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .today-cta { margin: 2.5rem 0 0; }
+  .today-cta-link {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 2px solid var(--paprika);
+    padding-bottom: 0.18rem;
+  }
+  .today-cta-link:hover { color: var(--ink); border-color: var(--ink); }
+
+  .today-meta {
+    margin: 2.5rem 0 0;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+</style>
