@@ -281,10 +281,18 @@ main:focus { outline: none; }
   border-radius: 6px;
   text-decoration: none;
   background: #11161c;
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Resting-state shadow gives the dish-card a sense of physicality —
+   * 2026 design trend leans toward soft drop-shadows that hint at depth
+   * without being skeuomorphic. Bumps deeper on hover. */
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.45);
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.dish-card:hover { transform: translateY(-3px); }
+.dish-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px -10px rgba(0, 0, 0, 0.55);
+}
 
 .dish-card .photo {
   position: absolute;
