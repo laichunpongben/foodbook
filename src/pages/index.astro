@@ -56,6 +56,14 @@ const websiteLd = {
     </div>
   </section>
 
+  <section class="container lifecycle-strip" aria-label="About foodbook">
+    <p class="lifecycle-strip-lead">
+      Every dish here traces backward to its <strong class="lifecycle-word">source</strong> and forward to its <strong class="lifecycle-word">table</strong> —
+      four stages, in both directions.
+      <a href="/about/" class="lifecycle-strip-link">How it works →</a>
+    </p>
+  </section>
+
   <section class="container">
     <h2>Recent dishes</h2>
     {dishes.length === 0 && (
@@ -75,3 +83,29 @@ const websiteLd = {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .lifecycle-strip {
+    margin: 2.5rem auto;
+    padding: 1.4rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .lifecycle-strip-lead {
+    color: var(--ink-soft);
+    margin: 0;
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+  .lifecycle-word {
+    color: var(--paprika);
+    font-weight: 500;
+  }
+  .lifecycle-strip-link {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+    margin-left: 0.4rem;
+  }
+  .lifecycle-strip-link:hover { color: var(--ink); border-color: var(--ink); }
+</style>
