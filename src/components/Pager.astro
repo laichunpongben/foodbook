@@ -42,17 +42,21 @@ const { prev, next, ariaLabel = 'Pagination' } = Astro.props;
 )}
 
 <style>
+  /* ADR-0010 stage-2 partial migration. One literal matched the scale
+   * exactly (margin-top 4rem → --space-2xl). The other five sit between
+   * scale steps; each carries an /* off-scale: */ comment naming the
+   * nearest token so audit-tokens.mjs can later surface them. */
   .pager {
     display: flex;
-    gap: 1.5rem;
-    margin-top: 4rem;
-    padding-top: 2rem;
+    gap: 1.5rem;                    /* off-scale: between --space-md (1.2) and --space-lg (1.8) */
+    margin-top: var(--space-2xl);
+    padding-top: 2rem;              /* off-scale: between --space-lg (1.8) and --space-xl (2.5) */
     border-top: 1px solid var(--rule);
   }
   .pager-link {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.2rem;                    /* off-scale: between --space-3xs (0.15) and --space-2xs (0.3) */
     text-decoration: none;
     color: var(--ink);
     max-width: 18rem;
@@ -60,10 +64,13 @@ const { prev, next, ariaLabel = 'Pagination' } = Astro.props;
   .pager-link.next { margin-left: auto; text-align: right; align-items: flex-end; }
   .pager-link:hover .pager-title { color: var(--paprika); }
   .pager-eyebrow {
-    font-size: 0.72rem;
+    font-size: 0.72rem;             /* off-scale: below --text-xs (0.78), genuinely small caps eyebrow */
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--ink-mute);
   }
-  .pager-title { font-family: var(--font-display); font-size: 1.1rem; }
+  .pager-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;              /* off-scale: between --text-sm (0.92) and --text-md (1.15) */
+  }
 </style>
