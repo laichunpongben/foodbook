@@ -72,6 +72,13 @@ const currentYear = new Date().getFullYear();
     <link rel="alternate" type="application/rss+xml" title="Foodbook" href="/rss.xml" />
     {unlisted && <meta name="robots" content="noindex,nofollow" />}
 
+    {/* Preload the og:image — for dish/recipe pages this is the hero photo,
+        so the browser preload scanner can fetch in parallel with the HTML.
+        Skip when og:image is the default SVG (already inlined fast). */}
+    {ogImage && !ogImage.endsWith('/og-default.svg') && (
+      <link rel="preload" as="image" href={ogImage} fetchpriority="high" />
+    )}
+
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
