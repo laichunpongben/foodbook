@@ -127,7 +127,11 @@
 :root[data-mode="cook"] .cook-progress__bar {
   height: 100%;
   background: var(--olive);
-  transition: width 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* ADR-0011: progress-bar advance uses --motion-slow + --ease-out.
+   * 0.35s was between --motion-base (200ms) and --motion-slow (400ms);
+   * --motion-slow reads as 'crisp progress' on cook-mode's parchment
+   * theme; the 50ms bump is imperceptible. */
+  transition: width var(--motion-slow) var(--ease-out);
 }
 
 /* ----- countdown timer ----- */
@@ -219,7 +223,8 @@
   content: '▾';
   color: var(--ink-mute);
   font-size: 0.9rem;
-  transition: transform 0.2s ease;
+  /* ADR-0011: chevron flip uses --motion-base. */
+  transition: transform var(--motion-base) var(--ease-out);
 }
 
 :root[data-mode="cook"] .cook-ingredients[open] summary::after {
