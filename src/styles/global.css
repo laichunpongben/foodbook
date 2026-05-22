@@ -1,6 +1,7 @@
 /* Foodbook — dark editorial theme.
  * Kitchen mode is in cook-mode.css and only loaded by /recipes/<slug>/cook.
- * See ADR-0003.
+ * See ADR-0003 (dual mode), ADR-0010 (visual tokens), ADR-0011 (motion tokens).
+ * Token canon mirrored in src/styles/tokens.json. Quick reference: docs/AUDITS.md.
  */
 
 :root {
