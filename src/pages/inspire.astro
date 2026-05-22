@@ -1,0 +1,200 @@
+---
+/**
+ * /inspire — a curated trio of "what to cook tonight" suggestions, by
+ * mood. Three different vibes (Quick, Slow, Showpiece), each surfacing
+ * one dish that matches. Rotates by ISO week.
+ *
+ * Distinct from /today (one anchor), /menu (composed meal), /pairings
+ * (kinship). /inspire helps when the reader knows the *vibe* but not
+ * the dish.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+
+type DishEntry = Awaited<ReturnType<typeof getCollection<'dishes'>>>[number];
+
+const dishes = publicOnly(await getCollection('dishes'))
+  .sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+const now = new Date();
+const isoWeek = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 1)) / 604_800_000,
+);
+
+interface Mood {
+  key: string;
+  label: string;
+  description: string;
+  filter: (d: DishEntry) => boolean;
+  offset: number;
+}
+
+const moods: Mood[] = [
+  {
+    key: 'quick',
+    label: 'Quick',
+    description: 'Weeknight-fast. Twenty minutes or under, one pan if possible.',
+    filter: (d) => d.data.tags.some((t) => ['raw', 'snack', 'one-pot', 'breakfast'].includes(t)),
+    offset: 0,
+  },
+  {
+    key: 'slow',
+    label: 'Slow',
+    description: 'A weekend project. Time + patience as ingredients.',
+    filter: (d) => d.data.tags.some((t) => ['fermentation', 'preserved', 'baking', 'grill'].includes(t)),
+    offset: 4,
+  },
+  {
+    key: 'showpiece',
+    label: 'Showpiece',
+    description: 'For a crowd. The dish that earns the dinner-party slot.',
+    filter: (d) => d.data.tags.some((t) => ['dessert', 'dinner'].includes(t)) && (d.data.tagline?.length ?? 0) > 0,
+    offset: 8,
+  },
+];
+
+interface MoodPick { mood: Mood; dish: DishEntry | null; }
+const picks: MoodPick[] = moods.map((m) => {
+  const candidates = dishes.filter(m.filter);
+  return {
+    mood: m,
+    dish: candidates.length > 0 ? candidates[(isoWeek + m.offset) % candidates.length] : null,
+  };
+});
+
+const site = Astro.site!;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Inspire',
+  url: new URL('/inspire/', site).toString(),
+  description: 'Three moods, one dish each — rotated weekly.',
+};
+---
+
+<BaseLayout title="Inspire" description="Three moods, one dish each — rotated weekly.">
+  <JsonLd data={webPageLd} />
+  <article class="inspire container">
+    <header class="inspire-head">
+      <p class="eyebrow">What to cook tonight</p>
+      <h1>Pick a mood</h1>
+      <p class="lead">
+        Three angles on what to cook — picked from the archive, rotated weekly.
+        Each card suggests one dish that fits.
+      </p>
+    </header>
+
+    <div class="inspire-moods">
+      {picks.map(({ mood, dish }) => (
+        <section class="inspire-mood">
+          <div class="inspire-mood-head">
+            <p class="inspire-mood-label">{mood.label}</p>
+            <p class="inspire-mood-desc">{mood.description}</p>
+          </div>
+          {dish ? (
+            <a class="inspire-mood-card" href={`/dishes/${bare(dish.id)}/`}>
+              {dish.data.heroUrl && (
+                <div
+                  class="inspire-mood-photo"
+                  style={`background-image: url('${dish.data.heroUrl}'); background-position: ${dish.data.heroFocal ?? 'center'};`}
+                />
+              )}
+              <div class="inspire-mood-text">
+                <h2 class="inspire-mood-title" set:html={dish.data.title} />
+                {dish.data.tagline && <p class="inspire-mood-tagline" set:html={dish.data.tagline} />}
+              </div>
+            </a>
+          ) : (
+            <p class="muted">No dish currently matches this mood.</p>
+          )}
+        </section>
+      ))}
+    </div>
+
+    <p class="inspire-footnote">
+      Or see <a href="/today/">today's pick</a>, <a href="/menu/">today's menu</a>, or <a href="/pairings/">this week's pairing</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .inspire { padding: 4rem 0 6rem; max-width: 1100px; }
+  .inspire-head { margin-bottom: 3rem; max-width: 60ch; }
+  .inspire-head h1 { margin: 0.4rem 0 0.8rem; }
+  .inspire-head .lead { color: var(--ink-soft); margin: 0; }
+  .inspire-moods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .inspire-mood {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .inspire-mood-head { padding: 0 0.4rem; }
+  .inspire-mood-label {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    margin: 0;
+  }
+  .inspire-mood-desc {
+    margin: 0.4rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .inspire-mood-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .inspire-mood-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-2px);
+  }
+  .inspire-mood-photo {
+    aspect-ratio: 16 / 10;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .inspire-mood-text { padding: 1rem 1.2rem 1.2rem; }
+  .inspire-mood-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1.15;
+    margin: 0;
+  }
+  .inspire-mood-tagline {
+    margin: 0.5rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .inspire-footnote {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .inspire-footnote a {
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--paprika);
+  }
+  @media (max-width: 900px) {
+    .inspire-moods { grid-template-columns: 1fr; }
+  }
+</style>
