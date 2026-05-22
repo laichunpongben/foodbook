@@ -10,12 +10,36 @@ import {
   MONTH_NAMES_LONG,
 } from '~/lib/seasons';
 import { publicOnly } from '~/lib/visibility';
+import { bare } from '~/lib/slug';
 
 const farms = publicOnly(await getCollection('farms'));
+const dishes = publicOnly(await getCollection('dishes'));
 const month = new Date().getMonth() + 1; // 1-12
 
 const products = collectProducts(farms);
 const inSeasonNow = products.filter((p) => inSeason(p.from, p.to, month));
+
+// "Try cooking this" — pick a dish whose source-stage farms include any
+// in-season producer. Deterministic by ISO week so it changes weekly.
+const inSeasonFarmSlugs = new Set<string>();
+for (const p of inSeasonNow) {
+  for (const f of p.farms) inSeasonFarmSlugs.add(bare(f.slug));
+}
+function dishUsesInSeasonFarm(d: typeof dishes[number]): boolean {
+  const sourceFarms = d.data.stages?.source?.farms ?? [];
+  return sourceFarms.some((slug: string) => inSeasonFarmSlugs.has(slug));
+}
+const eligibleDishes = dishes
+  .filter(dishUsesInSeasonFarm)
+  .sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+const now = new Date();
+const isoWeek = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 1)) / 604_800_000,
+);
+const featuredDish = eligibleDishes.length > 0
+  ? eligibleDishes[isoWeek % eligibleDishes.length]
+  : null;
 
 const site = Astro.site!;
 const description = `What's in season this ${MONTH_NAMES_LONG[month - 1]} — ${inSeasonNow.length} products drawn from farm + producer windows.`;
@@ -43,6 +67,29 @@ const crumb = breadcrumb(site, { label: 'Seasons', kind: 'seasons' });
     </p>
 
     <SeasonalWheel farms={farms} currentMonth={month} />
+
+    {featuredDish && (
+      <aside class="try-cooking">
+        <p class="eyebrow">Try cooking this</p>
+        <a class="try-cooking-card" href={`/dishes/${bare(featuredDish.id)}/`}>
+          {featuredDish.data.heroUrl && (
+            <div
+              class="try-cooking-photo"
+              style={`background-image: url('${featuredDish.data.heroUrl}'); background-position: ${featuredDish.data.heroFocal ?? 'center'};`}
+            />
+          )}
+          <div class="try-cooking-text">
+            <h3 class="try-cooking-title" set:html={featuredDish.data.title} />
+            {featuredDish.data.tagline && (
+              <p class="try-cooking-tagline" set:html={featuredDish.data.tagline} />
+            )}
+            <p class="try-cooking-note">
+              Uses ingredients in season this {MONTH_NAMES_LONG[month - 1]}.
+            </p>
+          </div>
+        </a>
+      </aside>
+    )}
 
     <div class="legend">
       <h2>Right now</h2>
@@ -90,5 +137,57 @@ const crumb = breadcrumb(site, { label: 'Seasons', kind: 'seasons' });
 
   .legend .muted {
     color: var(--ink-mute);
+  }
+
+  /* "Try cooking this" callout — bridges seasonality to a concrete dish.
+   * Weekly rotation by ISO week. */
+  .try-cooking {
+    margin-top: 3rem;
+  }
+  .try-cooking-card {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1.5rem;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 0.6rem;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .try-cooking-card:hover {
+    border-color: var(--paprika);
+    transform: translateY(-2px);
+  }
+  .try-cooking-photo {
+    aspect-ratio: 4 / 5;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .try-cooking-text { padding: 1.2rem 1.4rem 1.2rem 0; }
+  .try-cooking-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--ink);
+  }
+  .try-cooking-tagline {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+  .try-cooking-note {
+    margin: 0.8rem 0 0;
+    color: var(--paprika);
+    font-size: 0.88rem;
+    font-style: italic;
+  }
+  @media (max-width: 640px) {
+    .try-cooking-card { grid-template-columns: 1fr; }
+    .try-cooking-photo { aspect-ratio: 16 / 10; }
+    .try-cooking-text { padding: 1.4rem; }
   }
 </style>
