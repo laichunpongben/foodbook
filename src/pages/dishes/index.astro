@@ -10,6 +10,18 @@ import { publicOnly } from '~/lib/visibility';
 const dishes = publicOnly(await getCollection('dishes')).sort((a, b) =>
   a.data.shortTitle.localeCompare(b.data.shortTitle, undefined, { sensitivity: 'base' }),
 );
+
+// Header stats — cuisine count + farm-source count for the at-a-glance
+// "shape of the archive" signal. Cuisine list is a subset of dishTags.
+const CUISINE_TAGS = ['italian', 'french', 'iberian', 'nordic', 'levantine', 'indian', 'chinese', 'japanese', 'thai', 'mexican'];
+const cuisinesCovered = new Set<string>();
+const farmsReferenced = new Set<string>();
+for (const d of dishes) {
+  for (const t of d.data.tags) if (CUISINE_TAGS.includes(t)) cuisinesCovered.add(t);
+  const sourceFarms = d.data.stages?.source?.farms ?? [];
+  for (const f of sourceFarms) farmsReferenced.add(f);
+}
+
 const description = `${dishes.length} dishes in the archive.`;
 const section = { label: 'Dishes', kind: 'dishes' };
 const items = dishes.map((d) => ({
@@ -27,7 +39,12 @@ const crumb = breadcrumb(Astro.site!, section);
   <section class="container index-page">
     <p class="eyebrow">Dishes</p>
     <h1>Dishes</h1>
-    <p class="lead">Every dish in the archive — {dishes.length} entries, alphabetical.</p>
+    <p class="lead">Every dish in the archive — alphabetical.</p>
+    <ul class="dishes-stats" aria-label="Archive scope">
+      <li><strong>{dishes.length}</strong> dishes</li>
+      <li><strong>{cuisinesCovered.size}</strong> cuisines</li>
+      <li><strong>{farmsReferenced.size}</strong> source farms</li>
+    </ul>
 
     <ul class="index-list dish-list">
       {dishes.map((d) => (
@@ -42,6 +59,24 @@ const crumb = breadcrumb(Astro.site!, section);
 </BaseLayout>
 
 <style>
+  .dishes-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .dishes-stats li { padding: 0; max-width: none; }
+  .dishes-stats strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    font-weight: 500;
+    margin-right: 0.25rem;
+  }
   .dish-list { gap: 1rem; }
   .dish-list li { padding-bottom: 1rem; border-bottom: 1px solid var(--rule); gap: 0.2rem; }
   .dish-list a { font-size: 1.25rem; }
