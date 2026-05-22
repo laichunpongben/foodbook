@@ -1,0 +1,308 @@
+---
+/**
+ * /live — the dashboard view of every rotating surface, side by side.
+ *
+ * Bundles today's dish, today's menu, this week's pairing, this week's
+ * featured farm, and this month's in-season list into a single digest
+ * page. Useful for someone catching up after a week away — see
+ * everything that has rotated since last visit in one scroll.
+ *
+ * Each card links to its full detail route.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import JsonLd from '~/components/JsonLd.astro';
+import { SCHEMA_CTX } from '~/lib/jsonld';
+import { bare } from '~/lib/slug';
+import { publicOnly } from '~/lib/visibility';
+import { collectProducts, inSeason, MONTH_NAMES_LONG } from '~/lib/seasons';
+
+const allDishes = await getCollection('dishes');
+const sortedById = publicOnly(allDishes).sort((a, b) => bare(a.id).localeCompare(bare(b.id)));
+
+// ---- temporal indices ----
+const now = new Date();
+const dayOfYear = (() => {
+  const start = Date.UTC(now.getUTCFullYear(), 0, 0);
+  return Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - start) / 86_400_000);
+})();
+const isoWeek = Math.floor(
+  (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(now.getUTCFullYear(), 0, 1)) / 604_800_000,
+);
+const month = now.getUTCMonth() + 1;
+
+// ---- today's dish ----
+const todaysDish = sortedById.length > 0 ? sortedById[dayOfYear % sortedById.length] : null;
+
+// ---- today's menu (3 courses) ----
+type DishEntry = typeof sortedById[number];
+function pickByTagBucket(bucket: readonly string[], offset: number): DishEntry | null {
+  const matches = sortedById.filter((d) => d.data.tags.some((t) => bucket.includes(t)));
+  return matches.length > 0 ? matches[(dayOfYear + offset) % matches.length] : null;
+}
+const menuStarter = pickByTagBucket(['snack', 'breakfast', 'drink', 'raw'], 0);
+const menuMain = pickByTagBucket(['lunch', 'dinner', 'one-pot', 'grill'], 7);
+const menuDessert = pickByTagBucket(['dessert', 'baking'], 13);
+const menuCourses = [menuStarter, menuMain, menuDessert].filter((d): d is DishEntry => d !== null);
+
+// ---- this week's pairing (anchor + tag-overlap partner) ----
+const anchor: DishEntry | null = sortedById.length > 0 ? sortedById[isoWeek % sortedById.length] : null;
+let partner: DishEntry | null = null;
+if (anchor) {
+  const anchorTags = new Set(anchor.data.tags);
+  const candidates = sortedById
+    .filter((d) => bare(d.id) !== bare(anchor.id))
+    .map((d) => ({ d, score: d.data.tags.filter((t) => anchorTags.has(t)).length }))
+    .sort((a, b) => b.score - a.score || bare(a.d.id).localeCompare(bare(b.d.id)));
+  partner = candidates.length > 0 ? candidates[0].d : null;
+}
+
+// ---- this week's farm ----
+const allFarms = publicOnly(await getCollection('farms'));
+const visibleFarms = allFarms
+  .filter((f) => f.data.heroUrl)
+  .sort((a, b) => a.id.localeCompare(b.id));
+const featuredFarm = visibleFarms.length > 0 ? visibleFarms[isoWeek % visibleFarms.length] : null;
+
+// ---- this month's in-season products ----
+const products = collectProducts(allFarms);
+const inSeasonNow = products
+  .filter((p) => inSeason(p.from, p.to, month))
+  .sort((a, b) => a.product.localeCompare(b.product))
+  .slice(0, 6);
+
+const site = Astro.site!;
+const webPageLd = {
+  '@context': SCHEMA_CTX,
+  '@type': 'WebPage',
+  name: 'Live at Foodbook',
+  url: new URL('/live/', site).toString(),
+  description: 'Everything rotating at foodbook today — daily, weekly, monthly.',
+};
+
+function photoOf(d: DishEntry | null): string | null {
+  if (!d) return null;
+  return d.data.heroUrl ?? (d.data.hero ? `${d.data.hero}-1280.jpg` : null);
+}
+---
+
+<BaseLayout title="Live at Foodbook" description="Everything rotating at foodbook today — daily, weekly, monthly.">
+  <JsonLd data={webPageLd} />
+  <article class="live container">
+    <header class="live-head">
+      <p class="eyebrow">All in one place</p>
+      <h1>Live at foodbook</h1>
+      <p class="lead">
+        Today's pick, this week's pairing and farm, this month's in-season — every rotating
+        surface on one page. Updated daily, weekly, monthly without any authoring.
+      </p>
+    </header>
+
+    {todaysDish && (
+      <section class="live-row">
+        <header class="live-row-head">
+          <p class="live-row-eyebrow">Today's dish · {now.toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })}</p>
+          <a href="/today/" class="live-row-more">/today →</a>
+        </header>
+        <a class="live-card live-card--wide" href={`/dishes/${bare(todaysDish.id)}/`}>
+          {photoOf(todaysDish) && <div class="live-photo" style={`background-image: url('${photoOf(todaysDish)}'); background-position: ${todaysDish.data.heroFocal ?? 'center'};`} />}
+          <div class="live-card-text">
+            <h2 class="live-card-title" set:html={todaysDish.data.title} />
+            {todaysDish.data.tagline && <p class="live-card-tagline" set:html={todaysDish.data.tagline} />}
+          </div>
+        </a>
+      </section>
+    )}
+
+    {menuCourses.length > 0 && (
+      <section class="live-row">
+        <header class="live-row-head">
+          <p class="live-row-eyebrow">Three courses for today</p>
+          <a href="/menu/" class="live-row-more">/menu →</a>
+        </header>
+        <ol class="live-trio">
+          {menuCourses.map((d) => (
+            <li>
+              <a class="live-card" href={`/dishes/${bare(d.id)}/`}>
+                {photoOf(d) && <div class="live-photo live-photo--small" style={`background-image: url('${photoOf(d)}'); background-position: ${d.data.heroFocal ?? 'center'};`} />}
+                <div class="live-card-text">
+                  <h3 class="live-card-title-sm" set:html={d.data.title} />
+                </div>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+
+    {anchor && partner && (
+      <section class="live-row">
+        <header class="live-row-head">
+          <p class="live-row-eyebrow">This week's pairing</p>
+          <a href="/pairings/" class="live-row-more">/pairings →</a>
+        </header>
+        <div class="live-pair">
+          {[anchor, partner].map((d) => (
+            <a class="live-card" href={`/dishes/${bare(d.id)}/`}>
+              {photoOf(d) && <div class="live-photo live-photo--small" style={`background-image: url('${photoOf(d)}'); background-position: ${d.data.heroFocal ?? 'center'};`} />}
+              <div class="live-card-text">
+                <h3 class="live-card-title-sm" set:html={d.data.title} />
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {featuredFarm && (
+      <section class="live-row">
+        <header class="live-row-head">
+          <p class="live-row-eyebrow">This week's source</p>
+          <a href={`/farms/${bare(featuredFarm.id)}/`} class="live-row-more">visit →</a>
+        </header>
+        <a class="live-card live-card--side" href={`/farms/${bare(featuredFarm.id)}/`}>
+          {featuredFarm.data.heroUrl && <div class="live-photo" style={`background-image: url('${featuredFarm.data.heroUrl}')`} />}
+          <div class="live-card-text">
+            <h3 class="live-card-title">{featuredFarm.data.name}</h3>
+            {featuredFarm.data.location && <p class="live-card-tagline">{featuredFarm.data.location}</p>}
+          </div>
+        </a>
+      </section>
+    )}
+
+    {inSeasonNow.length > 0 && (
+      <section class="live-row">
+        <header class="live-row-head">
+          <p class="live-row-eyebrow">In season this {MONTH_NAMES_LONG[month - 1]}</p>
+          <a href="/seasons/" class="live-row-more">/seasons →</a>
+        </header>
+        <ul class="live-season">
+          {inSeasonNow.map((p) => (
+            <li>
+              <span class="live-season-product">{p.product}</span>
+              {p.farms.length > 0 && <span class="live-season-farms"> · {p.farms.slice(0, 2).map((f) => f.name).join(', ')}</span>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .live { padding: 4rem 0 6rem; max-width: 1100px; }
+  .live-head { margin-bottom: 3.5rem; max-width: 60ch; }
+  .live-head h1 { margin: 0.4rem 0 0.8rem; }
+  .live-head .lead { color: var(--ink-soft); margin: 0; }
+
+  .live-row {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .live-row:last-of-type { border-bottom: 0; padding-bottom: 0; }
+  .live-row-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .live-row-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paprika);
+    font-weight: 600;
+    margin: 0;
+  }
+  .live-row-more {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--ink-mute);
+    text-decoration: none;
+  }
+  .live-row-more:hover { color: var(--paprika); }
+
+  .live-card {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 1.4rem;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .live-card:hover { border-color: var(--paprika); transform: translateY(-2px); }
+  .live-card--wide { grid-template-columns: 360px 1fr; }
+  .live-card--side { grid-template-columns: 180px 1fr; }
+  .live-photo {
+    aspect-ratio: 4 / 5;
+    background-size: cover;
+    background-color: #11161c;
+  }
+  .live-photo--small { aspect-ratio: 16 / 10; }
+  .live-card-text { padding: 1.2rem 1.4rem 1.2rem 0; }
+  .live-card-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .live-card-title-sm {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .live-card-tagline {
+    margin: 0.5rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .live-trio, .live-pair {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .live-trio { grid-template-columns: repeat(3, 1fr); }
+  .live-pair { grid-template-columns: repeat(2, 1fr); }
+  .live-trio .live-card,
+  .live-pair .live-card { grid-template-columns: 1fr; }
+  .live-trio .live-card-text,
+  .live-pair .live-card-text { padding: 1rem 1.2rem; }
+
+  .live-season {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+  .live-season li { max-width: none; }
+  .live-season-product {
+    font-family: var(--font-display);
+    color: var(--ink);
+  }
+  .live-season-farms {
+    color: var(--ink-mute);
+    font-size: 0.88rem;
+  }
+
+  @media (max-width: 720px) {
+    .live-card,
+    .live-card--wide,
+    .live-card--side { grid-template-columns: 1fr; }
+    .live-card-text { padding: 1.2rem; }
+    .live-trio, .live-pair { grid-template-columns: 1fr; }
+  }
+</style>
