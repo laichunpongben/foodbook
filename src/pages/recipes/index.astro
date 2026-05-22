@@ -30,9 +30,13 @@ const crumb = breadcrumb(Astro.site!, section);
     <p class="eyebrow">Cook</p>
     <h1>Recipes</h1>
     <p class="lead">
-      {recipes.length} cookable recipes — yields, timing, and ingredient provenance.
-      Each opens in <em>cook mode</em> for kitchen use.
+      Yields, timing, ingredient provenance. Each opens in <em>cook mode</em> for kitchen use.
     </p>
+    <ul class="index-stats" aria-label="Recipe scope">
+      <li><strong>{recipes.length}</strong> recipes</li>
+      <li><strong>{recipes.filter((r) => r.data.timeCook).length}</strong> timed</li>
+      <li><strong>{new Set(recipes.flatMap((r) => r.data.tags ?? [])).size}</strong> tags covered</li>
+    </ul>
 
     <ul class="index-list divided">
       {recipes.map((r) => (
@@ -46,3 +50,24 @@ const crumb = breadcrumb(Astro.site!, section);
     </ul>
   </section>
 </BaseLayout>
+
+<style>
+  .index-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+  .index-stats li { padding: 0; max-width: none; }
+  .index-stats strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--paprika);
+    font-weight: 500;
+    margin-right: 0.25rem;
+  }
+</style>
