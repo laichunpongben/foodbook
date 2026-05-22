@@ -54,6 +54,38 @@ jobs:
             fi
           done
 
+      - name: Editorial + design audits (advisory)
+        # Run every audit script as an advisory check — never fails CI.
+        # Each script is read-only; output goes to the workflow log.
+        # See docs/adr/0009-0013 for the canon each one polices.
+        continue-on-error: true
+        run: |
+          set +e
+          echo "::group::audit:lineage (ADR-0009 north star)"
+          npm run audit:lineage 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:tags"
+          npm run audit:tags 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:coords"
+          npm run audit:coords 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:tokens (ADR-0010 visual)"
+          npm run audit:tokens 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:radii (ADR-0010 radii)"
+          npm run audit:radii 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:motion (ADR-0011 motion)"
+          npm run audit:motion 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:prose (ADR-0012 voice)"
+          npm run audit:prose 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::audit:a11y (ADR-0013 accessibility)"
+          npm run audit:a11y 2>/dev/null || true
+          echo "::endgroup::"
+
       - name: Upload dist
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@v7
