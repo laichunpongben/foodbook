@@ -59,7 +59,9 @@ const originHref = i.origin
     border-radius: 10px;
     overflow: hidden;
     color: var(--ink);
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    /* ADR-0011: hover lift uses --motion-base + --ease-out. 0.2s ease was
+     * already the canonical baseline — this just names it. */
+    transition: transform var(--motion-base) var(--ease-out), border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
   }
   .ingredient:hover {
     transform: translateY(-2px);
