@@ -62,7 +62,7 @@ const websiteLd = {
       <p class="lead">No dish entries yet — try <code>./scripts/new-dish.sh &lt;slug&gt;</code> to scaffold one.</p>
     )}
     <div class="dish-grid">
-      {dishes.map((dish) => (
+      {dishes.slice(0, 12).map((dish) => (
         <DishCard
           slug={bare(dish.id)}
           title={dish.data.title}
@@ -73,5 +73,25 @@ const websiteLd = {
         />
       ))}
     </div>
+    {dishes.length > 12 && (
+      <p class="more-dishes-cta"><a href="/dishes/">See all {dishes.length} dishes →</a></p>
+    )}
   </section>
 </BaseLayout>
+
+<style>
+  .more-dishes-cta {
+    margin: 1rem 0 4rem;
+    text-align: center;
+  }
+  .more-dishes-cta a {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--paprika);
+    text-decoration: none;
+    border-bottom: 2px solid var(--paprika);
+    padding-bottom: 0.18rem;
+  }
+  .more-dishes-cta a:hover { color: var(--ink); border-color: var(--ink); }
+</style>
