@@ -30,9 +30,15 @@ const { dishes, label = 'Appears in' } = Astro.props;
 )}
 
 <style>
+  /* ADR-0010 stage-2 partial migration. Two literals matched the scale
+   * exactly and were swapped (gap 0.15rem → --space-3xs, font-size
+   * 1.15rem → --text-md). The other four (3rem / 1.5rem / 0.6rem /
+   * 0.88rem) sit between scale steps; rounding would shift visuals,
+   * so they're left as-is and flagged for the next round of scale
+   * tuning (audit-tokens.mjs, follow-up). */
   .appears-in {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
+    margin-top: 3rem;              /* off-scale: between --space-xl (2.5) and --space-2xl (4) */
+    padding-top: 1.5rem;           /* off-scale: between --space-md (1.2) and --space-lg (1.8) */
     border-top: 1px solid var(--rule);
   }
   .appears-in ul {
@@ -41,19 +47,22 @@ const { dishes, label = 'Appears in' } = Astro.props;
     margin: 1rem 0 0;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.6rem;                   /* off-scale: between --space-xs (0.5) and --space-sm (0.8) */
   }
   .appears-in li {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: var(--space-3xs);
   }
   .appears-in li a {
     font-family: var(--font-display);
-    font-size: 1.15rem;
+    font-size: var(--text-md);
     text-decoration: none;
     color: var(--ink);
   }
   .appears-in li a:hover { color: var(--paprika); }
-  .appears-in li .line { color: var(--ink-mute); font-size: 0.88rem; }
+  .appears-in li .line {
+    color: var(--ink-mute);
+    font-size: 0.88rem;            /* off-scale: between --text-xs (0.78) and --text-sm (0.92) */
+  }
 </style>
