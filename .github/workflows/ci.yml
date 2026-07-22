@@ -54,27 +54,15 @@ jobs:
             fi
           done
 
-      - name: Upload dist
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist
-          retention-days: 1
-
-  deploy:
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubicloud-standard-2
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist
-
+      # Deploy the exact dist/ verified above, from this same workspace.
+      # The previous shape (upload dist → separate deploy job downloads
+      # it) fails whenever the ACCOUNT-wide Actions artifact storage
+      # quota is exhausted (2026-07-20/22 incident, first seen on
+      # researchbook) — the quota is shared across all repos and with
+      # GitHub Packages, so this repo can be broken by another repo's
+      # storage. Inlining removes the artifact dependency entirely.
       - name: Deploy to Cloudflare Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: npx wrangler pages deploy dist --project-name=foodbook --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
