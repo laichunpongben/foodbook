@@ -37,12 +37,12 @@
     "leaflet": "^1.9.4"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
-    "@biomejs/biome": "2.4.15",
+    "@astrojs/check": "^0.9.10",
+    "@biomejs/biome": "2.5.5",
     "@types/d3-shape": "^3.1.8",
     "pagefind": "^1.5.2",
-    "sharp": "^0.34.5",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.6"
+    "sharp": "^0.35.3",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
